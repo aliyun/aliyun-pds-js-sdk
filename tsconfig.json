@@ -1,0 +1,21 @@
+{
+  "version": "1.8.0",
+  "compilerOptions": {
+    "outDir": "lib",
+    "rootDir": "./",
+    "lib": ["es6"],
+    "target": "es5",
+    "allowJs": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "strict": false,
+
+    "declaration": true /* declaration的值为true或false，用来指定是否在编译的时候生成相应的".d.ts"声明文件。如果设为true，编译每个ts文件之后会生成一个js文件和一个声明文件。但是declaration和allowJs不能同时设为true */,
+
+    "sourceMap": true /* sourceMap的值为true或false，用来指定编译时是否生成.map文件 */
+  },
+  "include": ["src/**/*.ts", "src/**/*.js"],
+  "exclude": ["lib", "src/**/**.test.ts", "src/**/**.test.js", "tests", "node_modules"]
+}

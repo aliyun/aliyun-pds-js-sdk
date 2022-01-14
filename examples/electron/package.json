@@ -1,0 +1,19 @@
+{
+  "name": "electron",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "mirror": "npm config set ELECTRON_MIRROR https://npm.taobao.org/mirrors/electron/ && npm config set ELECTRON_BUILDER_BINARIES_MIRROR https://npm.taobao.org/mirrors/electron-builder-binaries/",
+    "start": "ts-node bin/gen-token.js && electron ."
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^16.0.6",
+    "ts-node": "^10.4.0"
+  },
+  "dependencies": {
+    "@electron/remote": "^2.0.1"
+  }
+}
