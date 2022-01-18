@@ -219,7 +219,6 @@ interface IUpConfig {
   init_chunk_con?: number // 自定义指定并发数， chunk_con_auto==false 时生效
   chunk_con_auto?: boolean // 自动调整并发数策略
   high_speed_mode?: boolean // 扩大stream缓冲区
-  use_https?: boolean
 
   custom_crc64_fun?: (opt: ICustomCrc64FunOpt) => Promise<string> //自定义 计算crc64的方法
   custom_sha1_fun?: (opt: ICustomSha1FunOpt) => Promise<string> //自定义 计算sha1的方法
@@ -296,7 +295,6 @@ interface IDownConfig {
   init_chunk_con?: number
   chunk_con_auto?: boolean
   high_speed_mode?: boolean
-  use_https?: boolean // 使用 https
   // crc64_running_mode?: CheckCRC64Mode // "end","part", 最后crc，还是分片crc
 
   custom_crc64_fun?: (opt: ICustomCrc64FunOpt) => Promise<string> //自定义 计算crc64的方法

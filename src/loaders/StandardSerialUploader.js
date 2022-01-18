@@ -225,7 +225,7 @@ export class StandardSerialUploader extends BaseUploader {
           // eslint-disable-next-line no-await-in-loop
           const result = await this.uploadPartRetry(partInfo, {
             method: 'put',
-            url: this.vendors.http_util.attachHttps(partInfo.upload_url, this.use_https),
+            url: partInfo.upload_url,
             headers: reqHeaders,
             maxContentLength: Infinity,
             maxRedirects: 5,

@@ -102,4 +102,4 @@ function basename(path, ext = '') {
   }
 }
 
-export {basename, dirname}
+export {basename, dirname, assertPath}

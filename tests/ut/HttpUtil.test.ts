@@ -12,13 +12,6 @@ describe('HttpUtil', function () {
     assert(Date.now() - st >= 1000)
   })
 
-  it('attachHttps', () => {
-    assert(HttpUtil.attachHttps('http://abc.com', true) === 'https://abc.com')
-    assert(HttpUtil.attachHttps('http://abc.com', false) === 'http://abc.com')
-    assert(HttpUtil.attachHttps('https://abc.com', true) === 'https://abc.com')
-    assert(HttpUtil.attachHttps('https://abc.com', false) === 'http://abc.com')
-  })
-
   describe('retryCall', () => {
     it('http error', async () => {
       let url = `https://statics.aliyunpds.com/a`

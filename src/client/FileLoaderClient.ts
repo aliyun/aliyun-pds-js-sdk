@@ -191,7 +191,6 @@ class FileLoaderClient extends PDSUserApiClient {
         max_chunk_size: 5 * 1024 * 1024, //每片5MB
         init_chunk_con: 3,
         chunk_con_auto: true,
-        use_https: true,
         high_speed_mode: false, //for electron
         ignore_rapid: false, //忽略秒传，测试时使用。
 
@@ -217,7 +216,6 @@ class FileLoaderClient extends PDSUserApiClient {
         max_chunk_size: 5 * 1024 * 1024, //每片5MB
         init_chunk_con: 3,
         chunk_con_auto: true,
-        use_https: false,
         high_speed_mode: false, //for electron
         verbose: false, //显示详细日志
 

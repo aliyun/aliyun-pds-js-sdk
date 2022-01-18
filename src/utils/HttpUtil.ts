@@ -45,10 +45,6 @@ function delay(ms: number): Promise<void> {
   return new Promise<void>(a => setTimeout(a, ms))
 }
 
-function attachHttps(url: string, use_https: boolean = false): string {
-  return url.replace(/^https?:/, use_https ? 'https:' : 'http:')
-}
-
 function getStreamBody(stream: ReadStream | string) {
   if (typeof stream == 'string') return stream
   return new Promise<string>((resolve, reject) => {
@@ -74,4 +70,4 @@ function isNetworkError(e: Error): boolean {
     e.message.indexOf('connect ECONNRESET') != -1
   )
 }
-export {callRetry, delay, attachHttps, getStreamBody, isNetworkError}
+export {callRetry, delay, getStreamBody, isNetworkError}

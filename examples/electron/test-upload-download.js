@@ -25,7 +25,7 @@ async function init() {
   let task
   var cp = await client.uploadFile(p, to, {
     ignore_rapid: true,
-    parallel_upload: true,
+    parallel_upload: false,
     verbose: true,
     onReady(t) {
       task = t
@@ -38,7 +38,7 @@ async function init() {
     },
   })
 
-  console.log('上传成功: ', cp.state)
+  console.log('上传成功: ', cp.state, ', file id:', cp.file_id)
   const {drive_id, file_id} = cp
   let pdsFile = await client.getFile({drive_id, file_id})
 

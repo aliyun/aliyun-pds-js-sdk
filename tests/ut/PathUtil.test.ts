@@ -4,7 +4,16 @@ import assert = require('assert')
 
 describe('PathUtil', function () {
   this.timeout(60 * 1000)
-
+ 
+  it('assertPath', ()=>{
+    try{
+      PathUtil.assertPath(123)
+      assert(false, 'should throw')
+    }catch(e){ 
+      assert(e instanceof TypeError)
+    }
+  })
+ 
   it('basename', async () => {
     assert(PathUtil.basename('/a') == 'a')
     assert(PathUtil.basename('/a/b') == 'b')
