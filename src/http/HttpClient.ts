@@ -96,7 +96,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     url: string,
     data = {},
     options: AxiosRequestConfig = {},
-    retries = 1,
+    retries = 0,
   ): Promise<T> {
     let req_opt: AxiosRequestConfig = {
       method,
@@ -112,6 +112,8 @@ export class HttpClient extends EventEmitter implements IHttpClient {
 
       let pdsErr = new PDSError(err)
 
+      this.emit('error', pdsErr, req_opt)
+
       if (retries > 0) {
         // 网络无法连接
         if (isNetworkError(pdsErr)) {
@@ -119,7 +121,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
           return await this.send(method, url, data, options, --retries)
         }
       }
-      throw this.throwError(pdsErr, req_opt)
+      throw pdsErr
     }
   }
 
@@ -129,7 +131,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     pathname: string,
     data = {},
     options = {},
-    retries = 1,
+    retries = 0,
   ): Promise<any> {
     let req_opt: AxiosRequestConfig = {
       method,
@@ -155,29 +157,28 @@ export class HttpClient extends EventEmitter implements IHttpClient {
 
       let pdsErr = new PDSError(e)
 
+      // 每个 http error 都emit
+      this.emit('error', pdsErr, req_opt)
+
       if (retries > 0) {
         // 网络无法连接
         if (isNetworkError(pdsErr)) {
           // 重试
           return await this.request(endpoint, method, pathname, data, options, --retries)
         }
+      }
 
-        // token 失效
-        if (pdsErr.status == 401) {
-          if (this.refresh_token_fun) {
-            await this.customRefreshTokenFun()
-            return await this.request(endpoint, method, pathname, data, options, --retries)
-          } else {
-            this.throwError(new PDSError(pdsErr.message, 'TokenExpired'), req_opt)
-          }
-        } else if (pdsErr.status == 403) {
-          if (pdsErr.message.includes('UserRoleChanged')) {
-            this.throwError(new PDSError(pdsErr.message, 'TokenExpired'), req_opt)
-          }
+      // token 失效
+      if (pdsErr.status == 401) {
+        if (this.refresh_token_fun) {
+          await this.customRefreshTokenFun()
+          return await this.request(endpoint, method, pathname, data, options, --retries)
+        } else {
+          throw new PDSError(pdsErr.message, 'TokenExpired')
         }
       }
 
-      this.throwError(pdsErr, req_opt)
+      throw pdsErr
     }
   }
 

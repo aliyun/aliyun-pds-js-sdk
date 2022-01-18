@@ -372,12 +372,18 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
       return info
     }
 
-    const result = await this.send(Method.PUT, info.part_info_list[0].upload_url, content, {
-      // data: content,
-      headers: {
-        'content-type': '',
+    const result = await this.send(
+      Method.PUT,
+      info.part_info_list[0].upload_url,
+      content,
+      {
+        // data: content,
+        headers: {
+          'content-type': '',
+        },
       },
-    })
+      1,
+    )
 
     return await this.postAPI('/file/complete', {
       drive_id: fileInfo.drive_id,
@@ -409,7 +415,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
     }
 
     req_opt = {...req_opt, ...options}
-    const result = await this.send(Method.GET, info.url, {}, req_opt)
+    const result = await this.send(Method.GET, info.url, {}, req_opt, 1)
 
     return {
       headers: result.headers || {},
