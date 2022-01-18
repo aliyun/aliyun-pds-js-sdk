@@ -381,11 +381,9 @@ export class BaseUploader extends BaseLoader {
     this.on_calc_crc_success = false
     this.on_calc_crc_failed = false
   }
-  async stop(doNotChangeState) {
+  async stop() {
     this.doStop()
-    if (!doNotChangeState) {
-      await this.changeState('stopped')
-    }
+    await this.changeState('stopped')
   }
   async cancel() {
     this.cancelFlag = true
@@ -453,10 +451,11 @@ export class BaseUploader extends BaseLoader {
 
   /* istanbul ignore next */
   async retryAllUploadRequest() {
-    this.stop('doNotChangeState')
+    this.doStop()
     // wait for 1 second
+    // stop是异步的，需要等待 getStopFlagFun 都执行到。
     await new Promise(a => setTimeout(a, 1000))
-    this.start()
+    this.doStart()
   }
 
   stopCalcSpeed() {
@@ -494,13 +493,15 @@ export class BaseUploader extends BaseLoader {
 
   async start() {
     console.log('-- Uploader call start(), state=', this.state)
-
+    // if (['success', 'rapid_success'].includes(this.status)) return
     if (!['waiting', 'error', 'stopped', 'cancelled'].includes(this.state)) return
-    this.stopFlag = false
-    this.cancelFlag = false
-
     // 防止多次调用 start()
     this.changeState('start')
+    this.doStart()
+  }
+  async doStart() {
+    this.stopFlag = false
+    this.cancelFlag = false
 
     try {
       // 上传流程，可以被抛出的异常阻断
@@ -683,7 +684,7 @@ export class BaseUploader extends BaseLoader {
     try {
       return await this.vendors.http_client[action](opt, options)
     } catch (e) {
-      console.error(e.response || e)
+      console.error(action, 'ERROR:', e.response || e)
       throw e
     } finally {
       this.timeLogEnd(action + '-' + _key, Date.now())

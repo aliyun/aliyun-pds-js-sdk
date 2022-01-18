@@ -155,7 +155,7 @@ export class Downloader extends BaseLoader {
       : () => {
           return this.init_chunk_con
         }
- 
+
     // this.crc64_running_mode = crc64_running_mode || 'end'
     // this.crc64_fun = crc64_fun || 'js'
     this.custom_crc64_fun = custom_crc64_fun
@@ -374,11 +374,9 @@ export class Downloader extends BaseLoader {
     this.cancelAllDownloadRequests()
     this.on_calc_part_crc_success = false
   }
-  async stop(doNotChangeState) {
+  async stop() {
     this.doStop()
-    if (!doNotChangeState) {
-      await this.changeState('stopped')
-    }
+    await this.changeState('stopped')
   }
 
   async cancel() {
@@ -418,7 +416,11 @@ export class Downloader extends BaseLoader {
   async start() {
     console.log('-- Downloader call start(), state=', this.state)
     if (!['waiting', 'error', 'stopped', 'cancelled'].includes(this.state)) return
+    this.changeState('start')
 
+    this.doStart()
+  }
+  async doStart() {
     // 外部调用时，先 wait(), 不会直接 start()
     // if (['error'].includes(this.state)) {
     //   //从头来
@@ -431,8 +433,6 @@ export class Downloader extends BaseLoader {
     this.stopFlag = false
     this.cancelFlag = false
     this.on_calc_part_crc_success = false
-
-    await this.changeState('start')
 
     try {
       // 上传流程，可以被抛出的异常阻断
@@ -565,6 +565,9 @@ export class Downloader extends BaseLoader {
     this.timeLogStart(action + '-' + _key, Date.now())
     try {
       return await this.vendors.http_client[action](opt, options)
+    } catch (e) {
+      console.error(action, 'ERROR:', e.response || e)
+      throw e
     } finally {
       this.timeLogEnd(action + '-' + _key, Date.now())
     }
@@ -659,10 +662,11 @@ export class Downloader extends BaseLoader {
 
   /* istanbul ignore next */
   async retryAllUploadRequest() {
-    this.stop('doNotChangeState')
+    this.doStop()
     // wait for 1 second
+    // stop是异步的，需要等待 getStopFlagFun 都执行到。
     await new Promise(a => setTimeout(a, 1000))
-    this.start()
+    this.doStart()
   }
 
   stopCalcSpeed() {
