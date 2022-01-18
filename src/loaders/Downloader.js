@@ -92,7 +92,6 @@ export class Downloader extends BaseLoader {
       init_chunk_con,
       chunk_con_auto,
       high_speed_mode,
-      use_https, // 使用 https
       // crc64_running_mode, // "end","part", 最后crc，还是分片crc
       // crc64_fun, // 计算crc64的方法
 
@@ -156,8 +155,7 @@ export class Downloader extends BaseLoader {
       : () => {
           return this.init_chunk_con
         }
-
-    this.use_https = use_https !== false
+ 
     // this.crc64_running_mode = crc64_running_mode || 'end'
     // this.crc64_fun = crc64_fun || 'js'
     this.custom_crc64_fun = custom_crc64_fun
@@ -376,9 +374,11 @@ export class Downloader extends BaseLoader {
     this.cancelAllDownloadRequests()
     this.on_calc_part_crc_success = false
   }
-  async stop() {
+  async stop(doNotChangeState) {
     this.doStop()
-    await this.changeState('stopped')
+    if (!doNotChangeState) {
+      await this.changeState('stopped')
+    }
   }
 
   async cancel() {
@@ -649,10 +649,20 @@ export class Downloader extends BaseLoader {
       this.speed_0_count = 0
     }
     if (this.verbose && this.speed_0_count > 0) console.log(`speed==0 ${this.speed_0_count}次, 1000次将暂停任务`)
-    if (this.speed_0_count >= 1000) {
-      this.stop()
+
+    if (this.speed_0_count >= 10) {
+      // this.stop()
       this.speed_0_count = 0
+      this.retryAllUploadRequest()
     }
+  }
+
+  /* istanbul ignore next */
+  async retryAllUploadRequest() {
+    this.stop('doNotChangeState')
+    // wait for 1 second
+    await new Promise(a => setTimeout(a, 1000))
+    this.start()
   }
 
   stopCalcSpeed() {
@@ -795,7 +805,7 @@ export class Downloader extends BaseLoader {
     try {
       const streamResult = await this.downloadPartRetry({
         method: 'get',
-        url: this.vendors.http_util.attachHttps(this.download_url, this.use_https),
+        url: this.download_url,
         headers: {
           Range: `bytes=${partInfo.from + partInfo.loaded}-${partInfo.to - 1}`,
         },
@@ -917,7 +927,7 @@ export class Downloader extends BaseLoader {
         // download_url 过期，需要重新获取
         if (this.verbose) console.warn('download_url 过期, 需要重新获取')
         await this.getDownloadUrl()
-        opt.url = this.vendors.http_util.attachHttps(this.download_url, this.use_https)
+        opt.url = this.download_url
         return await this._axiosDownloadPart(opt)
       } else {
         throw e

@@ -117,7 +117,6 @@ export class BaseUploader extends BaseLoader {
       init_chunk_con, // 自定义指定并发数， chunk_con_auto==false 时生效
       chunk_con_auto, // 自动调整并发数策略
       high_speed_mode, // 扩大stream缓冲区
-      use_https,
 
       max_size_for_sha1, // 文件大小 小于此Bytes才秒传。太大了将直接上传。
       min_size_for_pre_sha1, // 文件大小超过此Bytes才预秒传，否则直接秒传。
@@ -172,7 +171,6 @@ export class BaseUploader extends BaseLoader {
     this.init_chunk_con = init_chunk_con || INIT_MAX_CON
     this.chunk_con_auto = chunk_con_auto || false
     this.high_speed_mode = high_speed_mode || false
-    this.use_https = use_https || false
 
     this.max_size_for_sha1 = max_size_for_sha1 || MAX_SIZE_FOR_SHA1
     this.min_size_for_pre_sha1 = min_size_for_pre_sha1 || MIN_SIZE_FOR_PRE_SHA1
@@ -383,9 +381,9 @@ export class BaseUploader extends BaseLoader {
     this.on_calc_crc_success = false
     this.on_calc_crc_failed = false
   }
-  async stop(doNotchangeState) {
+  async stop(doNotChangeState) {
     this.doStop()
-    if (!doNotchangeState) {
+    if (!doNotChangeState) {
       await this.changeState('stopped')
     }
   }
@@ -899,7 +897,7 @@ export class BaseUploader extends BaseLoader {
 
             const result = await that.uploadPartRetry(partInfo, {
               method: 'put',
-              url: that.vendors.http_util.attachHttps(partInfo.upload_url, that.use_https),
+              url: partInfo.upload_url,
               headers: reqHeaders,
               maxContentLength: Infinity,
               maxRedirects: 5,
@@ -1082,7 +1080,7 @@ export class BaseUploader extends BaseLoader {
         if (this.verbose) console.warn('upload_url 过期, 需要重新获取')
         await this.getUploadUrl()
         // update url
-        opt.url = this.vendors.http_util.attachHttps(partInfo.upload_url, this.use_https)
+        opt.url = partInfo.upload_url
         return await this.doUploadPart(partInfo, opt)
       } else {
         // console.error(e)
