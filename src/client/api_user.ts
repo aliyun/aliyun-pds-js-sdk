@@ -56,15 +56,17 @@ export class PDSUserApiClient extends PDSStoreApiClient {
   async importUser(data: IImportUserReq, options?: AxiosRequestConfig) {
     return await this.postAPI<IUserItem>('/user/import', data, options)
   }
-
+  /* istanbul ignore next */
   createAccountLink(data: ICreateAccountLinkReq, options?: AxiosRequestConfig) {
     data.custom_identity = data.identity || undefined
     return this.postAuth<any>('/account/link', data, options)
   }
+  /* istanbul ignore next */
   getAccountLink(data: IGetAccountLinkReq, options?: AxiosRequestConfig) {
     data.custom_identity = data.identity || undefined
     return this.postAuth<IAccountLinkInfo>('/account/get_link_info', data, options)
   }
+  /* istanbul ignore next */
   getAccountLinkByUserId(data: {user_id: string}, options?: AxiosRequestConfig) {
     return this.postAuth<IListRes<IAccountLinkInfo>>('/account/get_link_info_by_user_id', data, options)
   }

@@ -260,11 +260,16 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
         options,
       )
     } catch (error) {
-      return {
-        name: 'Forbidden',
-        file_id,
-        parent_file_id: file_id,
-      }
+      if (404 === error.status) {
+        return null
+      } else if (403 === error.status) {
+        return {
+          is_forbidden: true,
+          name: 'Forbidden',
+          file_id,
+          parent_file_id: file_id,
+        }
+      } else throw error
     }
     if (result.file_id) {
       this.folderIdMap[file_id] = {
@@ -278,25 +283,32 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
 
   /**
    * 获取多级面包屑目录信息
-   * 从当前目录向上查找所有目录信息。
+   * 从当前目录向上查找所有目录信息, 返回的数组不包含root目录。
+   * 异常情况
+   * 1. 遇到没有权限（403）的目录，将截止。返回的数组包含一个 is_forbidden==true 的目录信息。
+   * 2. 其他异常 throw Error
    * @param drive_id 云盘ID
    * @param file_id 当前目录ID
    * @param end_parent_id 截止父目录ID， 默认 root
-   * @returns 多级面包屑目录信息 [{file_id, name},...]
+   * @returns 多级面包屑目录信息 [{file_id, name, is_forbidden?:true},...]
    */
-
   async getBreadcrumbFolders(drive_id: string, file_id: string, end_parent_id: string = 'root') {
-    const t = []
+    const t: Omit<IParentFolderNameId, 'parent_file_id'>[] = []
     do {
       if (file_id === end_parent_id) {
         break
       }
+
       const result = await this.getFolderFromCache(drive_id, file_id)
-      if (!result) break
+      if (!result) break // 404
       t.unshift({
+        is_forbidden: result.is_forbidden,
         name: result.name,
         file_id: result.file_id,
       })
+      if (result.is_forbidden) {
+        break //403
+      }
       file_id = result.parent_file_id
     } while (!file_id || file_id != 'root')
     return t
@@ -733,6 +745,7 @@ interface IParentFolderNameId {
   name?: string
   file_id?: string
   parent_file_id?: string
+  is_forbidden?: boolean
 }
 
 interface IParentFileKey {

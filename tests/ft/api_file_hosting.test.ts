@@ -11,7 +11,7 @@ const {getClient} = require('./token-util')
 const PATH_TYPE = 'HostingMode'
 
 describe('HostingFileAPI', function () {
-  this.timeout(60000)
+  this.timeout(120000)
   let drive_id: string
   let client: PDSClient
   let test_folder: ICreateFileRes
