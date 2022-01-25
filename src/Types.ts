@@ -330,8 +330,8 @@ interface ITokenInfo {
 
 interface IClientParams {
   token_info?: ITokenInfo
-  api_endpoint: string
-  auth_endpoint: string
+  api_endpoint?: string
+  auth_endpoint?: string
   path_type?: PathType
   version?: string
   refresh_token_fun?: () => Promise<ITokenInfo>

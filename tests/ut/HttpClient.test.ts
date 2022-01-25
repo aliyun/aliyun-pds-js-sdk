@@ -5,7 +5,7 @@ const {HttpClient} = require('../../src/http/HttpClient')
 import {PDSError} from '../../src/utils/PDSError'
 import assert = require('assert')
 
-describe('HttpUtil', function () {
+describe('HttpClient', function () {
   this.timeout(60 * 1000)
   describe('constructor', () => {
     it('params is required', async () => {
@@ -29,29 +29,31 @@ describe('HttpUtil', function () {
       }
     })
 
-    it('api_endpoint is required', async () => {
+    it('api_endpoint or auth_endpoint is required', async () => {
       try {
         new HttpClient({}, {})
         assert(false, 'should throw')
       } catch (e) {
         console.log(e)
         assert(e.code == 'InvalidParameter')
-        assert(e.message == 'api_endpoint is required')
+        assert(e.message == 'api_endpoint or auth_endpoint is required')
       }
     })
-    it('auth_endpoint is required', async () => {
-      try {
-        new HttpClient(
-          {
-            api_endpoint: 'https://api_endpoint.test',
-          },
-          Context,
-        )
-        assert(false, 'should throw')
-      } catch (e) {
-        assert(e.code == 'InvalidParameter')
-        assert(e.message == 'auth_endpoint is required')
-      }
+    it('auth_endpoint or auth_endpoint', async () => {
+      new HttpClient(
+        {
+          api_endpoint: 'https://api_endpoint.test',
+        },
+        Context,
+      )
+      assert(true)
+      new HttpClient(
+        {
+          auth_endpoint: 'https://auth_endpoint.test',
+        },
+        Context,
+      )
+      assert(true)
     })
 
     it('access_token is required', async () => {
@@ -67,28 +69,23 @@ describe('HttpUtil', function () {
         assert(false, 'should throw')
       } catch (e) {
         assert(e.code == 'InvalidParameter')
-        assert(e.message == 'access_token is required')
+        assert(e.message == 'token_info.access_token is required')
       }
     })
 
     it('Token expired', async () => {
-      try {
-        new HttpClient(
-          {
-            token_info: {
-              access_token: 'a',
-              expire_time: new Date(Date.now() - 1000).toISOString(),
-            },
-            api_endpoint: 'https://api_endpoint.test',
-            auth_endpoint: 'https://api_endpoint.test',
+      new HttpClient(
+        {
+          token_info: {
+            access_token: 'a',
+            expire_time: new Date(Date.now() - 1000).toISOString(),
           },
-          Context,
-        )
-        assert(false, 'should throw')
-      } catch (e) {
-        assert(e.code == 'TokenExpired')
-        assert(e.message == 'Token expired')
-      }
+          api_endpoint: 'https://api_endpoint.test',
+          auth_endpoint: 'https://api_endpoint.test',
+        },
+        Context,
+      )
+      assert(true)
     })
 
     it('Invalid refresh_token_fun', async () => {
@@ -157,16 +154,12 @@ describe('HttpUtil', function () {
         Context,
       )
 
-      try {
-        client.setToken({
-          access_token: 'a',
-          refresh_token: 'x',
-          expire_time: new Date(Date.now() - 1000).toISOString(),
-        })
-        assert(false, 'should throw')
-      } catch (e) {
-        assert(e.code == 'TokenExpired')
-      }
+      client.setToken({
+        access_token: 'a',
+        refresh_token: 'x',
+        expire_time: new Date(Date.now() - 1000).toISOString(),
+      })
+      assert(true)
     })
   })
 

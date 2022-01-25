@@ -1,6 +1,6 @@
 {
   "name": "aliyun-pds-js-sdk",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "PDS SDK for javascript",
   "main": "lib/cjs/index.js",
   "module": "lib/esm/index.browser.js",
@@ -47,19 +47,16 @@
   "license": "MIT",
   "devDependencies": {
     "@istanbuljs/nyc-config-typescript": "^1.0.1",
-    "@types/debug": "^4.1.7",
     "@types/mocha": "^9.0.0",
     "@types/node": "^16.11.7",
     "@typescript-eslint/eslint-plugin": "^5.5.0",
     "@typescript-eslint/parser": "^5.5.0",
     "browserify": "^17.0.0",
-    "dotenv": "^10.0.0",
     "eslint": "^8.3.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^4.0.0",
     "espower-typescript": "^10.0.0",
     "husky": "^7.0.4",
-    "jsonwebtoken": "^8.5.1",
     "mocha": "^9.1.3",
     "npm-run-all": "^4.1.5",
     "nyc": "^15.1.0",
@@ -68,10 +65,12 @@
     "sinon": "^12.0.1",
     "tsify": "^5.0.4",
     "typescript": "^4.4.4",
-    "uglify-js": "^3.14.4",
     "uglifyjs": "^2.4.11"
   },
   "dependencies": {
+    "@types/debug": "^4.1.7",
+    "@types/jsonwebtoken": "^8.5.8",
+    "jsonwebtoken": "^8.5.1",
     "axios": "^0.24.0",
     "debug": "^4.3.2",
     "js-sha1": "^0.6.0",
@@ -79,5 +78,8 @@
   },
   "engines": {
     "node": ">=12"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
   }
 }

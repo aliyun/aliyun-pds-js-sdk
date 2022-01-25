@@ -17,7 +17,7 @@ export interface IHttpClient {
 // emit('error')
 export class HttpClient extends EventEmitter implements IHttpClient {
   token_info?: ITokenInfo
-  api_endpoint: string
+  api_endpoint?: string
   auth_endpoint?: string
   refresh_token_fun?: () => Promise<ITokenInfo>
   path_type: PathType
@@ -55,11 +55,8 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     if (!context) {
       throw new PDSError('constructor context is required', 'InvalidParameter')
     }
-    if (!params.api_endpoint) {
-      throw new PDSError('api_endpoint is required', 'InvalidParameter')
-    }
-    if (!params.auth_endpoint) {
-      throw new PDSError('auth_endpoint is required', 'InvalidParameter')
+    if (!params.api_endpoint && !params.auth_endpoint) {
+      throw new PDSError('api_endpoint or auth_endpoint is required', 'InvalidParameter')
     }
 
     if (params.token_info) {
@@ -72,10 +69,10 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   }
   validateTokenInfo(tokenInfo: ITokenInfo) {
     if (!tokenInfo || !tokenInfo.access_token) {
-      throw new PDSError('access_token is required', 'InvalidParameter')
+      throw new PDSError('token_info.access_token is required', 'InvalidParameter')
     }
-    if (tokenInfo.expire_time && Date.parse(tokenInfo.expire_time) < Date.now()) {
-      throw new PDSError('Token expired', 'TokenExpired')
+    if (!tokenInfo.expire_time || isNaN(Date.parse(tokenInfo.expire_time))) {
+      throw new PDSError('token_info.expire_time is required', 'InvalidParameter')
     }
   }
 
@@ -91,7 +88,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     return await this.request(this.auth_endpoint, Method.POST, pathname, data, options)
   }
 
-  async send<T = any>(
+  protected async send<T = any>(
     method: Method,
     url: string,
     data = {},
@@ -125,7 +122,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     }
   }
 
-  async request(
+  protected async request(
     endpoint: string,
     method: Method,
     pathname: string,

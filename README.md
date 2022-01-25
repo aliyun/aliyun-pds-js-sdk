@@ -52,6 +52,9 @@ const {items = [], next_marker} = await client.listFiles({
 
 更加详细的介绍，请看[帮助文档](https://help.aliyun.com/document_detail/393346.html)。
 
+## Release notes
+
+[RELEASE-NOTES.md](RELEASE-NOTES.md)
 
 ## LICENSE
 

@@ -1,5 +1,6 @@
 /** @format */
 export * from './Types'
+export * from './client/api_auth'
 export * from './client/api_drive'
 export * from './client/api_file'
 export * from './client/api_group'

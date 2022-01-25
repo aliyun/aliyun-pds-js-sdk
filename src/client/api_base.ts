@@ -1,10 +1,10 @@
 /** @format */
 import {IContext, IClientParams, AxiosRequestConfig, IListRes} from '../Types'
 import {delay} from '../utils/HttpUtil'
-import {HttpClient} from '../http/HttpClient'
+import {PDSAuthClient} from './api_auth'
 // import {PDSError} from '../utils/PDSError'
 
-export class PDSBaseAPIClient extends HttpClient {
+export class PDSBaseAPIClient extends PDSAuthClient {
   constructor(opt: IClientParams, customContext: IContext) {
     super(opt, customContext)
   }
