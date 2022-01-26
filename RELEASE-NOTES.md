@@ -2,6 +2,7 @@
 
 ## 0.1.3
 
+* feat: 增加方法 getFileDownloadUrl。
 * feat: 增加方法 getShareLinkByAnonymous，getShareToken，postAPIAnonymous, postAuthAnonymous。
 * feat: 所有API方法支持 x-share-token 请求头。
 * fix: getFileByPath 参数 file_path 改为必选。

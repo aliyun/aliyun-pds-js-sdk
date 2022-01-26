@@ -1,7 +1,7 @@
 /** @format */
 
 const assert = require('assert')
-import {PDSClient, IGetUserTokenParams, IGetServiceTokenParams, IRefreshTokenParams} from './index'
+import {PDSClient, IGetUserJwtTokenReq, IGetServiceJwtTokenReq, IRefreshTokenReq} from './index'
 
 const Config = require('./conf.js')
 const PATH_TYPE = 'StandardMode'
@@ -14,7 +14,7 @@ describe('AuthAPI', function () {
   it('getUserJwtToken & refreshJwtToken', async () => {
     const {domain_id, user_id, client_id, auth_endpoint, private_key} = Config.domains[PATH_TYPE]
 
-    const params: IGetUserTokenParams = {domain_id, client_id, user_id, private_key_pem: private_key}
+    const params: IGetUserJwtTokenReq = {domain_id, client_id, user_id, private_key_pem: private_key}
 
     client = new PDSClient({
       auth_endpoint,
@@ -42,7 +42,7 @@ describe('AuthAPI', function () {
   it('getServiceJwtToken', async () => {
     const {domain_id, client_id, auth_endpoint, private_key} = Config.domains[PATH_TYPE]
 
-    const params: IGetServiceTokenParams = {domain_id, client_id, private_key_pem: private_key}
+    const params: IGetServiceJwtTokenReq = {domain_id, client_id, private_key_pem: private_key}
 
     client = new PDSClient({
       auth_endpoint,

@@ -6,6 +6,7 @@ import {IBatchBaseReq} from './api_base'
 import {dirname, basename} from '../utils/PathUtil'
 import {PDSError} from '../utils/PDSError'
 import {sha1 as sha1Fun, getByteLength} from '../utils/FileUtil'
+import {TMethod} from '..'
 
 export class PDSFileAPIClient extends PDSFilePermissionClient {
   // 缓存目录名称
@@ -711,8 +712,11 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
         url: '/recyclebin/restore',
       })
     }
-
     return await this.batchApi({batchArr: arr, num: 10}, options)
+  }
+
+  getFileDownloadUrl(data: IGetFileDownloadUrlReq, options?: AxiosRequestConfig) {
+    return this.postAPI<IGetFileDownloadUrlRes>('/file/get_download_url', data, options)
   }
 }
 
@@ -1054,6 +1058,25 @@ interface ICreateFoldersConfig {
   // 发现同名目录已经存在，会回调这个方法。
   onFolderRepeat?: (folderInfo: IFileItem) => boolean // return  true, 继续执行，false throw new PDSError
   onFolderCreated?: (folderKey: ICreateFolderRes) => void
+}
+
+interface IGetFileDownloadUrlReq {
+  drive_id?: string
+  share_id?: string
+  file_id?: string
+  file_path?: string
+  file_name?: string //长度 1-1024
+  expire_sec?: number
+}
+interface IGetFileDownloadUrlRes {
+  expiration: Date
+  method: TMethod
+  url: string
+
+  // 以下可选
+  size?: number
+  streams_url?: Map<string, string>
+  [key: string]: any
 }
 
 export {

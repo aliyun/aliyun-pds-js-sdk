@@ -424,4 +424,26 @@ describe('FileAPI', function () {
 
     assert(contentResult.content == 'abc')
   })
+  it('get file download url', async () => {
+    const fileRes = await client.saveFileContent(
+      {
+        drive_id,
+        parent_file_id: test_folder.file_id,
+        type: 'file',
+        name: '文本文档2.txt',
+        parent_file_path: '/',
+      },
+      'abc2',
+      {ignore_rapid: true},
+    )
+
+    const result = await client.getFileDownloadUrl({
+      drive_id,
+      file_id: fileRes.file_id,
+    })
+    // console.log(result)
+    assert(result.method == 'GET')
+    assert(result.url)
+    assert(result.expiration)
+  })
 })

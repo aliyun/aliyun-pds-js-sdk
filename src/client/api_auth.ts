@@ -14,11 +14,11 @@ export interface IGetJWTTokenReq {
   user_id?: string
   auto_create?: boolean
 }
-export interface IGetUserTokenJwtReq extends IGetJWTTokenReq {
+export interface IGetUserJwtTokenReq extends IGetJWTTokenReq {
   user_id: string
 }
 
-export interface IGetServiceTokenJwtReq extends Omit<IGetJWTTokenReq, 'user_id' | 'sub_type'> {}
+export interface IGetServiceJwtTokenReq extends Omit<IGetJWTTokenReq, 'user_id' | 'sub_type'> {}
 export interface IRefreshJwtTokenReq {
   client_id: string
   // grant_type: "refresh_token"
@@ -45,11 +45,11 @@ export class PDSAuthClient extends HttpClient {
     super(opt, customContext)
   }
   // node.js only
-  async getUserJwtToken(params: IGetUserTokenJwtReq, options: AxiosRequestConfig = {}): Promise<ITokenInfo> {
+  async getUserJwtToken(params: IGetUserJwtTokenReq, options: AxiosRequestConfig = {}): Promise<ITokenInfo> {
     return await this.getJwtToken({...params, sub_type: 'user'}, options)
   }
   // node.js only
-  async getServiceJwtToken(params: IGetServiceTokenJwtReq, options: AxiosRequestConfig = {}): Promise<ITokenInfo> {
+  async getServiceJwtToken(params: IGetServiceJwtTokenReq, options: AxiosRequestConfig = {}): Promise<ITokenInfo> {
     return await this.getJwtToken({...params, sub_type: 'service'}, options)
   }
   // node.js only
