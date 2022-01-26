@@ -76,7 +76,7 @@ interface IAnonymousShareLinkItem {
   disable_preview: boolean
   disable_save: boolean
   enable_upload: boolean
-  expiration: string
+  expiration: Date
   preview_limit: number
   require_login: boolean
   save_download_limit: number

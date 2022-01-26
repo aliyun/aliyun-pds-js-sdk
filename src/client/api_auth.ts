@@ -1,11 +1,11 @@
 /** @format */
 
-import {IContext, IClientParams, ITokenInfo} from '../Types'
+import {IContext, IClientParams, ITokenInfo, AxiosRequestConfig} from '../Types'
 import {signJWT} from '../utils/jwt-util'
 import {HttpClient} from '../http/HttpClient'
 import {URLSearchParams} from 'url'
 
-export interface IGetJWTTokenParams {
+export interface IGetJWTTokenReq {
   client_id: string
   private_key_pem: string
   domain_id: string
@@ -14,25 +14,25 @@ export interface IGetJWTTokenParams {
   user_id?: string
   auto_create?: boolean
 }
-export interface IGetUserTokenParams extends IGetJWTTokenParams {
+export interface IGetUserTokenJwtReq extends IGetJWTTokenReq {
   user_id: string
 }
 
-export interface IGetServiceTokenParams extends Omit<IGetJWTTokenParams, 'user_id' | 'sub_type'> {}
-export interface IRefreshJwtTokenParams {
+export interface IGetServiceTokenJwtReq extends Omit<IGetJWTTokenReq, 'user_id' | 'sub_type'> {}
+export interface IRefreshJwtTokenReq {
   client_id: string
   // grant_type: "refresh_token"
   refresh_token: string
 }
 
-export interface IGetTokenByCodeParams {
+export interface IGetTokenByCodeReq {
   client_id: string
   client_secret?: string
   redirect_uri: string
   code: string
   // grant_type: 'code'
 }
-export interface IRefreshTokenParams {
+export interface IRefreshTokenReq {
   client_id: string
   client_secret?: string
   redirect_uri: string
@@ -45,15 +45,15 @@ export class PDSAuthClient extends HttpClient {
     super(opt, customContext)
   }
   // node.js only
-  async getUserJwtToken(params: IGetUserTokenParams): Promise<ITokenInfo> {
-    return await this.getJwtToken({...params, sub_type: 'user'})
+  async getUserJwtToken(params: IGetUserTokenJwtReq, options: AxiosRequestConfig = {}): Promise<ITokenInfo> {
+    return await this.getJwtToken({...params, sub_type: 'user'}, options)
   }
   // node.js only
-  async getServiceJwtToken(params: IGetServiceTokenParams): Promise<ITokenInfo> {
-    return await this.getJwtToken({...params, sub_type: 'service'})
+  async getServiceJwtToken(params: IGetServiceTokenJwtReq, options: AxiosRequestConfig = {}): Promise<ITokenInfo> {
+    return await this.getJwtToken({...params, sub_type: 'service'}, options)
   }
   // node.js only
-  protected async getJwtToken(params: IGetJWTTokenParams): Promise<ITokenInfo> {
+  protected async getJwtToken(params: IGetJWTTokenReq, options: AxiosRequestConfig = {}): Promise<ITokenInfo> {
     let {
       client_id,
       private_key_pem,
@@ -90,43 +90,45 @@ export class PDSAuthClient extends HttpClient {
     }
     if (subdomain_id) data.subdomain_id = subdomain_id
 
-    return await this.getToken(data)
+    return await this.getToken(data, options)
   }
 
-  async refreshJwtToken(params: IRefreshJwtTokenParams) {
+  async refreshJwtToken(params: IRefreshJwtTokenReq, options: AxiosRequestConfig = {}) {
     let data: any = {
       app_id: params.client_id,
       refresh_token: params.refresh_token,
       grant_type: 'refresh_token',
     }
-    return await this.postAuthAnonymous(`/account/token`, data)
+    return await this.postAuthAnonymous(`/account/token`, data, options)
   }
 
   /* istanbul ignore next */
-  async getTokenByCode(params: IGetTokenByCodeParams): Promise<ITokenInfo> {
+  async getTokenByCode(params: IGetTokenByCodeReq, options: AxiosRequestConfig = {}): Promise<ITokenInfo> {
     let data: any = {
       ...params,
       grant_type: 'code',
     }
-    return await this.getToken(data)
+    return await this.getToken(data, options)
   }
   /* istanbul ignore next */
-  async refreshToken(params: IRefreshTokenParams) {
+  async refreshToken(params: IRefreshTokenReq, options: AxiosRequestConfig = {}) {
     let data: any = {
       ...params,
       grant_type: 'refresh_token',
     }
-    return await this.getToken(data)
+    return await this.getToken(data, options)
   }
 
-  private async getToken(data: any) {
+  private async getToken(data: any, options: AxiosRequestConfig = {}) {
     return await this.postAuthAnonymous(
       `/oauth/token`,
       //注意：请求参数要放在body里
       new URLSearchParams(data).toString(),
       //注意：要设置请求的 content-type 为 application/x-www-form-urlencoded
       {
+        ...options,
         headers: {
+          ...options?.headers,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
       },
