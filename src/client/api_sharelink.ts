@@ -33,6 +33,23 @@ export class PDSShareLinkApiClient extends PDSShareApiClient {
   cancelShareLink(data: {share_id: string}, options?: AxiosRequestConfig) {
     return this.postAPI<void>('/share_link/cancel', data, options)
   }
+
+  /**
+   * @description 匿名获取分享信息
+   * @param {{share_id: string}} data
+   * @param {AxiosRequestConfig} options
+   */
+  getShareLinkByAnonymous(data: {share_id: string}, options?: AxiosRequestConfig) {
+    return this.postAPIAnonymous<IAnonymousShareLinkItem>('/share_link/get_by_anonymous', data, options)
+  }
+  /**
+   * @description 匿名获取分享token
+   * @param {{share_id: string}} data
+   * @param {AxiosRequestConfig} options
+   */
+  getShareToken(data: {share_id: string; share_pwd?: string}, options?: AxiosRequestConfig) {
+    return this.postAPIAnonymous<IShareToken>('/share_link/get_share_token', data, options)
+  }
 }
 
 interface ICreateShareLinkReq {
@@ -44,7 +61,31 @@ interface ICreateShareLinkReq {
   file_id_list?: string[]
 }
 
-// 分享项目
+interface IShareToken {
+  expire_time: Date
+  expires_in: number
+  share_token: string
+}
+
+interface IAnonymousShareLinkItem {
+  avatar: string
+  creator_id: string
+  creator_name: string
+  creator_phone: string
+  disable_download: boolean
+  disable_preview: boolean
+  disable_save: boolean
+  enable_upload: boolean
+  expiration: string
+  preview_limit: number
+  require_login: boolean
+  save_download_limit: number
+  share_name: string
+  updated_at: Date
+  [key: string]: any
+}
+
+// 分享item
 interface IShareLinkItem {
   created_at: Date // "2021-11-23T03:52:22.352Z"
   creator: string //'2b9dc96336bf4fe08e69f25985a93d86'

@@ -1,6 +1,6 @@
 /** @format */
 
-import {IContext, IClientParams, ITokenInfo, Method} from '../Types'
+import {IContext, IClientParams, ITokenInfo} from '../Types'
 import {signJWT} from '../utils/jwt-util'
 import {HttpClient} from '../http/HttpClient'
 import {URLSearchParams} from 'url'
@@ -99,8 +99,7 @@ export class PDSAuthClient extends HttpClient {
       refresh_token: params.refresh_token,
       grant_type: 'refresh_token',
     }
-    let res = await this.send(Method.POST, `${this.auth_endpoint}/v2/account/token`, data)
-    return res.data
+    return await this.postAuthAnonymous(`/account/token`, data)
   }
 
   /* istanbul ignore next */
@@ -121,9 +120,8 @@ export class PDSAuthClient extends HttpClient {
   }
 
   private async getToken(data: any) {
-    let res = await this.send(
-      Method.POST,
-      `${this.auth_endpoint}/v2/oauth/token`,
+    return await this.postAuthAnonymous(
+      `/oauth/token`,
       //注意：请求参数要放在body里
       new URLSearchParams(data).toString(),
       //注意：要设置请求的 content-type 为 application/x-www-form-urlencoded
@@ -133,6 +131,5 @@ export class PDSAuthClient extends HttpClient {
         },
       },
     )
-    return res.data
   }
 }

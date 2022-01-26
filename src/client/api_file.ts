@@ -1,5 +1,5 @@
 /** @format */
-import {IContext, IClientParams, AxiosRequestConfig, IListRes, Method} from '../Types'
+import {IContext, IClientParams, AxiosRequestConfig, IListRes} from '../Types'
 import {IFileKey} from './api_file_ext'
 import {PDSFilePermissionClient} from './api_file_permission'
 import {IBatchBaseReq} from './api_base'
@@ -385,7 +385,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
     }
 
     const result = await this.send(
-      Method.PUT,
+      'PUT',
       info.part_info_list[0].upload_url,
       content,
       {
@@ -427,7 +427,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
     }
 
     req_opt = {...req_opt, ...options}
-    const result = await this.send(Method.GET, info.url, {}, req_opt, 1)
+    const result = await this.send('GET', info.url, {}, req_opt, 1)
 
     return {
       headers: result.headers || {},
@@ -977,7 +977,7 @@ interface IGetFileByPathReq extends IGetFileItemOption {
   drive_id: string
   fields?: string // *
   // file_id: string
-  file_path?: string //   /a/b/c
+  file_path: string //   /a/b/c
   // file_path_in_array?: string[] // ['a','b','c']
 }
 interface IGetFileItemOption {

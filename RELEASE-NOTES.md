@@ -1,5 +1,11 @@
 # Release Notes
 
+## 0.1.3
+
+* feat: 增加方法 getShareLinkByAnonymous，getShareToken，postAPIAnonymous, postAuthAnonymous。
+* feat: 所有API方法支持 x-share-token 请求头。
+* fix: getFileByPath 参数 file_path 改为必选。
+
 ## 0.1.2
 
 * 增加 token 相关方法： getUserJwtToken, getServiceJwtToken, refreshJwtToken, getTokenByCode, refreshToken。

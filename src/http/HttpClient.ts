@@ -1,6 +1,6 @@
 /** @format */
 import {EventEmitter} from '../utils/EventEmitter'
-import {IClientParams, IContext, ITokenInfo, AxiosRequestConfig, Method, PathType} from '../Types'
+import {IClientParams, IContext, ITokenInfo, AxiosRequestConfig, TMethod, PathType} from '../Types'
 
 import {PDSError} from '../utils/PDSError'
 
@@ -82,19 +82,27 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   }
 
   async postAPI<T = any>(pathname: string, data = {}, options: AxiosRequestConfig = {}): Promise<T> {
-    return await this.request(this.api_endpoint, Method.POST, pathname, data, options)
+    return await this.request(this.api_endpoint, 'POST', pathname, data, options)
   }
   async postAuth<T = any>(pathname: string, data = {}, options: AxiosRequestConfig = {}): Promise<T> {
-    return await this.request(this.auth_endpoint, Method.POST, pathname, data, options)
+    return await this.request(this.auth_endpoint, 'POST', pathname, data, options)
+  }
+  async postAPIAnonymous<T = any>(pathname: string, data = {}, options: AxiosRequestConfig = {}): Promise<T> {
+    let res = await this.send('POST', getUrl(this.api_endpoint, this.path_type, this.version, pathname), data, options)
+    return res.data
+  }
+  async postAuthAnonymous<T = any>(pathname: string, data = {}, options: AxiosRequestConfig = {}): Promise<T> {
+    let res = await this.send('POST', getUrl(this.auth_endpoint, this.path_type, this.version, pathname), data, options)
+    return res.data
   }
 
-  protected async send<T = any>(
-    method: Method,
+  protected async send(
+    method: TMethod,
     url: string,
     data = {},
     options: AxiosRequestConfig = {},
     retries = 0,
-  ): Promise<T> {
+  ): Promise<any> {
     let req_opt: AxiosRequestConfig = {
       method,
       url,
@@ -124,9 +132,9 @@ export class HttpClient extends EventEmitter implements IHttpClient {
 
   protected async request(
     endpoint: string,
-    method: Method,
+    method: TMethod,
     pathname: string,
-    data = {},
+    data: {[key: string]: any} = {},
     options = {},
     retries = 0,
   ): Promise<any> {
@@ -138,10 +146,14 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     }
     debug('request:', JSON.stringify(req_opt))
 
-    await this.checkRefreshToken(req_opt)
-
     req_opt.headers = req_opt.headers || {}
-    req_opt.headers['Authorization'] = 'Bearer ' + this.token_info.access_token
+
+    let hasShareToken = !!req_opt.headers['x-share-token']
+
+    if (!hasShareToken) {
+      await this.checkRefreshToken(req_opt)
+      req_opt.headers['Authorization'] = 'Bearer ' + this.token_info.access_token
+    }
 
     try {
       // 发送请求
@@ -166,7 +178,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       }
 
       // token 失效
-      if (pdsErr.status == 401) {
+      if (!hasShareToken && pdsErr.status == 401) {
         if (this.refresh_token_fun) {
           await this.customRefreshTokenFun()
           return await this.request(endpoint, method, pathname, data, options, --retries)

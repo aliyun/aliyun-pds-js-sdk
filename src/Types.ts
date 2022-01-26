@@ -2,13 +2,7 @@
 import {AxiosRequestConfig} from 'axios'
 import {PDSError} from './utils/PDSError'
 
-enum Method {
-  GET = 'GET',
-  POST = 'POST',
-  PUT = 'PUT',
-  DELETE = 'DELETE',
-  HEAD = 'HEAD',
-}
+type TMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD'
 
 type PathType =
   | 'StandardMode' // 标准模式
@@ -366,7 +360,7 @@ interface IDownloadHttpClient {
 
 export {
   AxiosRequestConfig,
-  Method,
+  TMethod,
   IPartMap,
   PathType,
   IContext,
