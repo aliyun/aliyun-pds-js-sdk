@@ -19,7 +19,7 @@ function genFile(file_path: string, size_MB: number) {
 describe('JS_SHA1', function () {
   this.timeout(60 * 1000)
 
-  describe('calcSha1MultiNode', () => {
+  describe('calcFilePartsSha1Node', () => {
     it('abc', async () => {
       // let p = join('/Users/zu/Downloads/Win10_1803_China_GGK_Chinese(Simplified)_x64.iso')
 
@@ -46,12 +46,12 @@ describe('JS_SHA1', function () {
 
       let start = Date.now()
 
-      let result = await JS_SHA1.calcSha1MultiNode(file, parts, null, null, {fs, crypto})
+      let result = await JS_SHA1.calcFilePartsSha1Node(file, parts, null, null, {fs, crypto})
       console.log(JSON.stringify(result, [' '], 2), Date.now() - start)
       assert(result.content_hash == 'A9993E364706816ABA3E25717850C26C9CD0D89D')
 
       let start2 = Date.now()
-      let result2 = await JS_SHA1.calcSha1Node(file, null, null, null, {fs, crypto})
+      let result2 = await JS_SHA1.calcFileSha1Node(file, null, null, null, {fs, crypto})
       console.log(result2, Date.now() - start2)
 
       assert(result2 == 'A9993E364706816ABA3E25717850C26C9CD0D89D')
@@ -72,7 +72,7 @@ describe('JS_SHA1', function () {
       let [parts, part_size] = init_chunks_parallel(file.size, [], 5 * 1024 * 1024)
       console.log('分片:', parts.length, '每片大小:', formatSize(part_size))
 
-      let result = await JS_SHA1.calcSha1MultiNode(
+      let result = await JS_SHA1.calcFilePartsSha1Node(
         file,
         parts,
         (prog: number) => {
@@ -88,7 +88,7 @@ describe('JS_SHA1', function () {
 
       console.log('-------------串行计算 start------------------')
       let start2 = Date.now()
-      let result2 = await JS_SHA1.calcSha1Node(file, null, null, null, {fs, crypto})
+      let result2 = await JS_SHA1.calcFileSha1Node(file, null, null, null, {fs, crypto})
       console.log(`结果：${result2} 耗时：${elapse(Date.now() - start2)}`)
       console.log('-------------串行计算 end------------------')
 
@@ -108,7 +108,7 @@ describe('JS_SHA1', function () {
       console.log('分片:', parts.length, '每片大小:', formatSize(part_size))
 
       try {
-        await JS_SHA1.calcSha1MultiNode(
+        await JS_SHA1.calcFilePartsSha1Node(
           file,
           parts,
           (prog: number) => {
@@ -125,7 +125,7 @@ describe('JS_SHA1', function () {
       }
     })
   })
-  describe('calcSha1Node', () => {
+  describe('calcFileSha1Node', () => {
     it('ok', async () => {
       let p = path.join(__dirname, 'tmp/tmp-sha1-test-range.txt')
 
@@ -133,7 +133,7 @@ describe('JS_SHA1', function () {
 
       let file = {size: fs.statSync(p).size, path: p}
 
-      let result = await JS_SHA1.calcSha1Node(file, null, null, null, {fs, crypto, highWaterMark: 3})
+      let result = await JS_SHA1.calcFileSha1Node(file, null, null, null, {fs, crypto, highWaterMark: 3})
 
       assert(result == '6740D1ECB48C5C9CA3B2A3CB1CA2F4B4D4487473')
     })
@@ -144,7 +144,7 @@ describe('JS_SHA1', function () {
 
       let file = {size: fs.statSync(p).size, path: p}
 
-      let result = await JS_SHA1.calcSha1Node(file, 3, null, null, {fs, crypto, highWaterMark: 3})
+      let result = await JS_SHA1.calcFileSha1Node(file, 3, null, null, {fs, crypto, highWaterMark: 3})
 
       assert(result == 'A9993E364706816ABA3E25717850C26C9CD0D89D')
     })
@@ -155,7 +155,7 @@ describe('JS_SHA1', function () {
 
       let file = {size: fs.statSync(p).size, path: p}
       try {
-        await JS_SHA1.calcSha1Node(file, null, null, () => true, {fs, crypto})
+        await JS_SHA1.calcFileSha1Node(file, null, null, () => true, {fs, crypto})
 
         assert(false, 'should throw error')
       } catch (e) {
@@ -169,7 +169,7 @@ describe('JS_SHA1', function () {
 
       let file = {size: fs.statSync(p).size, path: p}
       try {
-        await JS_SHA1.calcSha1Node(file, null, null, () => true, {fs, crypto})
+        await JS_SHA1.calcFileSha1Node(file, null, null, () => true, {fs, crypto})
 
         assert(false, 'should throw error')
       } catch (e) {

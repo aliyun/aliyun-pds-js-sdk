@@ -1,88 +1,158 @@
 /** @format */
 
-import * as jsSha1 from 'js-sha1'
+import {ready, sha1, createSha1} from './sha1-wasm/js-sha1'
+import {throttleInTimes} from './LoadUtil'
 
-const CHUNK_SIZE = 500 * 1024 //500KB
+const CHUNK_SIZE = 1024 * 1024 //500KB
+
+/**
+ * onProgress 截流
+ * @param {*} fn
+ * @param {*} file_size   文件大小
+ * @param {*} chunk_size  node.js 的 64KB， 浏览器的 CHUNK_SIZE
+ * @param {*} expect_times  期望 fn 被调用次数。默认200次，即 0.5% 调用一次。（100/200）=> 0.5
+ * @returns
+ */
+function createThrottleProgressFn(fn, file_size, chunk_size = 64 * 1024, expect_times = 200) {
+  return throttleInTimes(fn, 10, file_size / chunk_size / expect_times)
+}
 
 export {
+  ready,
   sha1,
-  calcSha1,
-  calcSha1Multi,
+  createSha1,
+  // 下面4个方法才有 ready
+  calcFileSha1,
+  calcFilePartsSha1,
   // for node.js
-  calcSha1Node,
-  calcSha1MultiNode,
+  calcFileSha1Node,
+  calcFilePartsSha1Node,
 }
-function sha1(str) {
-  let hash = jsSha1.create()
-  hash.update(str)
+
+/**
+ * 浏览器中计算文件的 sha1
+ * @param {*} file  HTML File 对象
+ * @param {number} preSize 只计算前面 0-preSize， 如果preSize为0，则计算整个文件
+ * @param {Function} onProgress 进度回调: (prog)=>{}  prog 0-1
+ * @param {Function} getStopFlag 获取暂停flag，如果返回true
+ */
+/* istanbul ignore next */
+async function calcFileSha1(file, preSize, onProgress, getStopFlag) {
+  await ready()
+  onProgress = onProgress || (prog => {})
+  onProgress = createThrottleProgressFn(onProgress, file.size, CHUNK_SIZE)
+  getStopFlag = getStopFlag || (() => false)
+
+  let hash = createSha1()
+
+  let blob
+
+  if (preSize) {
+    // 预秒传只需计算前1000KB
+    blob = file.slice(0, preSize)
+  } else {
+    //计算整个文件的
+    blob = file
+  }
+
+  await readBlock(
+    blob,
+    async (buf, loaded, total) => {
+      await hash.update(buf)
+
+      onProgress((loaded * 100) / total)
+
+      if (loaded == total) onProgress.cancel()
+    },
+    getStopFlag,
+  )
   return hash.hex().toUpperCase()
 }
 
-async function calcSha1MultiNode(file, parts, onProgress, getStopFlag, context) {
-  const {fs, highWaterMark} = context
+/* istanbul ignore next */
+async function calcFilePartsSha1(file, parts, onProgress, getStopFlag) {
+  await ready()
 
-  let hash = jsSha1.create()
+  onProgress = onProgress || (prog => {})
+  onProgress = createThrottleProgressFn(onProgress, file.size, CHUNK_SIZE)
 
-  let lastH = []
-  let loadedSize = 0
+  getStopFlag = getStopFlag || (() => false)
+
+  let hash = createSha1()
+
+  let total = file.size
+
+  let loaded = 0
+
   for (let n of parts) {
-    n.parallel_sha1_ctx = {
-      h: [...lastH],
-      part_offset: n.from,
+    if (getStopFlag()) {
+      throw new Error('stopped')
     }
 
-    let stream
-    if (n.part_size == 0) {
-      hash.update('')
-    } else {
-      stream = fs.createReadStream(file.path, {start: n.from, end: n.to - 1, highWaterMark})
-      lastH = await update(stream, onProgress, getStopFlag)
+    await readBlock(
+      file.slice(n.from, n.to),
+      async buf => {
+        await hash.update(buf)
+        loaded += buf.length
+
+        onProgress((loaded * 100) / total)
+        if (loaded == total) onProgress.cancel()
+      },
+      getStopFlag,
+    )
+
+    // 中间值
+    n.parallel_sha1_ctx = {
+      h: [...hash.getH()],
+      part_offset: n.from,
     }
   }
   return {
     part_info_list: parts,
-
     content_hash: hash.hex().toUpperCase(),
     content_hash_name: 'sha1',
   }
+}
+/* istanbul ignore next */
+async function readBlock(blob, onChunkData, getStopFlag) {
+  getStopFlag = getStopFlag || (() => false)
 
-  function update(input, onProgress, getStopFlag) {
-    return new Promise((resolve, reject) => {
-      input.on('data', chunk => {
-        if (getStopFlag && getStopFlag() === true) {
-          input.destroy()
-          reject(new Error('stopped'))
-          return
-        }
-        if (chunk) {
-          loadedSize += Buffer.byteLength(chunk)
-          hash.update(chunk)
-
-          onProgress && onProgress((loadedSize * 100) / file.size)
-        }
-      })
-      input.on('end', () => {
-        onProgress && onProgress(100)
-
-        lastH = []
-        for (let i = 0; i < 5; i++) {
-          const val = hash[`h${i}`] >>> 0
-          lastH.push(val)
-        }
-        resolve(lastH)
-      })
-      input.on('error', e => {
-        reject(e)
-      })
-    })
+  let size = blob.size
+  let len = Math.ceil(size / CHUNK_SIZE)
+  let start = 0
+  let end
+  for (let i = 0; i < len; i++) {
+    if (getStopFlag()) {
+      throw new Error('stopped')
+    }
+    start = i * CHUNK_SIZE
+    end = Math.min(start + CHUNK_SIZE, size)
+    let buf = await getArrayBufferFromBlob(blob.slice(start, end))
+    await onChunkData(buf, end, size)
   }
 }
+async function getArrayBufferFromBlob(blob) {
+  return new Promise((a, b) => {
+    var fileReader = new FileReader()
+    fileReader.onload = e => a(new Uint8Array(e.target.result))
+    fileReader.onerror = b
+    fileReader.readAsArrayBuffer(blob)
+  })
+}
 
-function calcSha1Node(file, size, onProgress, getStopFlag, context) {
-  const {crypto, fs, highWaterMark} = context
+/// for node.js
+async function calcFileSha1Node(file, size, onProgress, getStopFlag, context) {
+  await ready()
 
-  return new Promise((resolve, reject) => {
-    const hash = crypto.createHash('sha1')
+  onProgress = onProgress || (prog => {})
+  onProgress = createThrottleProgressFn(onProgress, file.size)
+
+  getStopFlag = getStopFlag || (() => false)
+
+  const {fs, highWaterMark} = context
+  let hash = createSha1()
+
+  return await new Promise((resolve, reject) => {
     const opt = {
       highWaterMark,
     }
@@ -92,7 +162,7 @@ function calcSha1Node(file, size, onProgress, getStopFlag, context) {
     let loadedSize = 0
     const input = fs.createReadStream(file.path, opt)
     input.on('data', chunk => {
-      if (getStopFlag && getStopFlag() === true) {
+      if (getStopFlag() === true) {
         input.destroy()
         reject(new Error('stopped'))
         return
@@ -100,12 +170,13 @@ function calcSha1Node(file, size, onProgress, getStopFlag, context) {
       if (chunk) {
         loadedSize += Buffer.byteLength(chunk)
         hash.update(chunk)
-        onProgress && onProgress((loadedSize * 100) / file.size)
+
+        onProgress((loadedSize * 100) / file.size)
+        if (loadedSize == file.size) onProgress.cancel()
       }
     })
     input.on('end', () => {
-      onProgress && onProgress(100)
-      resolve(hash.digest('hex').toUpperCase())
+      resolve(hash.hex().toUpperCase())
     })
     input.on('error', e => {
       reject(e)
@@ -113,111 +184,51 @@ function calcSha1Node(file, size, onProgress, getStopFlag, context) {
   })
 }
 
-/* istanbul ignore next */
-async function calcSha1Multi(file, parts, onProgress, getStopFlag) {
-  const blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice
+async function calcFilePartsSha1Node(file, parts, onProgress, getStopFlag, context) {
+  await ready()
+  onProgress = onProgress || (prog => {})
+  onProgress = createThrottleProgressFn(onProgress, file.size)
 
-  const cipher = jsSha1.create()
-
-  const partList = []
-  let lastH = []
+  getStopFlag = getStopFlag || (() => false)
+  const {fs, highWaterMark} = context
+  let hash = createSha1()
+  let total = file.size
+  let loaded = 0
+  let stream
   for (let n of parts) {
-    if (getStopFlag && getStopFlag() === true) {
+    if (getStopFlag()) {
       throw new Error('stopped')
     }
-    onProgress && onProgress(+((100 * n.to) / file.size).toFixed(2))
-    let part = await update(blobSlice.call(file, n.from, n.to), n)
-    partList.push(part)
+    if (n.part_size == 0) hash.update('')
+    else {
+      stream = fs.createReadStream(file.path, {start: n.from, end: n.to - 1, highWaterMark})
+      await readStream(stream, chunk => {
+        hash.update(chunk)
+        loaded += chunk.length
+
+        onProgress((loaded * 100) / total)
+        if (loaded == total) onProgress.cancel()
+      })
+
+      // 中间值
+      n.parallel_sha1_ctx = {
+        h: [...hash.getH()],
+        part_offset: n.from,
+      }
+    }
   }
-  onProgress && onProgress(100)
+
   return {
-    part_info_list: partList,
-    content_hash: cipher.hex().toUpperCase(),
+    part_info_list: parts,
+    content_hash: hash.hex().toUpperCase(),
     content_hash_name: 'sha1',
   }
-
-  async function update(blob, part) {
-    part.parallel_sha1_ctx = {
-      h: [...lastH],
-      part_offset: part.from,
-    }
-
-    try {
-      const arrayBuffer = await blob.arrayBuffer()
-      cipher.update(arrayBuffer)
-
-      lastH = []
-      for (let i = 0; i < 5; i++) {
-        const val = cipher[`h${i}`] >>> 0
-        lastH.push(val)
-      }
-
-      return part
-    } catch (e) {
-      return e
-    }
-  }
 }
-/* istanbul ignore next */
-function calcSha1(file, preSize, onProgress, getStopFlag) {
-  return new Promise((resolve, reject) => {
-    var blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice
-    var chunkSize = CHUNK_SIZE
-    var chunksNum = Math.ceil(file.size / chunkSize)
-    var currentChunk = 0
 
-    var sha1 = jsSha1.create()
-
-    var frOnload = function (e) {
-      sha1.update(new Uint8Array(e.target.result))
-
-      if (preSize) {
-        resolve(sha1.hex())
-        return
-      }
-
-      currentChunk++
-      if (currentChunk < chunksNum) {
-        onProgress ? onProgress((currentChunk * 100) / chunksNum) : null
-        loadNext()
-      } else {
-        onProgress ? onProgress(100) : null
-        resolve(sha1.hex().toUpperCase())
-      }
-    }
-    var frOnerror = function () {
-      console.error('读取文件失败')
-      reject('读取文件失败')
-    }
-
-    function loadNext() {
-      if (getStopFlag && getStopFlag() === true) {
-        reject(new Error('stopped'))
-        return
-      }
-
-      var fileReader = new FileReader()
-      fileReader.onload = frOnload
-      fileReader.onerror = frOnerror
-
-      var start = currentChunk * chunkSize,
-        end = start + chunkSize >= file.size ? file.size : start + chunkSize
-      var blobPacket = blobSlice.call(file, start, end)
-      fileReader.readAsArrayBuffer(blobPacket)
-    }
-
-    function loadPreSize(preSize) {
-      if (preSize > file.size) {
-        reject(new Error('preSize is bigger than file.size'))
-        return
-      }
-      var fileReader = new FileReader()
-      fileReader.onload = frOnload
-      fileReader.onerror = frOnerror
-      var blobPacket = blobSlice.call(file, 0, preSize)
-      fileReader.readAsArrayBuffer(blobPacket)
-    }
-
-    preSize ? loadPreSize(preSize) : loadNext()
+function readStream(stream, onData) {
+  return new Promise((a, b) => {
+    stream.on('data', onData)
+    stream.on('end', a)
+    stream.on('error', err => b(err))
   })
 }

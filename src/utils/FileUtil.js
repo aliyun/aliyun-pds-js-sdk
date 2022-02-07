@@ -55,15 +55,15 @@ function doesFileExistInBrowser(file) {
 
 /* istanbul ignore next */
 function js_sha1_multi_node({file, part_info_list, onProgress, getStopFlagFun, context}) {
-  return JS_SHA1.calcSha1MultiNode(file, part_info_list, onProgress, getStopFlagFun, context)
+  return JS_SHA1.calcFilePartsSha1Node(file, part_info_list, onProgress, getStopFlagFun, context)
 }
 /* istanbul ignore next */
 function js_sha1_multi({file, part_info_list, onProgress, getStopFlagFun}) {
-  return JS_SHA1.calcSha1Multi(file, part_info_list, onProgress, getStopFlagFun)
+  return JS_SHA1.calcFilePartsSha1(file, part_info_list, onProgress, getStopFlagFun)
 }
 /* istanbul ignore next */
 function js_sha1_node({file, pre_size, onProgress, getStopFlagFun, context}) {
-  return JS_SHA1.calcSha1Node(file, pre_size, onProgress, getStopFlagFun, context)
+  return JS_SHA1.calcFileSha1Node(file, pre_size, onProgress, getStopFlagFun, context)
 }
 /* istanbul ignore next */
 function sha1(str) {
@@ -71,7 +71,7 @@ function sha1(str) {
 }
 /* istanbul ignore next */
 function js_sha1({file, pre_size, onProgress, getStopFlagFun}) {
-  return JS_SHA1.calcSha1(file, pre_size, onProgress, getStopFlagFun)
+  return JS_SHA1.calcFileSha1(file, pre_size, onProgress, getStopFlagFun)
 }
 /* istanbul ignore next */
 function js_crc64_file({file, onProgress, getStopFlagFun}) {

@@ -7,6 +7,7 @@
   "types": "lib/cjs/index.browser.d.ts",
   "browser": "lib/cjs/index.browser.js",
   "scripts": {
+    "h": "nyc -h",
     "prepare": "husky install",
     "prepublish": "npm run build:lib && npm run build:dist",
     "start": "tsnd --respawn --transpile-only src/index.ts",
@@ -29,13 +30,12 @@
     "test": "tests/"
   },
   "nyc": {
-    "extends": "@istanbuljs/nyc-config-typescript",
-    "include": [
-      "src/**/*.ts",
-      "src/**/*.js"
-    ],
+    "extends": "@istanbuljs/nyc-config-typescript", 
     "exclude": [
+      "tests/**",
       "src/utils/crc64-wasm.js",
+      "src/utils/sha1-wasm/sha1-wasm.base64.js",
+      "src/utils/sha1-wasm/sha1-wasm.js",
       "src/utils/axios-node-adapter.js"
     ],
     "extension": [
@@ -72,7 +72,6 @@
     "@types/jsonwebtoken": "^8.5.8",
     "axios": "^0.24.0",
     "debug": "^4.3.2",
-    "js-sha1": "^0.6.0",
     "jsonwebtoken": "^8.5.1",
     "uuid": "^8.3.2"
   },

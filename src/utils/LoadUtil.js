@@ -18,7 +18,7 @@ function throttleInTimes(fn, ms = 10, times = 200) {
   let _cc = 0
   let _up_prog_tid
 
-  return function (...argv) {
+  let target = function (...argv) {
     // 缓冲修改 progress
     if (!_cc) _cc = 0
     _cc++
@@ -35,6 +35,10 @@ function throttleInTimes(fn, ms = 10, times = 200) {
       _cc = 0
     }, ms)
   }
+  target.cancel = function () {
+    clearTimeout(_up_prog_tid)
+  }
+  return target
 }
 
 function formatProgress(process) {
