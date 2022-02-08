@@ -7,7 +7,6 @@
   "types": "lib/cjs/index.browser.d.ts",
   "browser": "lib/cjs/index.browser.js",
   "scripts": {
-    "h": "nyc -h",
     "prepare": "husky install",
     "prepublish": "npm run build:lib && npm run build:dist",
     "start": "tsnd --respawn --transpile-only src/index.ts",
@@ -30,7 +29,7 @@
     "test": "tests/"
   },
   "nyc": {
-    "extends": "@istanbuljs/nyc-config-typescript", 
+    "extends": "@istanbuljs/nyc-config-typescript",
     "exclude": [
       "tests/**",
       "src/utils/crc64-wasm.js",

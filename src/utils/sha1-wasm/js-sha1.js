@@ -83,17 +83,21 @@ function createSha1() {
 }
 
 function buffToPtr(buff) {
-  if (typeof window == 'object') {
-    if (typeof buff === 'string') {
-      buff = stringToUint8Array(buff)
-    } else if (!(buff instanceof Uint8Array)) {
-      throw new Error('Invalid Uint8Array type.')
-    }
-  } else {
+  if (
+    typeof process === 'object' &&
+    typeof process.versions === 'object' &&
+    typeof process.versions.node === 'string'
+  ) {
     if (typeof buff === 'string') {
       buff = Buffer.from(buff)
     } else if (!Buffer.isBuffer(buff)) {
       throw new Error('Invalid buffer type.')
+    }
+  } else {
+    if (typeof buff === 'string') {
+      buff = stringToUint8Array(buff)
+    } else if (!(buff instanceof Uint8Array)) {
+      throw new Error('Invalid Uint8Array type.')
     }
   }
 

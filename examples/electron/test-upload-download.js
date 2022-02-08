@@ -4,19 +4,40 @@ const conf = window.Config
 // const {execSync} = window.PDS_SDK.Context.cp
 window.onload = function () {
   document.getElementById('btn').onclick = () => {
-    init()
+    uploadDownload()
+  }
+
+  document.getElementById('btn2').onclick = () => {
+    sha1Test()
   }
 }
 
-async function init() {
+async function sha1Test() {
+  let p = await window.getUploadFile()
+  if (!p) return
+
+  const {path, fs} = window.PDS_SDK.Context
+
+  let file = {
+    path: p,
+    name: path.basename(p),
+    size: fs.statSync(p).size,
+  }
+
+  let d = Date.now()
+  let x = await window.PDS_SDK.JS_SHA1.calcFileSha1Node(file, 0, prog => { 
+    console.log(prog)
+  }, null, {
+    ...window.ClientBridge.Context,
+  })
+  console.log(x, Date.now() - d)
+}
+
+async function uploadDownload() {
   var client = await window.getPDSClient('StandardMode')
 
   let p = await window.getUploadFile()
   if (!p) return
-  // const p = 'bin/tmp-electron-test.txt'
-  const p2 = 'bin/tmp-electron-test2.txt'
-
-  // execSync(`dd if=/dev/zero of=${p} bs=1024 count=10000`)
 
   const to = {
     drive_id: conf['domains']['StandardMode'].drive_id,
@@ -25,7 +46,7 @@ async function init() {
   let task
   var cp = await client.uploadFile(p, to, {
     ignore_rapid: true,
-    parallel_upload: false,
+    parallel_upload: true,
     verbose: true,
     onReady(t) {
       task = t
@@ -42,7 +63,9 @@ async function init() {
   const {drive_id, file_id} = cp
   let pdsFile = await client.getFile({drive_id, file_id})
 
-  var cp2 = await client.downloadFile(pdsFile, p2, {
+  const downloadTo = 'bin/tmp-' + pdsFile.name
+
+  var cp2 = await client.downloadFile(pdsFile, downloadTo, {
     verbose: true,
     onReady(t) {
       task = t
