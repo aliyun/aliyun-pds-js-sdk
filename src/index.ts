@@ -19,10 +19,11 @@ import {PDSClient as _PDSClient} from './client/PDSClient'
 import {HttpClient as _HttpClient} from './http/HttpClient'
 import {IClientParams, IContext} from './Types'
 import {PDSError} from './utils/PDSError'
-
+import * as ChunkUtil from './utils/ChunkUtil'
 import * as JS_CRC64 from './utils/JS_CRC64'
 import * as JS_SHA1 from './utils/JS_SHA1'
 export * from './utils/Formatter'
+
 class PDSClient extends _PDSClient {
   constructor(opt: IClientParams, ctx: IContext = Context) {
     super(opt, ctx)
@@ -34,4 +35,4 @@ class HttpClient extends _HttpClient {
   }
 }
 // for node.js
-export {PDSClient, HttpClient, PDSError, JS_CRC64, JS_SHA1, Context}
+export {PDSClient, HttpClient, PDSError, JS_CRC64, JS_SHA1, ChunkUtil, Context}

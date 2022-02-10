@@ -1222,7 +1222,7 @@ export class BaseUploader extends BaseLoader {
     if (this.context.isNode) {
       const _crc64_fun = this.custom_crc64_fun || this.vendors.file_util.js_crc64_file_node
       result = await _crc64_fun({
-        file: this.file.path,
+        file_path: this.file.path,
         onProgress: progress => {
           this.checking_progress = Math.round(progress) // 0-100
           if (this.state == 'checking') this.notifyProgress(this.state, this.checking_progress)

@@ -9,7 +9,7 @@ const path = require('path')
 function createWindow() {
   // 创建浏览器窗口
   const mainWindow = new BrowserWindow({
-    width: 800,
+    width: 860,
     height: 600,
     webPreferences: {
       contextIsolation: false,

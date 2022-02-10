@@ -25,3 +25,13 @@ async function getUploadFile() {
 
   return filePaths?.[0]
 }
+
+function selectFileInBrowser() {
+  return new Promise(resolve => {
+    handle_select_file_browser = file => {
+      if (file) resolve(file)
+    }
+    let fileEle = document.getElementById('file1')
+    fileEle.click()
+  })
+}

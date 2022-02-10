@@ -1,7 +1,11 @@
 /** @format */
 
-describe('JS Calc', function () {
+describe('JS Calc', async function () {
   this.timeout(600 * 1000)
+  this.beforeAll(async () => {
+    await PDS_SDK.JS_CRC64.ready()
+    await PDS_SDK.JS_SHA1.ready()
+  })
 
   describe('calc str', function () {
     it('crc64 str', async () => {
@@ -41,7 +45,7 @@ describe('JS Calc', function () {
     it('sha1 file', async () => {
       let st = Date.now()
 
-      let result = await PDS_SDK.JS_SHA1.calcSha1(file, null, prog => {
+      let result = await PDS_SDK.JS_SHA1.calcFileSha1(file, null, prog => {
         // console.log('sha1',prog)
         showMessage('sha1', 'sha1:' + prog)
       })

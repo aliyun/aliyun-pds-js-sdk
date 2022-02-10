@@ -37,9 +37,13 @@ describe('LoadUtil', function () {
 
   it('throttleInTimes', async () => {
     let c = 0
-    let fn = LoadUtil.throttleInTimes(() => {
-      console.log('---throttleInTimes----', ++c)
-    })
+    let fn = LoadUtil.throttleInTimes(
+      () => {
+        console.log('---throttleInTimes----', ++c)
+      },
+      10,
+      200,
+    )
 
     for (let i = 0; i < 500; i++) fn()
 

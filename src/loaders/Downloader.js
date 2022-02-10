@@ -1160,7 +1160,7 @@ export class Downloader extends BaseLoader {
     const _crc64_fun = this.custom_crc64_fun || this.vendors.file_util.js_crc64_file_node
 
     const result = await _crc64_fun({
-      file: this.file.temp_path,
+      file_path: this.file.temp_path,
       onProgress: progress => {
         this.checking_progress = Math.round(progress) // 0-100
       },

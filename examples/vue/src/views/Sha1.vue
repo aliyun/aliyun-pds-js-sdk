@@ -10,7 +10,7 @@
 
 <script setup>
 import {onMounted} from 'vue'
-import { JS_SHA1} from '../../../..'
+const  {PDSClient, formatSize, JS_CRC64, JS_SHA1} = window.PDS_SDK
 
 onMounted(()=>{
   document.getElementById('f1').onchange = async e => {

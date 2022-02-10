@@ -8,7 +8,8 @@
 </template>
 <script setup>
 import {onMounted} from 'vue'
-import {PDSClient, formatSize, JS_CRC64, JS_SHA1} from '../../../..'
+const  {PDSClient, formatSize, JS_CRC64, JS_SHA1} = window.PDS_SDK
+
 const path_type = 'StandardMode'
 const {api_endpoint, auth_endpoint, drive_id} = window.Config.domains[path_type]
 

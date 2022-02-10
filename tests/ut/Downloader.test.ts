@@ -1,11 +1,11 @@
 /** @format */
 
 import assert = require('assert')
-import sinon from 'sinon'
+// import sinon from 'sinon'
 import os = require('os')
 
 import {Downloader} from '../../src/loaders/Downloader'
-describe('Downloader', function () { 
+describe('Downloader', function () {
   var ctx = {os}
   describe('handleError', function () {
     it('handleError', async () => {

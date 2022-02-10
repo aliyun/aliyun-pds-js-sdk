@@ -1,27 +1,16 @@
 /** @format */
 
-import {ready, sha1, createSha1} from './sha1-wasm/js-sha1'
-import {throttleInTimes} from './LoadUtil'
+import {ready, sha1, createSha1} from './wasm/js-sha1'
+import {readBlock, readStream} from './StreamUtil'
 
 const CHUNK_SIZE = 1024 * 1024 //1MB
-
-/**
- * onProgress 截流
- * @param {*} fn
- * @param {*} file_size   文件大小
- * @param {*} chunk_size  node.js 的 64KB， 浏览器的 CHUNK_SIZE
- * @param {*} expect_times  期望 fn 被调用次数。默认300次，即 0.33% 调用一次。（100/300）=> 0.33
- * @returns
- */
-function createThrottleProgressFn(fn, file_size, chunk_size = 64 * 1024, expect_times = 300) {
-  return throttleInTimes(fn, 10, file_size / chunk_size / expect_times)
-}
+const PROGRESS_EMIT_VALVE = 0.1 // 进度超过多少,回调onProgress
 
 export {
-  ready,
+  ready, // wasm是异步载入的， await ready() 后才能使用 crc64 方法。
   sha1,
   createSha1,
-  // 下面4个方法才有 ready
+  // 下面4个方法会自动掉用 await ready()
   calcFileSha1,
   calcFilePartsSha1,
   // for node.js
@@ -40,7 +29,6 @@ export {
 async function calcFileSha1(file, preSize, onProgress, getStopFlag) {
   await ready()
   onProgress = onProgress || (prog => {})
-  onProgress = createThrottleProgressFn(onProgress, file.size, CHUNK_SIZE)
   getStopFlag = getStopFlag || (() => false)
 
   let hash = createSha1()
@@ -55,15 +43,24 @@ async function calcFileSha1(file, preSize, onProgress, getStopFlag) {
     blob = file
   }
 
+  let progress = 0
+  let last_progress = 0
   await readBlock(
     blob,
     CHUNK_SIZE,
-    async (buf, loaded, total) => {
-      await hash.update(buf)
+    (buf, loaded, total) => {
+      hash.update(buf)
 
-      onProgress((loaded * 100) / total)
-
-      if (loaded == total) onProgress.cancel()
+      // 进度
+      progress = (loaded * 100) / total
+      if (progress - last_progress >= PROGRESS_EMIT_VALVE) {
+        try {
+          onProgress(progress)
+        } catch (e) {
+          console.error(e)
+        }
+        last_progress = progress
+      }
     },
     getStopFlag,
   )
@@ -75,8 +72,6 @@ async function calcFilePartsSha1(file, parts, onProgress, getStopFlag) {
   await ready()
 
   onProgress = onProgress || (prog => {})
-  onProgress = createThrottleProgressFn(onProgress, file.size, CHUNK_SIZE)
-
   getStopFlag = getStopFlag || (() => false)
 
   let hash = createSha1()
@@ -85,6 +80,8 @@ async function calcFilePartsSha1(file, parts, onProgress, getStopFlag) {
 
   let loaded = 0
   let lastH = []
+  let progress = 0
+  let last_progress = 0
 
   for (let n of parts) {
     if (getStopFlag()) {
@@ -99,12 +96,20 @@ async function calcFilePartsSha1(file, parts, onProgress, getStopFlag) {
     await readBlock(
       file.slice(n.from, n.to),
       CHUNK_SIZE,
-      async buf => {
-        await hash.update(buf)
+      buf => {
+        hash.update(buf)
         loaded += buf.length
 
-        onProgress((loaded * 100) / total)
-        if (loaded == total) onProgress.cancel()
+        // 进度
+        progress = (loaded * 100) / total
+        if (progress - last_progress >= PROGRESS_EMIT_VALVE) {
+          try {
+            onProgress(progress)
+          } catch (e) {
+            console.error(e)
+          }
+          last_progress = progress
+        }
       },
       getStopFlag,
     )
@@ -116,91 +121,71 @@ async function calcFilePartsSha1(file, parts, onProgress, getStopFlag) {
     content_hash_name: 'sha1',
   }
 }
-/* istanbul ignore next */
-async function readBlock(blob, chunkSize, onChunkData, getStopFlag) {
-  getStopFlag = getStopFlag || (() => false)
-
-  let size = blob.size
-  let len = Math.ceil(size / chunkSize)
-  let start = 0
-  let end
-  for (let i = 0; i < len; i++) {
-    if (getStopFlag()) {
-      throw new Error('stopped')
-    }
-    start = i * chunkSize
-    end = Math.min(start + chunkSize, size)
-    let buf = await getArrayBufferFromBlob(blob.slice(start, end))
-    await onChunkData(buf, end, size)
-  }
-}
-async function getArrayBufferFromBlob(blob) {
-  return new Promise((a, b) => {
-    var fileReader = new FileReader()
-    fileReader.onload = e => a(new Uint8Array(e.target.result))
-    fileReader.onerror = b
-    fileReader.readAsArrayBuffer(blob)
-  })
-}
 
 /// for node.js
-async function calcFileSha1Node(file, size, onProgress, getStopFlag, context) {
+async function calcFileSha1Node(file_path, size, onProgress, getStopFlag, context) {
   await ready()
   const {fs, crypto, highWaterMark} = context
+  let total = fs.statSync(file_path).size
 
   onProgress = onProgress || (prog => {})
-  onProgress = createThrottleProgressFn(onProgress, file.size)
-
   getStopFlag = getStopFlag || (() => false)
 
   // 如果不需要中间值，直接使用内置模块crypto效率更高。
   let hash = crypto.createHash('sha1')
   // let hash = createSha1()
 
-  return await new Promise((resolve, reject) => {
-    const opt = {
-      highWaterMark,
-    }
-    if (size) {
-      Object.assign(opt, {start: 0, end: size - 1})
-    }
-    let loadedSize = 0
-    const input = fs.createReadStream(file.path, opt)
-    input.on('data', chunk => {
-      if (getStopFlag() === true) {
-        input.destroy()
-        reject(new Error('stopped'))
-        return
+  const opt = {
+    highWaterMark,
+  }
+  if (size) {
+    Object.assign(opt, {start: 0, end: size - 1})
+  }
+
+  let loaded = 0
+  let progress = 0
+  let last_progress = 0
+  const input = fs.createReadStream(file_path, opt)
+
+  await readStream(
+    input,
+    chunk => {
+      loaded += Buffer.byteLength(chunk)
+      hash.update(chunk)
+
+      // 进度
+      progress = (loaded * 100) / total
+      if (progress - last_progress >= PROGRESS_EMIT_VALVE) {
+        try {
+          onProgress(progress)
+        } catch (e) {
+          console.error(e)
+        }
+        last_progress = progress
       }
-      if (chunk) {
-        loadedSize += Buffer.byteLength(chunk)
-        hash.update(chunk)
-        onProgress((loadedSize * 100) / file.size)
-        if (loadedSize == file.size) onProgress.cancel()
-      }
-    })
-    input.on('end', () => {
-      // resolve(hash.hex().toUpperCase())
-      resolve(hash.digest('hex').toUpperCase())
-    })
-    input.on('error', e => {
-      reject(e)
-    })
-  })
+    },
+    getStopFlag,
+  )
+  // return (hash.hex().toUpperCase())
+  return hash.digest('hex').toUpperCase()
 }
 
-async function calcFilePartsSha1Node(file, parts, onProgress, getStopFlag, context) {
+async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, context) {
   await ready()
-  onProgress = onProgress || (prog => {})
-  onProgress = createThrottleProgressFn(onProgress, file.size)
-
-  getStopFlag = getStopFlag || (() => false)
   const {fs, highWaterMark} = context
+  let total = fs.statSync(file_path).size
+
+  onProgress = onProgress || (prog => {})
+  getStopFlag = getStopFlag || (() => false)
+
   let hash = createSha1()
-  let total = file.size
   let loaded = 0
   let stream
   let lastH = []
+  var buf = Buffer.allocUnsafe(0)
+  let progress = 0
+  let last_progress = 0
+
   for (let n of parts) {
     if (getStopFlag()) {
       throw new Error('stopped')
@@ -213,14 +198,46 @@ async function calcFilePartsSha1Node(file, parts, onProgress, getStopFlag, conte
 
     if (n.part_size == 0) hash.update('')
     else {
-      stream = fs.createReadStream(file.path, {start: n.from, end: n.to - 1, highWaterMark})
-      await readStream(stream, chunk => {
-        hash.update(chunk)
-        loaded += chunk.length
-        onProgress((loaded * 100) / total)
-        if (loaded == total) onProgress.cancel()
-      })
+      stream = fs.createReadStream(file_path, {start: n.from, end: n.to - 1, highWaterMark})
+
+      await readStream(
+        stream,
+        chunk => {
+          buf = Buffer.concat([buf, chunk], buf.length + chunk.length)
+          // 减少js和wasm交互： 攒够 chunkSize 才 update
+          if (buf.length >= CHUNK_SIZE) {
+            hash.update(buf)
+            buf = Buffer.allocUnsafe(0)
+          }
+
+          loaded += chunk.length
+
+          // 进度
+          progress = (loaded * 100) / total
+          if (progress - last_progress >= PROGRESS_EMIT_VALVE) {
+            try {
+              onProgress(progress)
+            } catch (e) {
+              console.error(e)
+            }
+            last_progress = progress
+          }
+        },
+        getStopFlag,
+      )
+
+      // 获取中间值
       lastH = hash.getH()
+    }
+  }
+  // 最后遗留片
+  if (buf.length > 0) {
+    hash.update(buf)
+    buf = null
+    try {
+      onProgress(100)
+    } catch (e) {
+      console.error(e)
     }
   }
 
@@ -229,26 +246,4 @@ async function calcFilePartsSha1Node(file, parts, onProgress, getStopFlag, conte
     content_hash: hash.hex().toUpperCase(),
     content_hash_name: 'sha1',
   }
-}
-
-function readStream(stream, onData, chunkSize = CHUNK_SIZE) {
-  return new Promise((a, b) => {
-    var buf = Buffer.allocUnsafe(0)
-    stream.on('data', chunk => {
-      buf = Buffer.concat([buf, chunk], buf.length + chunk.length)
-      if (buf.length >= chunkSize) {
-        onData(buf)
-        buf = null
-        buf = Buffer.allocUnsafe(0)
-      }
-    })
-    stream.on('end', () => {
-      if (buf.length > 0) {
-        onData(buf)
-        buf = null
-      }
-      a()
-    })
-    stream.on('error', err => b(err))
-  })
 }

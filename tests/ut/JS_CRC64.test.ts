@@ -8,6 +8,9 @@ import path = require('path')
 
 describe('CRC64', function () {
   this.timeout(60 * 1000)
+  this.beforeAll(async () => {
+    await JS_CRC64.ready()
+  })
 
   describe('crc64', async () => {
     it('success', () => {
@@ -31,21 +34,6 @@ describe('CRC64', function () {
         {fs},
       )
       console.log('result:', fs.statSync(p).size, result, Date.now() - start)
-      assert('3231342946509354535' == result)
-    })
-
-    it('range', async () => {
-      let p = path.join(__dirname, 'tmp/tmp-crc64-test-range.txt')
-      fs.writeFileSync(p, 'abcdef')
-
-      let start = Date.now()
-      let result = await JS_CRC64.crc64FileNode(
-        p,
-        () => {},
-        () => {},
-        {fs, start: 0, end: 2},
-      )
-      console.log('result:', result, Date.now() - start)
       assert('3231342946509354535' == result)
     })
 
@@ -74,21 +62,18 @@ describe('CRC64', function () {
     })
     it('prog error', async () => {
       let p = path.join(__dirname, 'tmp/tmp-crc64-test-error.txt')
-      fs.writeFileSync(p, 'abcdef')
+      fs.writeFileSync(p, 'abc')
 
-      try {
-        await JS_CRC64.crc64FileNode(
-          p,
-          (prog: any) => {
-            throw new Error('x')
-          },
-          () => {},
-          {fs, highWaterMark: 3},
-        )
-        assert(false, 'should throw error')
-      } catch (e) {
-        assert(e.message === 'x')
-      }
+      var x = await JS_CRC64.crc64FileNode(
+        p,
+        (prog: any) => {
+          throw new Error('x')
+        },
+        () => {},
+        {fs, highWaterMark: 3},
+      )
+
+      assert(x == '3231342946509354535')
     })
   })
 })

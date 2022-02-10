@@ -32,9 +32,8 @@
     "extends": "@istanbuljs/nyc-config-typescript",
     "exclude": [
       "tests/**",
-      "src/utils/crc64-wasm.js",
-      "src/utils/sha1-wasm/sha1-wasm.base64.js",
-      "src/utils/sha1-wasm/sha1-wasm.js",
+      "src/utils/wasm/crc64-wasm.js", 
+      "src/utils/wasm/sha1-wasm.js",
       "src/utils/axios-node-adapter.js"
     ],
     "extension": [

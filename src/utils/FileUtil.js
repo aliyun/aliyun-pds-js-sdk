@@ -54,16 +54,16 @@ function doesFileExistInBrowser(file) {
 }
 
 /* istanbul ignore next */
-function js_sha1_multi_node({file, part_info_list, onProgress, getStopFlagFun, context}) {
-  return JS_SHA1.calcFilePartsSha1Node(file, part_info_list, onProgress, getStopFlagFun, context)
+function js_sha1_multi_node({file, file_path, part_info_list, onProgress, getStopFlagFun, context}) {
+  return JS_SHA1.calcFilePartsSha1Node(file_path || file.path, part_info_list, onProgress, getStopFlagFun, context)
 }
 /* istanbul ignore next */
 function js_sha1_multi({file, part_info_list, onProgress, getStopFlagFun}) {
   return JS_SHA1.calcFilePartsSha1(file, part_info_list, onProgress, getStopFlagFun)
 }
 /* istanbul ignore next */
-function js_sha1_node({file, pre_size, onProgress, getStopFlagFun, context}) {
-  return JS_SHA1.calcFileSha1Node(file, pre_size, onProgress, getStopFlagFun, context)
+function js_sha1_node({file, file_path, pre_size, onProgress, getStopFlagFun, context}) {
+  return JS_SHA1.calcFileSha1Node(file_path || file.path, pre_size, onProgress, getStopFlagFun, context)
 }
 /* istanbul ignore next */
 function sha1(str) {
@@ -78,8 +78,8 @@ function js_crc64_file({file, onProgress, getStopFlagFun}) {
   return JS_CRC64.crc64File(file, onProgress, getStopFlagFun)
 }
 /* istanbul ignore next */
-function js_crc64_file_node({file: file_path, onProgress, getStopFlagFun, context, start, end}) {
-  return JS_CRC64.crc64FileNode(file_path, onProgress, getStopFlagFun, {start, end, ...context})
+function js_crc64_file_node({file, file_path, onProgress, getStopFlagFun, context, start, end}) {
+  return JS_CRC64.crc64FileNode(file_path || file.path, onProgress, getStopFlagFun, {start, end, ...context})
 }
 
 async function getFreeDiskSize(p, context) {

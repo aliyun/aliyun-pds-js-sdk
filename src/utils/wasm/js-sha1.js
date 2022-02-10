@@ -37,7 +37,7 @@ function sha1(buff) {
   binding._free(buffPtr)
   binding._free(prevPtr)
 
-  return ret
+  return ret.toUpperCase()
 }
 
 function createSha1() {
@@ -77,27 +77,21 @@ function createSha1() {
 
       binding._free(prevPtr)
       binding._free(resultPtr)
-      return ret
+      return ret.toUpperCase()
     },
   }
 }
 
 function buffToPtr(buff) {
-  if (
-    typeof process === 'object' &&
-    typeof process.versions === 'object' &&
-    typeof process.versions.node === 'string'
-  ) {
-    if (typeof buff === 'string') {
-      buff = Buffer.from(buff)
-    } else if (!Buffer.isBuffer(buff)) {
+  if (!buff.buffer || !buff.buffer instanceof ArrayBuffer) {
+    if (typeof buff == 'string') {
+      if (typeof Buffer == 'function' && Buffer.from) {
+        buff = Buffer.from(buff)
+      } else {
+        buff = stringToUint8Array(buff)
+      }
+    } else {
       throw new Error('Invalid buffer type.')
-    }
-  } else {
-    if (typeof buff === 'string') {
-      buff = stringToUint8Array(buff)
-    } else if (!(buff instanceof Uint8Array)) {
-      throw new Error('Invalid Uint8Array type.')
     }
   }
 
@@ -105,7 +99,7 @@ function buffToPtr(buff) {
   binding.writeArrayToMemory(buff, buffPtr)
   return buffPtr
 }
-
+/* istanbul ignore next */
 function stringToUint8Array(str) {
   var arr = []
   for (var i = 0, j = str.length; i < j; ++i) {
