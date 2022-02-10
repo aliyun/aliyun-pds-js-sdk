@@ -46,7 +46,7 @@ describe('JS_SHA1', function () {
 
       let start = Date.now()
 
-      let result = await JS_SHA1.calcFilePartsSha1Node(file.path, parts, null, null, {fs, crypto})
+      let result = await JS_SHA1.calcFilePartsSha1Node(file.path, parts, null, null, {fs, cp, crypto})
       console.log(JSON.stringify(result, [' '], 2), Date.now() - start)
       assert(result.content_hash == 'A9993E364706816ABA3E25717850C26C9CD0D89D')
 
@@ -79,7 +79,7 @@ describe('JS_SHA1', function () {
           console.log(prog)
         },
         null,
-        {fs, crypto},
+        {fs, cp, crypto},
       )
 
       const content_hash = result.content_hash
@@ -117,7 +117,7 @@ describe('JS_SHA1', function () {
           () => {
             return true
           },
-          {fs, crypto},
+          {fs, cp, crypto},
         )
         assert(false, 'should throw error')
       } catch (e) {

@@ -42,7 +42,7 @@ async function sha1Node_mul() {
       console.log(prog)
     },
     null,
-    {fs, crypto},
+    window.PDS_SDK.Context
   )
 
   console.log(result)

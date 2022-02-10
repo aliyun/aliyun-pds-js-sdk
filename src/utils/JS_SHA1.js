@@ -5,6 +5,7 @@ import {readBlock, readStream} from './StreamUtil'
 
 const CHUNK_SIZE = 1024 * 1024 //1MB
 const PROGRESS_EMIT_VALVE = 0.1 // 进度超过多少,回调onProgress
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 超过 50MB，就用子进程
 
 export {
   ready, // wasm是异步载入的， await ready() 后才能使用 crc64 方法。
@@ -172,8 +173,13 @@ async function calcFileSha1Node(file_path, size, onProgress, getStopFlag, contex
 
 async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, context) {
   await ready()
-  const {fs, highWaterMark} = context
+  const {fs, highWaterMark, process_calc_size = MAX_FILE_SIZE} = context
   let total = fs.statSync(file_path).size
+
+  if (total > process_calc_size) {
+    // 使用子进程计算
+    return await calcFilePartsSha1NodeProcess(file_path, parts, onProgress, getStopFlag, context)
+  }
 
   onProgress = onProgress || (prog => {})
   getStopFlag = getStopFlag || (() => false)
@@ -246,4 +252,44 @@ async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, 
     content_hash: hash.hex().toUpperCase(),
     content_hash_name: 'sha1',
   }
+}
+
+async function calcFilePartsSha1NodeProcess(file_path, parts, onProgress, getStopFlag, context) {
+  const {cp, path, highWaterMark = 64 * 1024} = context
+
+  onProgress = onProgress || (prog => {})
+  getStopFlag = getStopFlag || (() => false)
+
+  let obj = {
+    highWaterMark,
+    file_path,
+    parts,
+  }
+
+  let base64Str = Buffer.from(JSON.stringify(obj)).toString('base64')
+
+  const child = cp.fork(path.join(__dirname, 'sha1/node-process-sha1.js'), [base64Str], {stdio: 'inherit'})
+
+  return await new Promise((a, b) => {
+    child.on('message', data => {
+      switch (data.type) {
+        case 'progress':
+          if (getStopFlag()) {
+            child.kill(2)
+            b(new Error('stopped'))
+            return
+          }
+          onProgress(data.progress)
+          break
+
+        case 'result':
+          a(data.result)
+          break
+        case 'error':
+          let err = data.error
+          b(typeof err == 'string' ? new Error(err) : err)
+          break
+      }
+    })
+  })
 }
