@@ -32,8 +32,8 @@
     "extends": "@istanbuljs/nyc-config-typescript",
     "exclude": [
       "tests/**",
-      "src/utils/wasm/crc64-wasm.js", 
-      "src/utils/wasm/sha1-wasm.js",
+      "src/utils/crc64/wasm/crc64-wasm.js",
+      "src/utils/sha1/wasm/sha1-wasm.js",
       "src/utils/axios-node-adapter.js"
     ],
     "extension": [
@@ -70,6 +70,7 @@
     "@types/jsonwebtoken": "^8.5.8",
     "axios": "^0.24.0",
     "debug": "^4.3.2",
+    "js-sha1": "^0.6.0",
     "jsonwebtoken": "^8.5.1",
     "uuid": "^8.3.2"
   },

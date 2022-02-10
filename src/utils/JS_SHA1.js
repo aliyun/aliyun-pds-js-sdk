@@ -1,6 +1,6 @@
 /** @format */
 
-import {ready, sha1, createSha1} from './wasm/js-sha1'
+import {ready, sha1, createSha1} from './sha1/js-sha1-origin'
 import {readBlock, readStream} from './StreamUtil'
 
 const CHUNK_SIZE = 1024 * 1024 //1MB

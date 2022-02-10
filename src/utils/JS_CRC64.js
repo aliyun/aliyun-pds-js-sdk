@@ -1,5 +1,5 @@
 /** @format */
-import {crc64, ready} from './wasm/js-crc64'
+import {crc64, ready} from './crc64/wasm'
 import {readBlock, readStream} from './StreamUtil'
 
 const CHUNK_SIZE = 256 * 1024 //前端分块大小 500KB
