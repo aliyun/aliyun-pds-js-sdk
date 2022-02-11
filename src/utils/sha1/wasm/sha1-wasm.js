@@ -89,12 +89,12 @@ if (ENVIRONMENT_IS_NODE) {
   if (typeof module !== 'undefined') {
     module['exports'] = Module
   }
-  process['on']('uncaughtException', function (ex) {
-    if (!(ex instanceof ExitStatus)) {
-      throw ex
-    }
-  })
-  process['on']('unhandledRejection', abort)
+  // process['on']('uncaughtException', function (ex) {
+  //   if (!(ex instanceof ExitStatus)) {
+  //     throw ex
+  //   }
+  // })
+  // process['on']('unhandledRejection', abort)
   quit_ = function (status) {
     process['exit'](status)
   }

@@ -5,18 +5,20 @@ import {readBlock, readStream} from './StreamUtil'
 
 const CHUNK_SIZE = 1024 * 1024 //1MB
 const PROGRESS_EMIT_VALVE = 0.1 // 进度超过多少,回调onProgress
-const MAX_FILE_SIZE = 50 * 1024 * 1024 // 超过 50MB，就用子进程
+const NODE_PROCESS_CALC_SIZE = 50 * 1024 * 1024 // node.js: 超过 50MB，就用子进程 (Electron 渲染进程目前不支持 worker_threads)
 
 export {
   ready, // wasm是异步载入的， await ready() 后才能使用 crc64 方法。
   sha1,
   createSha1,
-  // 下面4个方法会自动掉用 await ready()
+  // 下面几个个方法会自动调用 await ready()
   calcFileSha1,
   calcFilePartsSha1,
   // for node.js
-  calcFileSha1Node,
-  calcFilePartsSha1Node,
+  calcFileSha1Node, // 串行
+  calcFilePartsSha1Node, // 并行，按part计算中间值
+  calcFilePartsSha1NodeProcess,
+  calcFilePartsSha1NodeWorker,
 }
 
 /**
@@ -173,7 +175,7 @@ async function calcFileSha1Node(file_path, size, onProgress, getStopFlag, contex
 
 async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, context) {
   await ready()
-  const {fs, worker_threads, highWaterMark, process_calc_size = MAX_FILE_SIZE} = context
+  const {fs, worker_threads, highWaterMark, process_calc_size = NODE_PROCESS_CALC_SIZE} = context
   let total = fs.statSync(file_path).size
 
   if (total > process_calc_size) {
@@ -244,7 +246,7 @@ async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, 
     }
   }
   // 最后遗留片
-  if (buf.length > 0) {
+  if (buf && buf.length > 0) {
     hash.update(buf)
     buf = null
     try {
@@ -313,22 +315,20 @@ async function calcFilePartsSha1NodeWorker(file_path, parts, onProgress, getStop
     file_path,
     parts,
   }
-  
-  return await new Promise((resolve, reject) => {
-    
-    const worker = new Worker(path.join(__dirname, 'sha1/node-worker-sha1.js'),
-    { workerData: obj})
 
-    worker.on('message', (data)=>{
+  return await new Promise((resolve, reject) => {
+    const worker = new Worker(path.join(__dirname, 'sha1/node-worker-sha1.js'), {workerData: obj})
+
+    worker.on('message', data => {
       switch (data.type) {
         case 'progress':
           if (getStopFlag()) {
-            worker.terminate() 
+            worker.terminate()
             reject(new Error('stopped'))
             return
           }
           onProgress(data.progress)
-          break 
+          break
         case 'result':
           resolve(data.result)
           break
@@ -337,15 +337,12 @@ async function calcFilePartsSha1NodeWorker(file_path, parts, onProgress, getStop
           reject(typeof err == 'string' ? new Error(err) : err)
           break
       }
-    });
-    worker.on('error', err=>{ 
+    })
+    worker.on('error', err => {
       reject(err)
-    });
-    worker.on('exit', (code) => { 
-
-      if (code !== 0)
-        reject(new Error(`Worker stopped with exit code ${code}`));
-    });
-   
+    })
+    worker.on('exit', code => {
+      if (code !== 0) reject(new Error(`Worker stopped with exit code ${code}`))
+    })
   })
 }
