@@ -173,12 +173,19 @@ async function calcFileSha1Node(file_path, size, onProgress, getStopFlag, contex
 
 async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, context) {
   await ready()
-  const {fs, highWaterMark, process_calc_size = MAX_FILE_SIZE} = context
+  const {fs, worker_threads, highWaterMark, process_calc_size = MAX_FILE_SIZE} = context
   let total = fs.statSync(file_path).size
 
   if (total > process_calc_size) {
-    // 使用子进程计算
-    return await calcFilePartsSha1NodeProcess(file_path, parts, onProgress, getStopFlag, context)
+    // if (typeof worker_threads == 'object') {
+    //   // 使用 worker 计算
+    //   console.log('使用 worker 计算')
+    //   return await calcFilePartsSha1NodeWorker(file_path, parts, onProgress, getStopFlag, context)
+    // } else {
+      // 使用子进程计算
+      console.log('使用子进程计算')
+      return await calcFilePartsSha1NodeProcess(file_path, parts, onProgress, getStopFlag, context)
+    // }
   }
 
   onProgress = onProgress || (prog => {})
@@ -254,6 +261,7 @@ async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, 
   }
 }
 
+// 启动子进程
 async function calcFilePartsSha1NodeProcess(file_path, parts, onProgress, getStopFlag, context) {
   const {cp, path, highWaterMark = 64 * 1024} = context
 
@@ -291,5 +299,53 @@ async function calcFilePartsSha1NodeProcess(file_path, parts, onProgress, getSto
           break
       }
     })
+  })
+}
+// 启动 worker_threads
+async function calcFilePartsSha1NodeWorker(file_path, parts, onProgress, getStopFlag, context) {
+  const {cp, path, worker_threads, highWaterMark = 64 * 1024} = context
+  const {Worker} = worker_threads
+  onProgress = onProgress || (prog => {})
+  getStopFlag = getStopFlag || (() => false)
+
+  let obj = {
+    highWaterMark,
+    file_path,
+    parts,
+  }
+  
+  return await new Promise((resolve, reject) => {
+    
+    const worker = new Worker(path.join(__dirname, 'sha1/node-worker-sha1.js'),
+    { workerData: obj})
+
+    worker.on('message', (data)=>{
+      switch (data.type) {
+        case 'progress':
+          if (getStopFlag()) {
+            worker.terminate() 
+            reject(new Error('stopped'))
+            return
+          }
+          onProgress(data.progress)
+          break 
+        case 'result':
+          resolve(data.result)
+          break
+        case 'error':
+          let err = data.error
+          reject(typeof err == 'string' ? new Error(err) : err)
+          break
+      }
+    });
+    worker.on('error', err=>{ 
+      reject(err)
+    });
+    worker.on('exit', (code) => { 
+
+      if (code !== 0)
+        reject(new Error(`Worker stopped with exit code ${code}`));
+    });
+   
   })
 }

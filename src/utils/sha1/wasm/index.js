@@ -2,7 +2,7 @@
 
 import x, * as x2 from './sha1-wasm'
 
-const binding = x || x2
+const binding = x || x2 
 
 const raw = {
   sha1: binding.cwrap('SHA1_Once', 'null', ['number', 'number', 'number']),

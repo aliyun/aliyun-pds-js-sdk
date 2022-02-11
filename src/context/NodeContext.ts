@@ -7,10 +7,11 @@ import * as cp from 'child_process'
 import * as http from 'http'
 import * as crypto from 'crypto'
 import * as https from 'https'
+import * as worker_threads from 'worker_threads'
 import Axios from 'axios'
 import AxiosNodeAdapter from '../utils/axios-node-adapter'
 
 const isNode = true
 const platform = process.platform
 
-export {isNode, Axios, platform, os, fs, path, cp, http, https, crypto, AxiosNodeAdapter}
+export {isNode, Axios, platform, os, fs, path, cp, http, https, crypto, worker_threads, AxiosNodeAdapter}

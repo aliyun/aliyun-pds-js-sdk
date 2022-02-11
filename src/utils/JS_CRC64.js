@@ -12,6 +12,7 @@ export {
   crc64FileNode, // for node.js
 }
 
+
 /**
  * 前端 js 计算crc64
  * @param {File} file  HTML File 对象 
