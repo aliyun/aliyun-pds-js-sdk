@@ -609,42 +609,41 @@ export class Downloader extends BaseLoader {
     return result
   }
 
+  calcSpeed(speedList) {
+    let average = speedList.reduce((a, b) => a + b) / speedList.length
+    let lastSpeed = speedList[speedList.length - 1]
+    const smoothing = 0.05
+    return smoothing * lastSpeed + (1 - 0.05) * average
+  }
   startCalcSpeed() {
     this.left_time = 0
     this.speed = 0
     let lastLoaded = this.loaded
-    // const c = 1;
+
+    let curSpeed = 0
+    let speedList = []
 
     if (this.tid_speed) {
       clearInterval(this.tid_speed)
       this.tid_speed = null
     }
     this.tid_speed = setInterval(() => {
-      //  if (c > 5 || c < 3) {
       // 进度会回退, 可能为负数，max(0, )
-      this.speed = Math.max(0, this.loaded - lastLoaded) //  / 2;
+      curSpeed = Math.max(0, this.loaded - lastLoaded)
+
+      speedList.push(curSpeed)
+      if (speedList.length > 10) speedList.shift()
+
+      this.speed = this.calcSpeed(speedList)
       // 进度为0，left_time就会为 Infinity，改为1天
       this.left_time = this.speed === 0 ? 24 * 3600 : (this.file.size - this.loaded) / this.speed
 
-      // if (this.speed < 0) {
-      //   console.warn('速度:' + (this.speed.toFixed(2)),
-      //     this.loaded, '/', this.file.size,
-      //     (this.loaded / this.file.size * 100).toFixed(2) + '%', JSON.stringify(this.part_info_list, ' ', 2))
-      // } else {
-      //   console.log('速度:' + (this.speed.toFixed(2)),
-      //     this.loaded, '/', this.file.size,
-      //     (this.loaded / this.file.size * 100).toFixed(2) + '%', JSON.stringify(this.part_info_list, ' ', 2))
-      // }
-
       lastLoaded = this.loaded
-      // if (c > 5) c = 3
 
       this.maxConcurrency = this.set_calc_max_con(this.speed, this.part_info_list[0].part_size, this.maxConcurrency)
 
       // check timeout
       this.checkTimeout()
-      // }
-      // c++
     }, 1000)
   }
   checkTimeout() {
