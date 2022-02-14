@@ -16,6 +16,6 @@
 
     "sourceMap": true /* sourceMap的值为true或false，用来指定编译时是否生成.map文件 */
   },
-  "include": ["src/**/*.ts", "src/**/*.js", "src/utils/sha1/node-worker-sha1.mjs"],
+  "include": ["src/**/*.ts", "src/**/*.js"],
   "exclude": ["lib", "src/**/**.test.ts", "src/**/**.test.js", "tests", "node_modules"]
 }

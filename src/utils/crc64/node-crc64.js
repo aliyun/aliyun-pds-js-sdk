@@ -1,5 +1,6 @@
 /** @format */
-const crypto = require('crypto')
+
+const {ready, crc64} = require('./wasm/index.js')
 const fs = require('fs')
 const {readStream} = require('../StreamUtil.js')
 const PROGRESS_EMIT_STEP = 0.1
@@ -7,29 +8,32 @@ const PROGRESS_EMIT_STEP = 0.1
 module.exports = {
   run,
 }
-
 async function run(obj, sendMessage) {
+  await ready()
   try {
-    let {file_path, size, highWaterMark, progress_emit_step = PROGRESS_EMIT_STEP} = obj
+    let {file_path, highWaterMark, progress_emit_step = PROGRESS_EMIT_STEP} = obj
 
     let total = fs.statSync(file_path).size
-    let hash = crypto.createHash('sha1')
 
-    let opt = {highWaterMark}
-    if (size) {
-      Object.assign(opt, {start: 0, end: size - 1})
+    if (total == 0) {
+      // result
+      sendMessage({
+        type: 'result',
+        result: '0',
+      })
+      return
     }
 
-    let stream = fs.createReadStream(file_path, opt) //opt
-
+    let stream = fs.createReadStream(file_path, {highWaterMark}) //opt
+    let last = '0'
     let loaded = 0
     let progress = 0
     let last_progress = 0
     await readStream(
       stream,
       chunk => {
-        loaded += Buffer.byteLength(chunk)
-        hash.update(chunk)
+        loaded += chunk.length
+        last = crc64(chunk, last + '')
 
         // 进度
         progress = (loaded * 100) / total
@@ -47,7 +51,7 @@ async function run(obj, sendMessage) {
     // result
     sendMessage({
       type: 'result',
-      result: hash.digest('hex').toUpperCase(),
+      result: last,
     })
   } catch (e) {
     console.error(__filename + ' error:', e)

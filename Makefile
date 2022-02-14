@@ -1,6 +1,7 @@
 i:
 	npm i
 
+build:lib dist
 dist:
 	rm -rf dist
 	npm run build:dist
@@ -27,4 +28,4 @@ clean:
 	cd examples/electron/ && rm -rf package-lock.json node_modules bin/tmp-* bin/*-token.json
 	echo 'done'
 # 命令和目录名称冲突
-.PHONY:lib dist tests
+.PHONY:lib dist tests build

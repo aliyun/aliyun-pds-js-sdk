@@ -145,27 +145,16 @@ export class StandardSerialUploader extends BaseUploader {
   async calcSha1(file, pre_size, onProgress = () => {}, getStopFlagFun = () => {}) {
     this.timeLogStart(pre_size ? 'pre_sha1' : 'sha1', Date.now())
 
-    let result
-    if (this.context.isNode) {
-      // 桌面端
-      let _sha1_fun = this.custom_sha1_fun || this.vendors.file_util.js_sha1_node
-      result = await _sha1_fun({
-        file,
-        pre_size,
-        onProgress,
-        getStopFlagFun,
-        context: this.context,
-      })
-    } else {
-      // 浏览器
-      let _sha1_fun = this.custom_sha1_fun || this.vendors.file_util.js_sha1
-      result = await _sha1_fun({
-        file,
-        pre_size,
-        onProgress,
-        getStopFlagFun,
-      })
-    }
+    let _sha1_fun = this.custom_sha1_fun || this.vendors.calc_util.calcFileSha1
+    let result = await _sha1_fun({
+      file,
+      pre_size,
+      process_calc_sha1_size: this.process_calc_sha1_size,
+      onProgress,
+      getStopFlagFun,
+      context: this.context,
+    })
+
     this.timeLogEnd(pre_size ? 'pre_sha1' : 'sha1', Date.now())
 
     return result

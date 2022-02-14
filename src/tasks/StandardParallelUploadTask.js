@@ -1,7 +1,7 @@
 /** @format */
 
 import {StandardParallelUploader} from '../loaders/StandardParallelUploader'
-import * as file_util from '../utils/FileUtil'
+import * as calc_util from '../utils/CalcUtil'
 import * as http_util from '../utils/HttpUtil'
 
 export class StandardParallelUploadTask extends StandardParallelUploader {
@@ -12,7 +12,7 @@ export class StandardParallelUploadTask extends StandardParallelUploader {
       {
         http_client: upload_http_client,
         http_util,
-        file_util,
+        calc_util,
       },
       customContext,
     )

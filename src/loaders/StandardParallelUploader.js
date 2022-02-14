@@ -92,36 +92,21 @@ export class StandardParallelUploader extends BaseUploader {
 
   async calcHash(file, onProgress = () => {}, getStopFlagFun = () => {}) {
     this.timeLogStart('multi_sha1', Date.now())
-    if (this.context.isNode) {
-      // 桌面端
-      let _multi_sha1_fun = this.custom_multi_sha1_fun || this.vendors.file_util.js_sha1_multi_node
-      let {part_info_list, content_hash} = await _multi_sha1_fun({
-        file,
-        part_info_list: this.part_info_list,
-        onProgress,
-        getStopFlagFun,
-        context: this.context,
-      })
-      this.part_info_list = part_info_list
 
-      this.timeLogEnd('multi_sha1', Date.now())
-      return content_hash
-    } else {
-      // 浏览器
-      let _multi_sha1_fun = this.custom_multi_sha1_fun || this.vendors.file_util.js_sha1_multi
+    let _parts_sha1_fun = this.custom_part_sha1_fun || this.vendors.calc_util.calcFilePartsSha1
 
-      let {part_info_list, content_hash} = await _multi_sha1_fun({
-        file,
-        part_info_list: this.part_info_list,
-        onProgress,
-        getStopFlagFun,
-        // context: {}, // this.context
-      })
-      this.part_info_list = part_info_list
+    let {part_info_list, content_hash} = await _parts_sha1_fun({
+      file,
+      process_calc_sha1_size: this.process_calc_sha1_size,
+      part_info_list: this.part_info_list,
+      onProgress,
+      getStopFlagFun,
+      context: this.context,
+    })
+    this.part_info_list = part_info_list
 
-      this.timeLogEnd('multi_sha1', Date.now())
-      return content_hash
-    }
+    this.timeLogEnd('multi_sha1', Date.now())
+    return content_hash
   }
 
   async upload() {

@@ -14,12 +14,14 @@ import {BaseLoader} from './BaseLoader'
 import {isNetworkError} from '../utils/HttpUtil'
 import {calc_downloaded} from '../utils/ChunkUtil'
 import {formatSize} from '../utils/Formatter'
+import {getFreeDiskSize} from '../utils/FileUtil'
 
 import {formatCheckpoint, initCheckpoint} from '../utils/CheckpointUtil'
 const INIT_MAX_CON = 10 // 初始并发
 const MAX_CHUNK_SIZE = 100 * 1024 * 1024 // 100MB
 const SUFFIX = '.download'
 const LIMIT_PART_NUM = 9000 // 最多分片数量
+const PROCESS_CALC_CRC64_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 crc64
 
 import Debug from 'debug'
 const debug = Debug('PDSJS:BaseUploader')
@@ -97,6 +99,8 @@ export class Downloader extends BaseLoader {
 
       custom_crc64_fun, //自定义 计算crc64的方法
 
+      process_calc_crc64_size, // 文件大小超过多少，将启用子进程计算 crc64
+
       progress_changed,
       state_changed,
       part_completed,
@@ -159,6 +163,7 @@ export class Downloader extends BaseLoader {
     // this.crc64_running_mode = crc64_running_mode || 'end'
     // this.crc64_fun = crc64_fun || 'js'
     this.custom_crc64_fun = custom_crc64_fun
+    this.process_calc_crc64_size = process_calc_crc64_size || PROCESS_CALC_CRC64_SIZE
 
     // progress & state
     this.state = state || 'waiting' // waiting running success error checking
@@ -536,7 +541,7 @@ export class Downloader extends BaseLoader {
   }
 
   async checkLocalDiskSize() {
-    const freeDiskSize = await this.vendors.file_util.getFreeDiskSize(this.file.temp_path, this.context)
+    const freeDiskSize = await getFreeDiskSize(this.file.temp_path, this.context)
     if (this.verbose) console.log('本地剩余磁盘空间:', freeDiskSize)
     if (freeDiskSize < this.file.size + 10 * 1024 * 1024) {
       throw new Error('Insufficient disk space')
@@ -1094,57 +1099,9 @@ export class Downloader extends BaseLoader {
     return result.headers['x-oss-hash-crc64ecma'] || ''
   }
 
-  // async calcFilePartCRC64(partInfo) {
-  //   const {from: start, to: end, part_number} = partInfo
-  //   // const {fs} = this.context
-  //   const _st = Date.now()
-  //   if (this.verbose) {
-  //     console.log(`[${this.file.name}] crc64 starting...`, part_number)
-  //   }
-
-  //   const _crc64_fun = this.custom_crc64_fun || this.vendors.file_util.js_crc64_file_node
-
-  //   const result = await _crc64_fun({
-  //     file: this.file.temp_path,
-  //     onProgress: progress => {
-  //       partInfo.checking_progress = Math.round(progress || 0) // 0-100
-
-  //       // 统计
-  //       let t = 0
-  //       this.part_info_list.forEach(n => {
-  //         t += n.crc64 && n.crc64 !== '0' ? n.part_size : ((n.checking_progress || 0) * n.part_size) / 100
-  //       })
-  //       this.checking_progress = Math.round((t / this.file.size) * 100)
-
-  //       if (this.state == 'checking') this.notifyProgress(this.state, this.checking_progress)
-  //     },
-  //     getStopFlagFun: () => {
-  //       return this.stopFlag
-  //     },
-
-  //     context: this.context,
-  //     start: start || 0,
-  //     end: end - 1,
-  //   })
-
-  //   if (this.stopFlag) {
-  //     throw new Error('stopped')
-  //   }
-
-  //   if (this.verbose) {
-  //     console.log(`[${this.file.name}] crc64 done,`, part_number, `, elapse:`, Date.now() - _st, `ms, result:`, result)
-  //   }
-  //   return result
-  // }
-
   async checkFileHash() {
-    // if (this.crc64_running_mode == 'part') {
-    //   // 分片下载完，计算crc
-    //   await this.checkFileHash_part()
-    // } else {
     // 全部下载完，计算crc
     await this.checkFileHash_all()
-    // }
   }
   async checkFileHash_all() {
     // const {fs} = this.context
@@ -1157,10 +1114,11 @@ export class Downloader extends BaseLoader {
     await this.changeState('checking')
     this.crc64_hash = await this.headCRC64()
 
-    const _crc64_fun = this.custom_crc64_fun || this.vendors.file_util.js_crc64_file_node
+    const _crc64_fun = this.custom_crc64_fun || this.vendors.calc_util.calcFileCrc64
 
     const result = await _crc64_fun({
       file_path: this.file.temp_path,
+      process_calc_crc64_size: this.process_calc_crc64_size,
       onProgress: progress => {
         this.checking_progress = Math.round(progress) // 0-100
       },
@@ -1180,61 +1138,6 @@ export class Downloader extends BaseLoader {
       throw new Error(`crc64_hash not match: ${this.calc_crc64} != ${this.crc64_hash}`)
     }
   }
-  // async checkFileHash_part() {
-  //   await this.changeState('checking')
-
-  //   this.crc64_hash = await this.headCRC64()
-
-  //   const len = this.part_info_list.length
-
-  //   if (len == 0) {
-  //     return null
-  //   }
-
-  //   if (!this.checkCrcAreAllDone()) {
-  //     await this.waitUntilCrcAllDone()
-  //   }
-
-  //   if (len == 1) {
-  //     this.calc_crc64 = this.part_info_list[0].crc64
-  //   } else {
-  //     if (this.verbose) {
-  //       console.log(`[${this.file.name}] start combining crc`)
-  //       console.log('--------------------')
-  //       console.log(this.part_info_list.map(n => `${n.part_number}: ${n.crc64}`).join('\n'))
-  //       console.log('--------------------')
-  //     }
-
-  //     let calc_crc64_hash = this.part_info_list[0].crc64
-  //     const arr = this.part_info_list.slice(1)
-
-  //     for (const n of arr) {
-  //       // webassembly go
-  //       calc_crc64_hash = window.CRC64.combine(calc_crc64_hash, n.crc64, n.part_size)
-  //     }
-  //     this.calc_crc64 = calc_crc64_hash
-  //   }
-
-  //   if (this.calc_crc64 != this.crc64_hash) {
-  //     throw new Error(`crc64_hash not match: ${this.calc_crc64} != ${this.crc64_hash}`)
-  //   }
-  // }
-
-  // checkCrcAreAllDone() {
-  //   for (const n of this.part_info_list) {
-  //     if (!n.crc64 || n.crc64 === '0') {
-  //       return false
-  //     }
-  //   }
-  //   return true
-  // }
-  // waitUntilCrcAllDone() {
-  //   return new Promise(resolve => {
-  //     this.on_calc_part_crc_success = () => {
-  //       if (this.checkCrcAreAllDone()) resolve()
-  //     }
-  //   })
-  // }
 }
 // end
 
@@ -1247,15 +1150,3 @@ function removeItem(arr, item) {
     }
   }
 }
-// async function combineCrc64(str1, str2, len2){
-//   // var {CRC64} = window.PDSClient
-
-//   // return new Promise((a,b)=>{
-//   //   CRC64.combile (str1, str2, len2, function(err, data) {
-//   //     if(err)b(err)
-//   //     else a(data)
-//   //   })
-//   // })
-//   // console.log(str1, str2, len2)
-//   return await window.CRC64.combine(str1, str2, len2)
-// }

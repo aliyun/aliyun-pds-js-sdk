@@ -4,6 +4,9 @@ window.addEventListener('load', function () {
   document.getElementById('btn-crc64-node').onclick = () => {
     crc64Test_node()
   }
+  document.getElementById('btn-crc64-node-process').onclick = () => {
+    crc64Test_node(true)
+  }
   document.getElementById('btn-crc64-browser').onclick = () => {
     crc64Test_browser()
   }
@@ -23,20 +26,18 @@ async function crc64Test_browser() {
   console.log(`result: ${result}, 耗时：${(Date.now() - start) / 1000}s `)
 }
 
-async function crc64Test_node() {
+async function crc64Test_node(useProcess) {
   let p = await window.getUploadFile()
   if (!p) return
 
-  const {fs} = window.PDS_SDK.Context
-
   let start = Date.now()
-  let result = await window.PDS_SDK.JS_CRC64.crc64FileNode(
+  let result = await window.PDS_SDK.JS_CRC64[useProcess ? 'crc64FileNodeProcess' : 'crc64FileNode'](
     p,
     prog => {
       console.log(prog)
     },
     () => {},
-    {fs, crypto},
+    window.PDS_SDK.Context,
   )
   console.log(`result: ${result}, 耗时：${(Date.now() - start) / 1000}s`)
 }

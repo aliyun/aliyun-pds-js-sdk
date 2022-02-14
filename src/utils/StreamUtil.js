@@ -1,5 +1,4 @@
 /** @format */
-
 export {readBlock, readStream}
 
 async function readStream(readable, onData, getStopFlag) {

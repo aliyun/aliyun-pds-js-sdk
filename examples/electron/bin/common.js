@@ -35,3 +35,7 @@ function selectFileInBrowser() {
     fileEle.click()
   })
 }
+
+function showMessage(msg) {
+  document.getElementById('msg').innerHTML = msg || ''
+}

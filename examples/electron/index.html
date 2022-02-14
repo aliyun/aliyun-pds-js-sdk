@@ -8,6 +8,11 @@
     <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
     <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'"> -->
     <title>Hello World!</title>
+    <style>
+     body{ 
+     font-family: monospace;
+    }
+    </style>
   </head>
   <body style="padding: 10px">
     <div style="display: none">
@@ -26,6 +31,8 @@
       <h1>CRC64测试</h1>
       <button id="btn-crc64-browser">选择文件 (浏览器js计算)</button>
       <button id="btn-crc64-node">请选择文件 (Nodejs 计算)</button>
+      <button id="btn-crc64-node-process">请选择文件 (Nodejs 子进程计算)</button>
+
       <div></div>
     </section>
     <section>
@@ -35,13 +42,18 @@
       <div>&nbsp;</div>
       <button id="btn-sha1-node">请选择文件 (Nodejs 串行计算)</button>
       <button id="btn-sha1-mul-node">请选择文件 (Nodejs 并行计算)</button>
+      <div>&nbsp;</div>
+      <button id="btn-sha1-node-process">请选择文件 (Nodejs 子进程串行计算)</button>
+      <button id="btn-sha1-mul-node-process">请选择文件 (Nodejs 子进程并行计算)</button>
       <div></div>
     </section>
     <section>
       <h1>上传下载文件</h1>
       <button id="btn-upload">上传文件</button>
-      <button id="btn-download">下载文件</button>
+      <button id="btn-download" disabled>下载文件</button> 
     </section>
+
+    <section id="msg"></section>
 
     <script src="bin/conf.js"></script>
     <script src="bin/common.js"></script>

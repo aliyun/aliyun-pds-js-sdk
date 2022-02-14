@@ -1,8 +1,9 @@
 /** @format */
 
 import x, * as x2 from './sha1-wasm'
+import {buffToPtr} from '../../WasmUtil'
 
-const binding = x || x2 
+const binding = x || x2
 
 const raw = {
   sha1: binding.cwrap('SHA1_Once', 'null', ['number', 'number', 'number']),
@@ -29,7 +30,7 @@ export {ready, sha1, createSha1}
 // 一次性计算
 function sha1(buff) {
   const prevPtr = binding._malloc(41)
-  const buffPtr = buffToPtr(buff)
+  const buffPtr = buffToPtr(buff, binding)
 
   raw.sha1(prevPtr, buffPtr, buff.length)
   const ret = binding.UTF8ToString(prevPtr)
@@ -47,7 +48,7 @@ function createSha1() {
 
   return {
     update(buff) {
-      const buffPtr = buffToPtr(buff)
+      const buffPtr = buffToPtr(buff, binding)
       raw.sha1Update(prevPtr, buffPtr, buff.length)
       binding._free(buffPtr)
     },
@@ -80,32 +81,4 @@ function createSha1() {
       return ret.toUpperCase()
     },
   }
-}
-
-function buffToPtr(buff) {
-  if (!buff.buffer || !buff.buffer instanceof ArrayBuffer) {
-    if (typeof buff == 'string') {
-      if (typeof Buffer == 'function' && Buffer.from) {
-        buff = Buffer.from(buff)
-      } else {
-        buff = stringToUint8Array(buff)
-      }
-    } else {
-      throw new Error('Invalid buffer type.')
-    }
-  }
-
-  const buffPtr = binding._malloc(buff.length + 1)
-  binding.writeArrayToMemory(buff, buffPtr)
-  return buffPtr
-}
-/* istanbul ignore next */
-function stringToUint8Array(str) {
-  var arr = []
-  for (var i = 0, j = str.length; i < j; ++i) {
-    arr.push(str.charCodeAt(i))
-  }
-
-  var tmpUint8Array = new Uint8Array(arr)
-  return tmpUint8Array
 }

@@ -25,6 +25,8 @@ const LIMIT_PART_NUM = 9000 // OSS分片数最多不能超过1w片，这里取�
 
 const MAX_SIZE_FOR_SHA1 = 10 * 1024 * 1024 * 1024 // 10GB
 const MIN_SIZE_FOR_PRE_SHA1 = 100 * 1024 * 1024 // 100MB
+const PROCESS_CALC_CRC64_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 crc64
+const PROCESS_CALC_SHA1_SIZE = 100 * 1024 * 1024 // 文件大小超过将启用子进程计算 sha1
 
 console.timeLog = console.timeLog || console.timeEnd
 
@@ -123,13 +125,16 @@ export class BaseUploader extends BaseLoader {
 
       custom_crc64_fun, // 自定义计算 crc64 方法
       custom_sha1_fun, // 自定义计算sha1 方法
-      custom_multi_sha1_fun, //自定义计算 sha1 方法 (分part)
+      custom_parts_sha1_fun, //自定义计算 sha1 方法 (分part)
 
       // (标准模式) 是否启用分片并发上传,  托管模式默认时并发的
       parallel_upload,
 
       // 最大分片数：10000片
       limit_part_num,
+
+      process_calc_crc64_size, // 文件大小超过多少，将启用子进程计算 crc64
+      process_calc_sha1_size, // 文件大小超过多少，将启用子进程计算 sha1
 
       verbose,
       ignore_rapid,
@@ -177,7 +182,10 @@ export class BaseUploader extends BaseLoader {
 
     this.custom_crc64_fun = custom_crc64_fun
     this.custom_sha1_fun = custom_sha1_fun
-    this.custom_multi_sha1_fun = custom_multi_sha1_fun
+    this.custom_part_sha1_fun = custom_parts_sha1_fun
+
+    this.process_calc_crc64_size = process_calc_crc64_size || PROCESS_CALC_CRC64_SIZE
+    this.process_calc_sha1_size = process_calc_sha1_size || PROCESS_CALC_SHA1_SIZE
 
     this.checking_crc = checking_crc !== false
     this.limit_part_num = limit_part_num || LIMIT_PART_NUM
@@ -910,6 +918,7 @@ export class BaseUploader extends BaseLoader {
 
                 // 更新进度，缓冲
                 that.updateProgressThrottle(running_parts)
+                // that.updateProgressStep(running_parts, 0.1)
 
                 // let running_part_loaded = 0
                 // for (var k in running_parts) running_part_loaded += running_parts[k]
@@ -1032,6 +1041,21 @@ export class BaseUploader extends BaseLoader {
     this.notifyProgress(this.state, this.progress)
   }
 
+  updateProgressStep(running_parts, step) {
+    let running_part_loaded = 0
+    for (const k in running_parts) running_part_loaded += running_parts[k]
+
+    this.loaded = this.done_part_loaded + running_part_loaded
+    let prog = (this.loaded * 100) / this.file.size
+    this._last_prog = this._last_prog || 0
+
+    if (prog - this._last_prog > step) {
+      this.progress = Math.floor(prog * 100) / 100
+      this._last_prog = prog
+      this.notifyProgress(this.state, this.progress)
+    }
+  }
+
   async uploadPartRetry(partInfo, opt) {
     return await this.vendors.http_util.callRetry(this.doUploadPart, this, [partInfo, opt], {
       verbose: this.verbose,
@@ -1040,28 +1064,6 @@ export class BaseUploader extends BaseLoader {
       },
     })
   }
-  // async doesFileExist() {
-  //   if (this.context.isNode) {
-  //     return Promise.resolve(
-  //       this.context.fs.existsSync(
-  //         this.file.path ? null : new Error('A requested file or directory could not be found'),
-  //       ),
-  //     )
-  //   }
-  //   return await new Promise(res => {
-  //     const fr = new FileReader()
-  //     fr.onabort = function () {
-  //       // 文件可能已经被删除
-  //       if (fr.error.message.indexOf('A requested file or directory could not be found') === 0) res(fr.error)
-  //       else res()
-  //     }
-  //     fr.onerror = fr.onabort
-  //     fr.onload = function () {
-  //       res()
-  //     }
-  //     fr.readAsArrayBuffer(this.file)
-  //   })
-  // }
 
   /* istanbul ignore next */
   async doUploadPart(partInfo, opt) {
@@ -1218,34 +1220,19 @@ export class BaseUploader extends BaseLoader {
     const timeKey = `crc64[${this.file.name}](${Math.random()}) elapse:`
     if (this.verbose) console.time(timeKey)
 
-    let result
-    if (this.context.isNode) {
-      const _crc64_fun = this.custom_crc64_fun || this.vendors.file_util.js_crc64_file_node
-      result = await _crc64_fun({
-        file_path: this.file.path,
-        onProgress: progress => {
-          this.checking_progress = Math.round(progress) // 0-100
-          if (this.state == 'checking') this.notifyProgress(this.state, this.checking_progress)
-        },
-        getStopFlagFun: () => {
-          return this.stopFlag
-        },
-        context: this.context,
-      })
-    } else {
-      const _crc64_fun = this.custom_crc64_fun || this.vendors.file_util.js_crc64_file
-      // file: HTML5 File对象
-      result = await _crc64_fun({
-        file: this.file,
-        onProgress: progress => {
-          this.checking_progress = Math.round(progress) // 0-100
-          if (this.state == 'checking') this.notifyProgress(this.state, this.checking_progress)
-        },
-        getStopFlagFun: () => {
-          return this.stopFlag
-        },
-      })
-    }
+    const _crc64_fun = this.custom_crc64_fun || this.vendors.calc_util.calcFileCrc64
+    let result = await _crc64_fun({
+      file: this.file,
+      process_calc_crc64_size: this.process_calc_crc64_size,
+      onProgress: progress => {
+        this.checking_progress = Math.round(progress) // 0-100
+        if (this.state == 'checking') this.notifyProgress(this.state, this.checking_progress)
+      },
+      getStopFlagFun: () => {
+        return this.stopFlag
+      },
+      context: this.context,
+    })
 
     if (this.verbose) console.timeLog(timeKey, ` result:`, result)
 

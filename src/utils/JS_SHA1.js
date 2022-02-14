@@ -1,11 +1,11 @@
 /** @format */
 
 import {ready, sha1, createSha1} from './sha1/js-sha1-origin'
-import {readBlock, readStream} from './StreamUtil'
+import {readBlock, readStream} from './StreamUtil.js'
+import {nodeProcessCalc} from './ForkUtil'
 
 const CHUNK_SIZE = 1024 * 1024 //1MB
-const PROGRESS_EMIT_VALVE = 0.1 // 进度超过多少,回调onProgress
-const NODE_PROCESS_CALC_SIZE = 50 * 1024 * 1024 // node.js: 超过 50MB，就用子进程 (Electron 渲染进程目前不支持 worker_threads)
+const PROGRESS_EMIT_STEP = 0.1 // 进度超过多少,回调onProgress
 
 export {
   ready, // wasm是异步载入的， await ready() 后才能使用 crc64 方法。
@@ -16,6 +16,7 @@ export {
   calcFilePartsSha1,
   // for node.js
   calcFileSha1Node, // 串行
+  calcFileSha1NodeProcess,
   calcFilePartsSha1Node, // 并行，按part计算中间值
   calcFilePartsSha1NodeProcess,
   calcFilePartsSha1NodeWorker,
@@ -56,7 +57,7 @@ async function calcFileSha1(file, preSize, onProgress, getStopFlag) {
 
       // 进度
       progress = (loaded * 100) / total
-      if (progress - last_progress >= PROGRESS_EMIT_VALVE) {
+      if (progress - last_progress >= PROGRESS_EMIT_STEP) {
         try {
           onProgress(progress)
         } catch (e) {
@@ -105,7 +106,7 @@ async function calcFilePartsSha1(file, parts, onProgress, getStopFlag) {
 
         // 进度
         progress = (loaded * 100) / total
-        if (progress - last_progress >= PROGRESS_EMIT_VALVE) {
+        if (progress - last_progress >= PROGRESS_EMIT_STEP) {
           try {
             onProgress(progress)
           } catch (e) {
@@ -158,7 +159,7 @@ async function calcFileSha1Node(file_path, size, onProgress, getStopFlag, contex
 
       // 进度
       progress = (loaded * 100) / total
-      if (progress - last_progress >= PROGRESS_EMIT_VALVE) {
+      if (progress - last_progress >= PROGRESS_EMIT_STEP) {
         try {
           onProgress(progress)
         } catch (e) {
@@ -173,22 +174,28 @@ async function calcFileSha1Node(file_path, size, onProgress, getStopFlag, contex
   return hash.digest('hex').toUpperCase()
 }
 
+// 启动子进程
+/* istanbul ignore next */
+async function calcFileSha1NodeProcess(file_path, size, onProgress, getStopFlag, context) {
+  const {path, highWaterMark = 64 * 1024} = context
+
+  onProgress = onProgress || (prog => {})
+  getStopFlag = getStopFlag || (() => false)
+
+  let obj = {
+    highWaterMark,
+    file_path,
+    size,
+    progress_emit_step: PROGRESS_EMIT_STEP,
+  }
+
+  return await nodeProcessCalc(path.join(__dirname, 'sha1/node-process-sha1.js'), obj, onProgress, getStopFlag, context)
+}
+
 async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, context) {
   await ready()
-  const {fs, worker_threads, highWaterMark, process_calc_size = NODE_PROCESS_CALC_SIZE} = context
+  const {fs, highWaterMark} = context
   let total = fs.statSync(file_path).size
-
-  if (total > process_calc_size) {
-    // if (typeof worker_threads == 'object') {
-    //   // 使用 worker 计算
-    //   console.log('使用 worker 计算')
-    //   return await calcFilePartsSha1NodeWorker(file_path, parts, onProgress, getStopFlag, context)
-    // } else {
-      // 使用子进程计算
-      console.log('使用子进程计算')
-      return await calcFilePartsSha1NodeProcess(file_path, parts, onProgress, getStopFlag, context)
-    // }
-  }
 
   onProgress = onProgress || (prog => {})
   getStopFlag = getStopFlag || (() => false)
@@ -229,7 +236,7 @@ async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, 
 
           // 进度
           progress = (loaded * 100) / total
-          if (progress - last_progress >= PROGRESS_EMIT_VALVE) {
+          if (progress - last_progress >= PROGRESS_EMIT_STEP) {
             try {
               onProgress(progress)
             } catch (e) {
@@ -241,20 +248,17 @@ async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, 
         getStopFlag,
       )
 
+      if (buf && buf.length > 0) {
+        hash.update(buf)
+        buf = Buffer.allocUnsafe(0)
+      }
+
       // 获取中间值
       lastH = hash.getH()
     }
   }
-  // 最后遗留片
-  if (buf && buf.length > 0) {
-    hash.update(buf)
-    buf = null
-    try {
-      onProgress(100)
-    } catch (e) {
-      console.error(e)
-    }
-  }
+
+  buf = null
 
   return {
     part_info_list: parts,
@@ -264,8 +268,9 @@ async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, 
 }
 
 // 启动子进程
+/* istanbul ignore next */
 async function calcFilePartsSha1NodeProcess(file_path, parts, onProgress, getStopFlag, context) {
-  const {cp, path, highWaterMark = 64 * 1024} = context
+  const {path, highWaterMark = 64 * 1024} = context
 
   onProgress = onProgress || (prog => {})
   getStopFlag = getStopFlag || (() => false)
@@ -274,39 +279,28 @@ async function calcFilePartsSha1NodeProcess(file_path, parts, onProgress, getSto
     highWaterMark,
     file_path,
     parts,
+    progress_emit_step: PROGRESS_EMIT_STEP,
   }
 
-  let base64Str = Buffer.from(JSON.stringify(obj)).toString('base64')
+  let result = await nodeProcessCalc(
+    path.join(__dirname, 'sha1/node-parts-process-sha1.js'),
+    obj,
+    onProgress,
+    getStopFlag,
+    context,
+  )
 
-  const child = cp.fork(path.join(__dirname, 'sha1/node-process-sha1.js'), [base64Str], {stdio: 'inherit'})
-
-  return await new Promise((a, b) => {
-    child.on('message', data => {
-      switch (data.type) {
-        case 'progress':
-          if (getStopFlag()) {
-            child.kill(2)
-            b(new Error('stopped'))
-            return
-          }
-          onProgress(data.progress)
-          break
-
-        case 'result':
-          a(data.result)
-          break
-        case 'error':
-          let err = data.error
-          b(typeof err == 'string' ? new Error(err) : err)
-          break
-      }
-    })
-  })
+  return {
+    part_info_list: result.part_info_list,
+    content_hash: result.content_hash,
+    content_hash_name: result.content_hash_name,
+  }
 }
 // 启动 worker_threads
+/* istanbul ignore next */
 async function calcFilePartsSha1NodeWorker(file_path, parts, onProgress, getStopFlag, context) {
-  const {cp, path, worker_threads, highWaterMark = 64 * 1024} = context
-  const {Worker} = worker_threads
+  const {path, highWaterMark = 64 * 1024} = context
+
   onProgress = onProgress || (prog => {})
   getStopFlag = getStopFlag || (() => false)
 
@@ -314,35 +308,19 @@ async function calcFilePartsSha1NodeWorker(file_path, parts, onProgress, getStop
     highWaterMark,
     file_path,
     parts,
+    progress_emit_step: PROGRESS_EMIT_STEP,
   }
 
-  return await new Promise((resolve, reject) => {
-    const worker = new Worker(path.join(__dirname, 'sha1/node-worker-sha1.js'), {workerData: obj})
-
-    worker.on('message', data => {
-      switch (data.type) {
-        case 'progress':
-          if (getStopFlag()) {
-            worker.terminate()
-            reject(new Error('stopped'))
-            return
-          }
-          onProgress(data.progress)
-          break
-        case 'result':
-          resolve(data.result)
-          break
-        case 'error':
-          let err = data.error
-          reject(typeof err == 'string' ? new Error(err) : err)
-          break
-      }
-    })
-    worker.on('error', err => {
-      reject(err)
-    })
-    worker.on('exit', code => {
-      if (code !== 0) reject(new Error(`Worker stopped with exit code ${code}`))
-    })
-  })
+  let result = await nodeProcessCalc(
+    path.join(__dirname, 'sha1/node-parts-worker-sha1.js'),
+    obj,
+    onProgress,
+    getStopFlag,
+    context,
+  )
+  return {
+    part_info_list: result.part_info_list,
+    content_hash: result.content_hash,
+    content_hash_name: result.content_hash_name,
+  }
 }

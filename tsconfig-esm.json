@@ -17,6 +17,6 @@
     "esModuleInterop": true,
     "allowUmdGlobalAccess": true
   },
-  "include": ["src/**/*.ts", "src/**/*.js"],
+  "include": ["src/**/*.ts", "src/**/*.js" ],
   "exclude": ["lib", "src/**/**.test.ts", "src/**/**.test.js", "tests", "node_modules"]
 }

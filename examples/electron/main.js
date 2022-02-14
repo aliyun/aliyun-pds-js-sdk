@@ -11,14 +11,12 @@ function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 860,
     height: 600,
-    webPreferences: { 
-
+    webPreferences: {
       enableRemoteModule: true,
       contextIsolation: false,
       nodeIntegrationInWorker: true,
       // 允许一个 https 页面运行来自http url的JavaScript, CSS 或 plugins。
       allowRunningInsecureContent: true,
-
 
       preload: path.join(__dirname, 'preload.js'),
     },

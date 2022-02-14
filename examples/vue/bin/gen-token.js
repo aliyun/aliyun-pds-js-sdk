@@ -7,6 +7,11 @@ const {join} = require('path')
 init()
 
 async function init() {
+  fs.copyFileSync(
+    join(__dirname, '../../../dist/aliyun-pds-js-sdk.min.js'),
+    join(__dirname, '../public/aliyun-pds-js-sdk.min.js'),
+  )
+
   const tokenInfo = await getSuperToken('StandardMode')
   fs.writeFileSync(join(__dirname, '../public/StandardMode-token.json'), JSON.stringify(tokenInfo, ' ', 2))
 

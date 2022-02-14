@@ -216,7 +216,7 @@ interface IUpConfig {
 
   custom_crc64_fun?: (opt: ICustomCrc64FunOpt) => Promise<string> //自定义 计算crc64的方法
   custom_sha1_fun?: (opt: ICustomSha1FunOpt) => Promise<string> //自定义 计算sha1的方法
-  custom_multi_sha1_fun?: (
+  custom_parts_sha1_fun?: (
     opt: ICustomMultiSha1FunOpt,
   ) => Promise<{part_info_list: IUpPartInfo[]; content_hash: string}> //自定义计算 sha1 方法 (分part)
 

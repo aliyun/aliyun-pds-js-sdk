@@ -5,7 +5,8 @@ import {PDSFilePermissionClient} from './api_file_permission'
 import {IBatchBaseReq} from './api_base'
 import {dirname, basename} from '../utils/PathUtil'
 import {PDSError} from '../utils/PDSError'
-import {sha1 as sha1Fun, getByteLength} from '../utils/FileUtil'
+import {sha1 as sha1Fun} from '../utils/CalcUtil'
+import {getByteLength} from '../utils/FileUtil'
 import {TMethod} from '..'
 
 export class PDSFileAPIClient extends PDSFilePermissionClient {

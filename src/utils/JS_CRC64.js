@@ -1,17 +1,18 @@
 /** @format */
-import {crc64, ready} from './crc64/wasm'
-import {readBlock, readStream} from './StreamUtil'
+import {crc64, ready} from './crc64/wasm/index.js'
+import {readBlock, readStream} from './StreamUtil.js'
+import {nodeProcessCalc} from './ForkUtil'
 
 const CHUNK_SIZE = 256 * 1024 //前端分块大小 500KB
-const PROGRESS_EMIT_VALVE = 0.1 // 进度超过多少,回调onProgress
+const PROGRESS_EMIT_STEP = 0.1 // 进度超过多少,回调onProgress
 
 export {
   ready, // wasm是异步载入的， await ready() 后才能使用 crc64 方法。
   crc64,
   crc64File, // for browser js
   crc64FileNode, // for node.js
+  crc64FileNodeProcess,
 }
-
 
 /**
  * 前端 js 计算crc64
@@ -50,7 +51,7 @@ async function crc64File(file, onProgress, getStopFlag, {chunkSize = CHUNK_SIZE}
 
       // 进度
       progress = (loaded * 100) / total
-      if (progress - last_progress >= PROGRESS_EMIT_VALVE) {
+      if (progress - last_progress >= PROGRESS_EMIT_STEP) {
         try {
           onProgress(progress)
         } catch (e) {
@@ -96,7 +97,7 @@ async function crc64FileNode(file_path, onProgress, getStopFlag, context = {}) {
 
       // 进度
       progress = (loaded * 100) / total
-      if (progress - last_progress >= PROGRESS_EMIT_VALVE) {
+      if (progress - last_progress >= PROGRESS_EMIT_STEP) {
         try {
           onProgress(progress)
         } catch (e) {
@@ -109,4 +110,27 @@ async function crc64FileNode(file_path, onProgress, getStopFlag, context = {}) {
   )
 
   return last
+}
+
+// 启动子进程
+/* istanbul ignore next */
+async function crc64FileNodeProcess(file_path, onProgress, getStopFlag, context = {}) {
+  const {path, highWaterMark = 64 * 1024} = context
+
+  onProgress = onProgress || (prog => {})
+  getStopFlag = getStopFlag || (() => false)
+
+  let obj = {
+    highWaterMark,
+    file_path,
+    progress_emit_step: PROGRESS_EMIT_STEP,
+  }
+
+  return await nodeProcessCalc(
+    path.join(__dirname, 'crc64/node-process-crc64.js'),
+    obj,
+    onProgress,
+    getStopFlag,
+    context,
+  )
 }

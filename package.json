@@ -12,17 +12,17 @@
     "start": "tsnd --respawn --transpile-only src/index.ts",
     "build:lib": "tsc --build tsconfig-cjs.json && tsc --build tsconfig-esm.json",
     "build:dist": "browserify src/index.browser.ts -p [ tsify  --declaration ] -s PDS_SDK -o  ./dist/aliyun-pds-js-sdk.js && uglifyjs  ./dist/aliyun-pds-js-sdk.js -o  ./dist/aliyun-pds-js-sdk.min.js",
-    "test:ft": "mocha -r espower-typescript/guess --reporter spec tests/ft/index.js tests/ft/*.test.{js,ts}",
-    "test:ut": "mocha -r espower-typescript/guess --reporter spec tests/ut/index.ts tests/ut/*.test.{js,ts}",
+    "test:ft": "mocha -r espower-typescript/guess --reporter spec tests/ft/index.js tests/ft/*.test.{js,mjs,ts}",
+    "test:ut": "mocha -r espower-typescript/guess --reporter spec tests/ut/index.ts tests/ut/*.test.{js,mjs,ts}",
     "pretest:web": "rm -rf dist && npm run build:dist && ts-node tests/web/gen-token.js",
     "test:web": "npm-run-all --parallel test:web_sv test:web_open",
     "test:web_sv": "static .",
     "test:web_open": "open http://localhost:8080/tests/web/",
     "test:ts": "mocha -r espower-typescript/guess tests/ut/index.ts",
     "test:js": "mocha tests/js/**/*.test.{js,mjs}",
-    "format": "prettier --write 'src/**/*.{js,ts}' 'tests/**/*.{js,ts}' 'examples/**/*.{js,ts}'",
+    "format": "prettier --write 'src/**/*.{js,mjs,ts}' 'tests/**/*.{js,mjs,ts}' 'examples/**/*.{js,mjs,ts}'",
     "lint": "eslint src --fix --ext .ts,.tsx ",
-    "cov": "nyc --reporter=lcov mocha -r espower-typescript/guess tests/ut/index.ts tests/ut/*.test.{ts,js}  tests/ft/*.test.{ts,js}",
+    "cov": "npm run build:lib && npm run build:dist && nyc --reporter=lcov mocha -r espower-typescript/guess tests/ut/index.ts tests/ut/*.test.{ts,mjs,js}  tests/ft/*.test.{ts,mjs,js}",
     "ci": "npm run lint && npm run cov"
   },
   "directories": {
@@ -32,6 +32,7 @@
     "extends": "@istanbuljs/nyc-config-typescript",
     "exclude": [
       "tests/**",
+      "lib/**",
       "src/utils/crc64/wasm/crc64-wasm.js",
       "src/utils/sha1/wasm/sha1-wasm.js",
       "src/utils/axios-node-adapter.js"

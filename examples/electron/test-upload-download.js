@@ -29,15 +29,30 @@ async function uploadTest() {
     onReady(t) {
       task = t
     },
-    onStateChange(cp, state) {
+    onStateChange(cp, state, error) {
+      if (state == 'success') {
+        showMessage('上传成功')
+      } else if (state == 'rapic_success') {
+        showMessage('秒传成功')
+      } else {
+        showMessage(state, error)
+      }
+
       console.log('🏞🏞🏞🏞', state)
     },
     onProgress(state, prog) {
-      console.log('🔫🔫🔫🔫', state, prog + '%', window.PDS_SDK.formatSize(task.speed) + '/s')
+      if (state == 'running') showMessage('正在上传:' + prog + '%, 速度' + window.PDS_SDK.formatSize(task.speed) + '/s')
+      else if (state == 'computing_hash') showMessage('正在计算:' + prog + '%')
+      else if (state == 'checking') {
+        showMessage('正在校验:' + prog + '%')
+      }
+      console.log('🤘🏻🤘🏻🤘🏻🤘🏻', state, prog + '%', window.PDS_SDK.formatSize(task.speed) + '/s')
     },
   })
 
   console.log('上传成功: ', cp.state, ', file id:', cp.file_id)
+
+  document.getElementById('btn-download').disabled = false
 }
 
 async function downloadTest() {
@@ -58,9 +73,20 @@ async function downloadTest() {
       task = t
     },
     onProgress(state, prog) {
-      console.log('🔫🔫🔫🔫', state, prog + '%', window.PDS_SDK.formatSize(task.speed) + '/s')
+      if (state == 'running') showMessage('正在上传:' + prog + '%, 速度' + window.PDS_SDK.formatSize(task.speed) + '/s')
+      else if (state == 'computing_hash') showMessage('正在计算:' + prog + '%')
+      else if (state == 'checking') {
+        showMessage('正在校验:' + prog + '%')
+      }
+
+      console.log('👇🏻👇🏻👇🏻👇🏻', state, prog + '%', window.PDS_SDK.formatSize(task.speed) + '/s')
     },
-    onStateChange(cp, state) {
+    onStateChange(cp, state, error) {
+      if (state == 'success') {
+        showMessage('下载成功')
+      } else {
+        showMessage(state, error)
+      }
       console.log('🏞🏞🏞🏞', state)
     },
   })

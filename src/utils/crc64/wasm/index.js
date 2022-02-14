@@ -1,6 +1,7 @@
 /** @format */
 
 import x, * as x2 from './crc64-wasm'
+import {buffToPtr} from '../../WasmUtil'
 
 const binding = x || x2
 
@@ -43,34 +44,6 @@ function uint64PtrToStr(uint64Ptr) {
   binding._free(strPtr)
   return str
 }
-/* istanbul ignore next */
-function stringToUint8Array(str) {
-  var arr = []
-  for (var i = 0, j = str.length; i < j; ++i) {
-    arr.push(str.charCodeAt(i))
-  }
-
-  var tmpUint8Array = new Uint8Array(arr)
-  return tmpUint8Array
-}
-
-function buffToPtr(buff) {
-  if (!buff.buffer || !buff.buffer instanceof ArrayBuffer) {
-    if (typeof buff == 'string') {
-      if (typeof Buffer == 'function' && Buffer.from) {
-        buff = Buffer.from(buff)
-      } else {
-        buff = stringToUint8Array(buff)
-      }
-    } else {
-      throw new Error('Invalid buffer type.')
-    }
-  }
-
-  const buffPtr = binding._malloc(buff.length)
-  binding.writeArrayToMemory(buff, buffPtr)
-  return buffPtr
-}
 /**
  *
  * @param {Buffer|string} buff  要计算的 buffer或者string
@@ -79,7 +52,7 @@ function buffToPtr(buff) {
  */
 function crc64(buff, prev = '0') {
   const prevPtr = strToUint64Ptr(prev)
-  const buffPtr = buffToPtr(buff)
+  const buffPtr = buffToPtr(buff, binding)
 
   raw.crc64(prevPtr, buffPtr, buff.length)
   const ret = uint64PtrToStr(prevPtr)
