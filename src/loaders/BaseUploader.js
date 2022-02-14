@@ -13,7 +13,7 @@ import {calc_uploaded} from '../utils/ChunkUtil'
 import {isNetworkError} from '../utils/HttpUtil'
 import {formatSize} from '../utils/Formatter'
 import {formatCheckpoint, initCheckpoint} from '../utils/CheckpointUtil'
-import {formatPercentsToFixed, calcUploadMaxConcurrency, removeItem, calcUploadHighWaterMark} from '../utils/LoadUtil'
+import {formatPercentsToFixed, calcUploadMaxConcurrency, removeItem} from '../utils/LoadUtil'
 
 import Debug from 'debug'
 const debug = Debug('PDSJS:BaseUploader')
@@ -118,7 +118,6 @@ export class BaseUploader extends BaseLoader {
       max_chunk_size, // 分片大小
       init_chunk_con, // 自定义指定并发数， chunk_con_auto==false 时生效
       chunk_con_auto, // 自动调整并发数策略
-      high_speed_mode, // 扩大stream缓冲区
 
       max_size_for_sha1, // 文件大小 小于此Bytes才秒传。太大了将直接上传。
       min_size_for_pre_sha1, // 文件大小超过此Bytes才预秒传，否则直接秒传。
@@ -143,7 +142,6 @@ export class BaseUploader extends BaseLoader {
       state_changed,
       progress_changed,
       part_completed,
-      set_high_water_mark,
       set_calc_max_con,
     } = configs
 
@@ -175,7 +173,6 @@ export class BaseUploader extends BaseLoader {
     this.max_chunk_size = parseInt(max_chunk_size || MAX_CHUNK_SIZE)
     this.init_chunk_con = init_chunk_con || INIT_MAX_CON
     this.chunk_con_auto = chunk_con_auto || false
-    this.high_speed_mode = high_speed_mode || false
 
     this.max_size_for_sha1 = max_size_for_sha1 || MAX_SIZE_FOR_SHA1
     this.min_size_for_pre_sha1 = min_size_for_pre_sha1 || MIN_SIZE_FOR_PRE_SHA1
@@ -199,7 +196,6 @@ export class BaseUploader extends BaseLoader {
     this.part_completed = part_completed
 
     // debug
-    this.set_high_water_mark = set_high_water_mark || calcUploadHighWaterMark
     this.set_calc_max_con = this.chunk_con_auto
       ? set_calc_max_con || calcUploadMaxConcurrency
       : () => {
@@ -739,7 +735,7 @@ export class BaseUploader extends BaseLoader {
     let result
 
     try {
-      result = await this.http_client_call('createFile', opt, {ignoreError: parallel_upload})
+      result = await this.http_client_call('createFile', opt, {ignoreError: !!parallel_upload})
     } catch (e) {
       if (e.code === 'InvalidParameterNotSupported.ParallelUpload' && this.parallel_upload) {
         // if (Global) {
@@ -1077,7 +1073,7 @@ export class BaseUploader extends BaseLoader {
   /* istanbul ignore next */
   async doUploadPart(partInfo, opt) {
     try {
-      return await this._axiosUploadPart(opt)
+      return await this._axiosUploadPart(partInfo, opt)
     } catch (e) {
       const er = await doesFileExist(this.file, this.context)
       if (er) throw er
@@ -1100,13 +1096,16 @@ export class BaseUploader extends BaseLoader {
       }
     }
   }
-  async _axiosUploadPart(opt) {
+  async _axiosUploadPart(partInfo, opt) {
     const {CancelToken} = Axios
     const source = CancelToken.source()
     this.cancelSources.push(source)
 
     try {
-      return await this.http_client_call('axiosUploadPart', {cancelToken: source.token, ...opt})
+      return await this.http_client_call('axiosUploadPart', opt, {
+        cancelToken: source.token,
+        key: partInfo.part_number,
+      })
     } catch (e) {
       if (Axios.isCancel(e)) {
         throw new Error('stopped')
@@ -1259,9 +1258,6 @@ export class BaseUploader extends BaseLoader {
       return fs.createReadStream(this.file.path, {
         start,
         end,
-        highWaterMark: this.high_speed_mode
-          ? this.set_high_water_mark(this.file.size, partInfo, this.speed)
-          : undefined,
       })
     } else {
       // 浏览器

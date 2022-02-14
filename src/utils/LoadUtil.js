@@ -9,8 +9,6 @@ export {
   formatPercentsToFixed,
   removeItem,
   calcUploadMaxConcurrency,
-  calcUploadHighWaterMark,
-  calcDownloadHighWaterMark,
   calcDownloadMaxConcurrency,
 }
 
@@ -78,11 +76,6 @@ function removeItem(arr, item) {
     }
   }
 }
-function calcDownloadHighWaterMark() {
-  // 不能超过 Number.MAX_SAFE_INTEGER   9007199254740991
-  // 设置 stream 每次 onData chunk 的大小
-  return 128 * 1024
-}
 
 // 根据网速调整下载并发量
 function calcDownloadMaxConcurrency(speed, chunkSize, lastConcurrency) {
@@ -99,26 +92,6 @@ function calcDownloadMaxConcurrency(speed, chunkSize, lastConcurrency) {
   }
 }
 
-function calcUploadHighWaterMark() {
-  // 不能超过 Number.MAX_SAFE_INTEGER   9007199254740991
-  // 设置 stream 每次 onData chunk 的大小
-  // return READ_STREAM_HIGH_WATER_MARK;
-  return 1024 * 1024
-}
-
-// 根据网速调整上传并发量
-// function calcMaxConcurrency(speed, chunkSize, lastConcurrency) {
-//   let block = chunkSize * lastConcurrency
-//   if (speed > block * 0.9) {
-//     //激进上涨
-//     return lastConcurrency + 5;
-//   }
-//   else {
-//     //保守下跌
-//     if (lastConcurrency > 5) return lastConcurrency - 1;
-//     return 5;
-//   }
-// }
 function calcUploadMaxConcurrency(speed, chunkSize, lastConcurrency) {
   const block = chunkSize * lastConcurrency
   if (speed > block * 0.9) {

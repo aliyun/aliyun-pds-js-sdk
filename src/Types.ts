@@ -212,7 +212,6 @@ interface IUpConfig {
   max_chunk_size?: number // 分片大小
   init_chunk_con?: number // 自定义指定并发数， chunk_con_auto==false 时生效
   chunk_con_auto?: boolean // 自动调整并发数策略
-  high_speed_mode?: boolean // 扩大stream缓冲区
 
   custom_crc64_fun?: (opt: ICustomCrc64FunOpt) => Promise<string> //自定义 计算crc64的方法
   custom_sha1_fun?: (opt: ICustomSha1FunOpt) => Promise<string> //自定义 计算sha1的方法
@@ -234,7 +233,6 @@ interface IUpConfig {
   progress_changed?: (state: UploadState, progress: number) => void
   part_completed?: (cp: IUpCheckpoint, part: IUpPartInfo) => void
 
-  set_high_water_mark?: (file_size: number, part: IUpPartInfo, speed: number) => number
   set_calc_max_con?: (speed: number, chunk_size: number, max_concurrency: number) => number
 }
 
@@ -288,15 +286,12 @@ interface IDownConfig {
   max_chunk_size?: number
   init_chunk_con?: number
   chunk_con_auto?: boolean
-  high_speed_mode?: boolean
-  // crc64_running_mode?: CheckCRC64Mode // "end","part", 最后crc，还是分片crc
 
   custom_crc64_fun?: (opt: ICustomCrc64FunOpt) => Promise<string> //自定义 计算crc64的方法
 
   progress_changed?: (state: DownloadState, progress: number) => void
   state_changed?: (cp: IDownCheckpoint, state: DownloadState, error?: PDSError) => void
   part_completed?: (cp: IDownCheckpoint, part: IDownPartInfo) => void
-  set_high_water_mark?: (file_size: number, part: IUpPartInfo, speed: number) => number
   set_calc_max_con?: (speed: number, chunk_size: number, last_concurrency: number) => number
 }
 

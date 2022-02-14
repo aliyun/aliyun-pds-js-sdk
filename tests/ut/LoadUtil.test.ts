@@ -10,18 +10,11 @@ describe('LoadUtil', function () {
     assert(LoadUtil.formatPercentsToFixed(12.11235) == 1211.24)
   })
 
-  it('calcUploadHighWaterMark', () => {
-    assert(LoadUtil.calcUploadHighWaterMark() == 1024 * 1024)
-  })
-
   it('calcUploadMaxConcurrency', () => {
     const M = 1024 * 1024
     assert(LoadUtil.calcUploadMaxConcurrency(1 * M, 5 * M, 3) == 3)
     assert(LoadUtil.calcUploadMaxConcurrency(1 * M, 3 * M, 2) == 2)
     assert(LoadUtil.calcUploadMaxConcurrency(4 * M, 3 * M, 3) == 5)
-  })
-  it('calcDownloadHighWaterMark', () => {
-    assert(LoadUtil.calcDownloadHighWaterMark() == 128 * 1024)
   })
 
   it('calcDownloadMaxConcurrency', () => {

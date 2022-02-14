@@ -7,7 +7,6 @@ import {
   randomHex,
   fixFileName4Windows,
   formatProgress,
-  calcDownloadHighWaterMark,
   calcDownloadMaxConcurrency,
 } from '../utils/LoadUtil'
 import {BaseLoader} from './BaseLoader'
@@ -93,9 +92,6 @@ export class Downloader extends BaseLoader {
       max_chunk_size,
       init_chunk_con,
       chunk_con_auto,
-      high_speed_mode,
-      // crc64_running_mode, // "end","part", 最后crc，还是分片crc
-      // crc64_fun, // 计算crc64的方法
 
       custom_crc64_fun, //自定义 计算crc64的方法
 
@@ -104,7 +100,6 @@ export class Downloader extends BaseLoader {
       progress_changed,
       state_changed,
       part_completed,
-      set_high_water_mark,
       set_calc_max_con,
     } = configs
 
@@ -137,7 +132,6 @@ export class Downloader extends BaseLoader {
 
     this.max_chunk_size = parseInt(max_chunk_size || MAX_CHUNK_SIZE)
     this.init_chunk_con = init_chunk_con || INIT_MAX_CON
-    this.high_speed_mode = high_speed_mode || false
     this.chunk_con_auto = chunk_con_auto || false
     this.checking_crc = checking_crc !== false
 
@@ -153,7 +147,6 @@ export class Downloader extends BaseLoader {
     this.progress_changed = progress_changed
     this.part_completed = part_completed
     // debug
-    this.set_high_water_mark = set_high_water_mark || calcDownloadHighWaterMark
     this.set_calc_max_con = this.chunk_con_auto
       ? set_calc_max_con || calcDownloadMaxConcurrency
       : () => {
@@ -426,15 +419,6 @@ export class Downloader extends BaseLoader {
     this.doStart()
   }
   async doStart() {
-    // 外部调用时，先 wait(), 不会直接 start()
-    // if (['error'].includes(this.state)) {
-    //   //从头来
-    //   delete this.download_id;
-    //   delete this.end_time;
-    //   delete this.message;
-    //   this.initChunks();
-    // }
-
     this.stopFlag = false
     this.cancelFlag = false
     this.on_calc_part_crc_success = false
@@ -459,12 +443,6 @@ export class Downloader extends BaseLoader {
       this.initChunks()
     }
 
-    // if(this.verbose){
-    //   console.log('---------------')
-    //   console.log(this.part_info_list.map(n=>n.part_number+':'+n.crc64).join('\n'))
-    //   console.log('---------------')
-    // }
-
     // 只有create了，task id 才正式生成。
     await this.create()
 
@@ -478,21 +456,6 @@ export class Downloader extends BaseLoader {
 
     this.download_start_time = Date.now()
     this.timeLogStart('download', Date.now())
-
-    // if (this.checking_crc) {
-    //   // 上次分片下载完，没有计算crc的
-    //   if (this.crc64_running_mode == 'part') {
-    //     // 未完成的 part crc
-    //     for (const n of this.part_info_list) {
-    //       if (n.done && (!n.crc64 || n.crc64 === '0')) {
-    //         // 异步启动
-    //         this.asyncPartCrc(n, () => {
-    //           this.notifyPartCompleted(n)
-    //         })
-    //       }
-    //     }
-    //   }
-    // }
 
     // fix created 状态无法 stopped
     if (this.cancelFlag) {
@@ -566,7 +529,8 @@ export class Downloader extends BaseLoader {
   }
 
   async http_client_call(action, opt, options = {}) {
-    const _key = Math.random().toString(36).substring(2)
+    const _key = options.key || Math.random().toString(36).substring(2)
+    delete options.key
     this.timeLogStart(action + '-' + _key, Date.now())
     try {
       return await this.vendors.http_client[action](opt, options)
@@ -681,26 +645,6 @@ export class Downloader extends BaseLoader {
     this.speed = 0
   }
 
-  // hasNextPart(checkRunning) {
-  //   if (checkRunning) {
-  //     for (let n of this.part_info_list) {
-  //       if (!n.done && !n.running) return true
-  //     }
-  //   }
-  //   else {
-  //     for (let n of this.part_info_list) {
-  //       if (!n.done) return true
-  //     }
-  //   }
-  //   return false;
-  // }
-
-  // getNextPart() {
-  //   for (const n of this.part_info_list) {
-  //     if (!n.done && !n.running) return n
-  //   }
-  //   return null
-  // }
   getNextPart() {
     let allDone = true
     let allRunning = true
@@ -784,7 +728,7 @@ export class Downloader extends BaseLoader {
       throw e
     } finally {
       // 最后
-      this.updateProgress(this.state, 100)
+      this.notifyProgress(this.state, 100)
       this.stopCalcSpeed()
     }
   }
@@ -811,7 +755,7 @@ export class Downloader extends BaseLoader {
     }
 
     try {
-      const streamResult = await this.downloadPartRetry({
+      const streamResult = await this.downloadPartRetry(partInfo, {
         method: 'get',
         url: this.download_url,
         headers: {
@@ -899,21 +843,10 @@ export class Downloader extends BaseLoader {
     }
     this.emit('partialcomplete', cp, part)
   }
-  // async asyncPartCrc(partInfo, callback) {
-  //   // console.log(`[${this.file.name}] 启动异步计算Part crc:`, partInfo.part_number)
-  //   try {
-  //     partInfo.crc64_st = Date.now()
-  //     partInfo.crc64 = await this.calcFilePartCRC64(partInfo)
-  //     partInfo.crc64_et = Date.now()
-  //     if (typeof callback === 'function') callback()
-  //     if (this.on_calc_part_crc_success) this.on_calc_part_crc_success(partInfo)
-  //   } catch (e) {
-  //     await this.handleError(e || new Error(`calc part crc failed:${this.file.name}`, partInfo))
-  //   }
-  // }
+
   /* istanbul ignore next */
-  async downloadPartRetry(opt) {
-    return await this.vendors.http_util.callRetry(this.doDownloadPart, this, [opt], {
+  async downloadPartRetry(partInfo, opt) {
+    return await this.vendors.http_util.callRetry(this.doDownloadPart, this, [partInfo, opt], {
       verbose: this.verbose,
       getStopFlagFun: () => {
         return this.stopFlag
@@ -921,9 +854,9 @@ export class Downloader extends BaseLoader {
     })
   }
 
-  async doDownloadPart(opt) {
+  async doDownloadPart(partInfo, opt) {
     try {
-      return await this._axiosDownloadPart(opt)
+      return await this._axiosDownloadPart(partInfo, opt)
     } catch (e) {
       if (
         e.response &&
@@ -936,21 +869,21 @@ export class Downloader extends BaseLoader {
         if (this.verbose) console.warn('download_url 过期, 需要重新获取')
         await this.getDownloadUrl()
         opt.url = this.download_url
-        return await this._axiosDownloadPart(opt)
+        return await this._axiosDownloadPart(partInfo, opt)
       } else {
         throw e
       }
     }
   }
-  async _axiosDownloadPart(opt) {
+  async _axiosDownloadPart(partInfo, opt) {
     const {CancelToken} = Axios
     const source = CancelToken.source()
     this.cancelSources.push(source)
 
     try {
-      const result = await this.http_client_call('axiosDownloadPart', {
+      const result = await this.http_client_call('axiosDownloadPart', opt, {
+        key: partInfo.part_number,
         cancelToken: source.token,
-        ...opt,
       })
 
       // check size 和 md5 等值，如果文件有变化，则失败
@@ -996,9 +929,6 @@ export class Downloader extends BaseLoader {
         // autoClose: true,
         flags: 'r+',
         start: partInfo.from + partInfo.loaded,
-        highWaterMark: this.high_speed_mode
-          ? this.set_high_water_mark(this.file.size, partInfo, this.speed)
-          : undefined,
       })
 
       stream.on('data', chunk => {
@@ -1033,16 +963,8 @@ export class Downloader extends BaseLoader {
         }
       })
       ws.on('error', e => {
-        // console.log('--errr ws',partInfo.part_number, e)
         reject(e)
       })
-
-      // ws.on('close', (a)=>{
-      //   console.log('--close ws',partInfo.part_number, a)
-      // })
-      // stream.on('close', (a)=>{
-      //   console.log('--close stream',partInfo.part_number, a)
-      // })
     })
   }
 
@@ -1052,8 +974,6 @@ export class Downloader extends BaseLoader {
       running_loaded += n.loaded
     })
     this.loaded = running_loaded
-
-    // this.loaded = this.done_part_loaded + running_loaded
 
     // console.log('---on data',partInfo.part_number, partInfo.part_size, partInfo.loaded,  this.loaded, this.done_part_loaded, chunk.byteLength)
     this.progress = formatProgress(this.loaded / this.file.size)
