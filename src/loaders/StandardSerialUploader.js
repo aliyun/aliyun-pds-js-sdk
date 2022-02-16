@@ -148,6 +148,7 @@ export class StandardSerialUploader extends BaseUploader {
     let _sha1_fun = this.custom_sha1_fun || this.vendors.calc_util.calcFileSha1
     let result = await _sha1_fun({
       file,
+      verbose: this.verbose,
       pre_size,
       process_calc_sha1_size: this.process_calc_sha1_size,
       onProgress,

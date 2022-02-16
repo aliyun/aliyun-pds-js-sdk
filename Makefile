@@ -1,7 +1,9 @@
+
+build:worker lib dist
+
 i:
 	npm i
 
-build:lib dist
 dist:
 	rm -rf dist
 	npm run build:dist
@@ -17,6 +19,10 @@ js:
 	npm run test:js
 web:
 	npm run test:web
+
+worker:
+	npm run build:worker:sha1
+
 cov:
 	npm run cov
 	open coverage/lcov-report/index.html

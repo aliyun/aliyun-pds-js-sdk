@@ -1,8 +1,9 @@
 /** @format */
 
 import {ready, sha1, createSha1} from './sha1/js-sha1-origin'
-import {readBlock, readStream} from './StreamUtil.js'
-import {nodeProcessCalc} from './ForkUtil'
+import {readBlock, readStream, getArrayBufferFromBlob} from './StreamUtil.js'
+import {nodeProcessCalc, webWorkerCalc} from './ForkUtil'
+import {createSha1WebWorkerBlob} from './sha1/webworker'
 
 const CHUNK_SIZE = 1024 * 1024 //1MB
 const PROGRESS_EMIT_STEP = 0.1 // 进度超过多少,回调onProgress
@@ -13,13 +14,56 @@ export {
   createSha1,
   // 下面几个个方法会自动调用 await ready()
   calcFileSha1,
+  calcFileSha1Worker,
   calcFilePartsSha1,
+  calcFilePartsSha1Worker,
   // for node.js
   calcFileSha1Node, // 串行
   calcFileSha1NodeProcess,
   calcFilePartsSha1Node, // 并行，按part计算中间值
   calcFilePartsSha1NodeProcess,
   calcFilePartsSha1NodeWorker,
+}
+/* istanbul ignore next */
+async function calcFileSha1Worker(file, preSize, onProgress, getStopFlag) {
+  await ready()
+
+  onProgress = onProgress || (prog => {})
+  getStopFlag = getStopFlag || (() => false)
+
+  let obj = {
+    action: 'sha1',
+    preSize,
+    chunkSize: CHUNK_SIZE,
+    file: await getArrayBufferFromBlob(file, new FileReader()),
+    progress_emit_step: PROGRESS_EMIT_STEP,
+  }
+
+  let blob = createSha1WebWorkerBlob()
+  return await webWorkerCalc(blob, obj, onProgress, getStopFlag)
+}
+/* istanbul ignore next */
+async function calcFilePartsSha1Worker(file, parts, onProgress, getStopFlag) {
+  await ready()
+
+  onProgress = onProgress || (prog => {})
+  getStopFlag = getStopFlag || (() => false)
+
+  let obj = {
+    action: 'sha1Parts',
+    parts,
+    chunkSize: CHUNK_SIZE,
+    file: await getArrayBufferFromBlob(file, new FileReader()),
+    progress_emit_step: PROGRESS_EMIT_STEP,
+  }
+
+  let blob = createSha1WebWorkerBlob()
+  let result = await webWorkerCalc(blob, obj, onProgress, getStopFlag)
+  return {
+    part_info_list: result.part_info_list,
+    content_hash: result.content_hash,
+    content_hash_name: result.content_hash_name,
+  }
 }
 
 /**

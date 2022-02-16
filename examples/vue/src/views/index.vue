@@ -42,6 +42,9 @@ onMounted(async () => {
           verbose: true,
           parallel_upload: true,
           ignore_rapid: true,
+          
+          
+
           onReady(t) {
             task = t
           },

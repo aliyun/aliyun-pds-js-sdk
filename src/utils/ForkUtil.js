@@ -1,6 +1,33 @@
 /** @format */
 
-export {nodeProcessCalc, nodeWorkerCalc}
+export {nodeProcessCalc, nodeWorkerCalc, webWorkerCalc}
+/* istanbul ignore next */
+async function webWorkerCalc(script_path, params, onProgress, getStopFlag) {
+  return await new Promise((resolve, reject) => {
+    const worker = new Worker(script_path)
+    worker.onmessage = ({data}) => {
+      switch (data.type) {
+        case 'ready':
+          worker.postMessage({type: 'init', workerData: params}, [params.file])
+          break
+        case 'progress':
+          if (getStopFlag()) {
+            worker.terminate()
+            reject(new Error('stopped'))
+            return
+          }
+          onProgress(data.progress)
+          break
+        case 'result':
+          resolve(data.result)
+          break
+        case 'error':
+          reject(typeof data.error == 'string' ? new Error(data.error) : data.error)
+          break
+      }
+    }
+  })
+}
 
 /* istanbul ignore next */
 async function nodeProcessCalc(script_path, params, onProgress, getStopFlag, context) {

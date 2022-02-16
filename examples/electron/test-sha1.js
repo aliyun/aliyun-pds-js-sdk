@@ -8,6 +8,12 @@ window.addEventListener('load', function () {
   document.getElementById('btn-sha1-mul-browser').onclick = () => {
     sha1Browser_mul()
   }
+  document.getElementById('btn-sha1-worker-browser').onclick = () => {
+    sha1BrowserWorker()
+  }
+  document.getElementById('btn-sha1-mul-worker-browser').onclick = () => {
+    sha1BrowserWorker_mul()
+  }
   document.getElementById('btn-sha1-node').onclick = () => {
     sha1Node()
   }
@@ -124,4 +130,44 @@ async function sha1Browser() {
   )
   console.log(`结果： ${x}, 耗时：${(Date.now() - d) / 1000}s`)
   console.log(`-----browser 串行 sha1---------`)
+}
+
+async function sha1BrowserWorker_mul() {
+  let file = await selectFileInBrowser()
+  if (!file) return
+  console.log(`-----browser Worker 并行 sha1---------`)
+
+  let [parts, part_size] = window.PDS_SDK.ChunkUtil.init_chunks_parallel(file.size, [], 5 * 1024 * 1024)
+  console.log('分片:', parts.length, '每片大小:', part_size)
+
+  let d = Date.now()
+  let result = await window.PDS_SDK.JS_SHA1.calcFilePartsSha1Worker(
+    file,
+    parts,
+    prog => {
+      console.log(prog)
+    },
+    null,
+  )
+  console.log(result)
+  console.log(`结果：${result.content_hash}, 耗时：${(Date.now() - d) / 1000}s`)
+  console.log(`-----browser Worker 并行 sha1---------`)
+}
+
+async function sha1BrowserWorker() {
+  let file = await selectFileInBrowser()
+  if (!file) return
+  console.log(`-----browser Worker 串行 sha1---------`)
+
+  let d = Date.now()
+  let x = await window.PDS_SDK.JS_SHA1.calcFileSha1Worker(
+    file,
+    0,
+    prog => {
+      console.log(prog)
+    },
+    null,
+  )
+  console.log(`结果： ${x}, 耗时：${(Date.now() - d) / 1000}s`)
+  console.log(`-----browser Worker 串行 sha1---------`)
 }

@@ -26,7 +26,7 @@ const LIMIT_PART_NUM = 9000 // OSS分片数最多不能超过1w片，这里取�
 const MAX_SIZE_FOR_SHA1 = 10 * 1024 * 1024 * 1024 // 10GB
 const MIN_SIZE_FOR_PRE_SHA1 = 100 * 1024 * 1024 // 100MB
 const PROCESS_CALC_CRC64_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 crc64
-const PROCESS_CALC_SHA1_SIZE = 100 * 1024 * 1024 // 文件大小超过将启用子进程计算 sha1
+const PROCESS_CALC_SHA1_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 sha1
 
 console.timeLog = console.timeLog || console.timeEnd
 
@@ -692,7 +692,8 @@ export class BaseUploader extends BaseLoader {
   }
 
   async http_client_call(action, opt, options = {}) {
-    const _key = Math.random().toString(36).substring(2)
+    const _key = options.key || Math.random().toString(36).substring(2)
+    delete options.key
     this.timeLogStart(action + '-' + _key, Date.now())
     try {
       return await this.vendors.http_client[action](opt, options)
@@ -1231,6 +1232,7 @@ export class BaseUploader extends BaseLoader {
     const _crc64_fun = this.custom_crc64_fun || this.vendors.calc_util.calcFileCrc64
     let result = await _crc64_fun({
       file: this.file,
+      verbose: this.verbose,
       process_calc_crc64_size: this.process_calc_crc64_size,
       onProgress: progress => {
         this.checking_progress = Math.round(progress) // 0-100

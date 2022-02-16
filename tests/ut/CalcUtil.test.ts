@@ -28,6 +28,7 @@ describe('CalcUtil', function () {
       let prog1 = 0
       let result = await calcFileSha1({
         file: null,
+        verbose: true,
         file_path: p,
         pre_size: 0,
         process_calc_sha1_size: 2,
@@ -50,6 +51,8 @@ describe('CalcUtil', function () {
       let prog1 = 0
       let result = await calcFileSha1({
         file: null,
+        verbose: true,
+
         file_path: p,
         pre_size: 0,
         process_calc_sha1_size: 10,
@@ -82,6 +85,8 @@ describe('CalcUtil', function () {
       let prog1 = 0
       let result = await calcFilePartsSha1({
         file: null,
+        verbose: true,
+
         file_path: p,
         part_info_list: parts,
         process_calc_sha1_size: 2,
@@ -109,6 +114,8 @@ describe('CalcUtil', function () {
       let prog1 = 0
       let result = await calcFilePartsSha1({
         file: null,
+        verbose: true,
+
         file_path: p,
         part_info_list: parts,
         process_calc_sha1_size: 100 * 1024 * 1024,
@@ -131,6 +138,8 @@ describe('CalcUtil', function () {
       let prog1 = 0
       let result = await calcFileCrc64({
         file: null,
+        verbose: true,
+
         file_path: p,
         process_calc_crc64_size: 10,
         onProgress: prog => {
@@ -151,6 +160,7 @@ describe('CalcUtil', function () {
       let prog1 = 0
       let result = await calcFileCrc64({
         file: null,
+        verbose: true,
         file_path: p,
         process_calc_crc64_size: 2,
         onProgress: prog => {

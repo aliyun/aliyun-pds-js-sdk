@@ -1,5 +1,5 @@
 /** @format */
-export {readBlock, readStream}
+export {readBlock, readStream, getArrayBufferFromBlob}
 
 async function readStream(readable, onData, getStopFlag) {
   // let errored = false

@@ -1036,6 +1036,7 @@ export class Downloader extends BaseLoader {
     const _crc64_fun = this.custom_crc64_fun || this.vendors.calc_util.calcFileCrc64
 
     const result = await _crc64_fun({
+      verbose: this.verbose,
       file_path: this.file.temp_path,
       process_calc_crc64_size: this.process_calc_crc64_size,
       onProgress: progress => {

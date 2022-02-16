@@ -1,2 +1,6 @@
 tests/web/mocha.js
 tests/web/mocha.css
+src/utils/sha1/webworker/index.js
+src/utils/sha1/webworker/src.js
+
+*.min.js

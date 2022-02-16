@@ -97,6 +97,7 @@ export class StandardParallelUploader extends BaseUploader {
 
     let {part_info_list, content_hash} = await _parts_sha1_fun({
       file,
+      verbose: this.verbose,
       process_calc_sha1_size: this.process_calc_sha1_size,
       part_info_list: this.part_info_list,
       onProgress,

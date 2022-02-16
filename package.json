@@ -12,6 +12,7 @@
     "start": "tsnd --respawn --transpile-only src/index.ts",
     "build:lib": "tsc --build tsconfig-cjs.json && tsc --build tsconfig-esm.json",
     "build:dist": "browserify src/index.browser.ts -p [ tsify  --declaration ] -s PDS_SDK -o  ./dist/aliyun-pds-js-sdk.js && uglifyjs  ./dist/aliyun-pds-js-sdk.js -o  ./dist/aliyun-pds-js-sdk.min.js",
+    "build:worker:sha1": "node bin/sha1-worker-builder.js",
     "test:ft": "mocha -r espower-typescript/guess --reporter spec tests/ft/index.js tests/ft/*.test.{js,mjs,ts}",
     "test:ut": "mocha -r espower-typescript/guess --reporter spec tests/ut/index.ts tests/ut/*.test.{js,mjs,ts}",
     "pretest:web": "rm -rf dist && npm run build:dist && ts-node tests/web/gen-token.js",
@@ -35,6 +36,7 @@
       "lib/**",
       "src/utils/crc64/wasm/crc64-wasm.js",
       "src/utils/sha1/wasm/sha1-wasm.js",
+      "src/utils/sha1/webworker/",
       "src/utils/axios-node-adapter.js"
     ],
     "extension": [

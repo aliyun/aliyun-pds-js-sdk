@@ -39,5 +39,7 @@ async function crc64Test_node(useProcess) {
     () => {},
     window.PDS_SDK.Context,
   )
-  console.log(`result: ${result}, 耗时：${(Date.now() - start) / 1000}s`)
+  console.log(
+    `${useProcess ? '使用 node 子进程计算 crc64,' : ''} result: ${result}, 耗时：${(Date.now() - start) / 1000}s`,
+  )
 }
