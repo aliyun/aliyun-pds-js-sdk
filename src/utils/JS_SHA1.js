@@ -1,6 +1,6 @@
 /** @format */
-
 import {ready, sha1, createSha1} from './sha1/js-sha1-origin'
+import {ready as wasmReady, createSha1 as wasmCreateSha1} from './sha1/wasm'
 import {readBlock, readStream, getArrayBufferFromBlob} from './StreamUtil.js'
 import {nodeProcessCalc, webWorkerCalc} from './ForkUtil'
 import {createSha1WebWorkerBlob} from './sha1/webworker'
@@ -237,14 +237,14 @@ async function calcFileSha1NodeProcess(file_path, size, onProgress, getStopFlag,
 }
 
 async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, context) {
-  await ready()
+  await wasmReady()
   const {fs, highWaterMark} = context
   let total = fs.statSync(file_path).size
 
   onProgress = onProgress || (prog => {})
   getStopFlag = getStopFlag || (() => false)
 
-  let hash = createSha1()
+  let hash = wasmCreateSha1()
   let loaded = 0
   let stream
   let lastH = []

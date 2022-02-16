@@ -1,11 +1,14 @@
 # Release Notes
 
+## 0.1.5
+
+* perf: node进程并发上传计算sha1 改用 wasm 更快。
 ## 0.1.4
 
 * refactor: 优化上传下载速度计算方法。
-* pref: 计算 sha1 方法优化，增加子进程，worker，wasm等方式。
+* perf: 计算 sha1 方法优化，增加子进程，worker，wasm等方式。
 * refactor: 标准模式并发上传去掉 crc64 计算流程。
-* fix: 修复token中expire_time格式错误信息
+* fix: 修复token中expire_time格式错误信息。
 
 ## 0.1.3
 
