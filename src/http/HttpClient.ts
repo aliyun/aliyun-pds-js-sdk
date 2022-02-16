@@ -72,7 +72,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       throw new PDSError('token_info.access_token is required', 'InvalidParameter')
     }
     if (!tokenInfo.expire_time || isNaN(Date.parse(tokenInfo.expire_time))) {
-      throw new PDSError('token_info.expire_time is required', 'InvalidParameter')
+      throw new PDSError('Invalid token_info.expire_time', 'InvalidParameter')
     }
   }
 
