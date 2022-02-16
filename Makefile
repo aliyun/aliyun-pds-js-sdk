@@ -1,5 +1,5 @@
 
-build:worker lib dist
+build:lib dist
 
 i:
 	npm i

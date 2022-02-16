@@ -1,5 +1,12 @@
 # Release Notes
 
+## 0.1.4
+
+* refactor: 优化上传下载速度计算方法。
+* pref: 计算 sha1 方法优化，增加子进程，worker，wasm等方式。
+* refactor: 标准模式并发上传去掉 crc64 计算流程。
+* fix: 修复token中expire_time格式错误信息
+
 ## 0.1.3
 
 * feat: 增加方法 getFileDownloadUrl。
