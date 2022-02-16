@@ -4,14 +4,17 @@ const conf = window.Config
 
 window.onload = function () {
   document.getElementById('btn-upload').onclick = () => {
-    uploadTest()
+    uploadTest({ignore_rapid: true, parallel_upload: true})
+  }
+  document.getElementById('btn-upload-serial').onclick = () => {
+    uploadTest({ignore_rapid: true, parallel_upload: false})
   }
   document.getElementById('btn-download').onclick = () => {
     downloadTest()
   }
 }
 let cp
-async function uploadTest() {
+async function uploadTest({ignore_rapid, parallel_upload}) {
   var client = await window.getPDSClient('StandardMode')
 
   let p = await window.getUploadFile()
@@ -23,8 +26,8 @@ async function uploadTest() {
   }
   let task
   cp = await client.uploadFile(p, to, {
-    ignore_rapid: true,
-    parallel_upload: true,
+    ignore_rapid,
+    parallel_upload,
     verbose: true,
     onReady(t) {
       task = t

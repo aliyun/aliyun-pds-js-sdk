@@ -184,7 +184,8 @@ export class BaseUploader extends BaseLoader {
     this.process_calc_crc64_size = process_calc_crc64_size || PROCESS_CALC_CRC64_SIZE
     this.process_calc_sha1_size = process_calc_sha1_size || PROCESS_CALC_SHA1_SIZE
 
-    this.checking_crc = checking_crc !== false
+    // 标准模式（串行）和托管模式需要通过crc64来校验文件完整性，标准模式(并发)通过sha1校验文件完整性
+    this.checking_crc = 'StandardMode' == path_type && parallel_upload ? false : checking_crc !== false
     this.limit_part_num = limit_part_num || LIMIT_PART_NUM
 
     // 同名 策略
