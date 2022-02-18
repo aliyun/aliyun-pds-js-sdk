@@ -1,8 +1,13 @@
 # Release Notes
 
+## 0.1.6
+
+* fix: 修复 sha1 方法。
+
 ## 0.1.5
 
 * perf: node进程并发上传计算sha1 改用 wasm 更快。
+
 ## 0.1.4
 
 * refactor: 优化上传下载速度计算方法。

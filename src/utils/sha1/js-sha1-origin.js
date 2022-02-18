@@ -8,7 +8,7 @@ export {ready, sha1, createSha1}
 
 // 一次性计算
 function sha1(buff) {
-  return Sha1(buff).toUpperCase()
+  return Sha1.create().update(buff).hex().toUpperCase()
 }
 
 function createSha1() {
