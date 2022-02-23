@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.1.7
+
+feat: 增加 getBreadcrumbFolderList 方法，支持 share_id 参数。
+
 ## 0.1.6
 
 * fix: 修复 sha1 方法。

@@ -243,11 +243,9 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
     return _path
   }
 
-  protected async getFolderFromCache(
-    drive_id: string,
-    file_id: string,
-    options?: AxiosRequestConfig,
-  ): Promise<IParentFolderNameId> {
+  protected async getFolderFromCache(req: IGetFolderReq, options?: AxiosRequestConfig): Promise<IParentFolderNameId> {
+    let {drive_id, share_id, file_id} = req
+
     if (this.folderIdMap[file_id]) {
       return this.folderIdMap[file_id]
     }
@@ -257,6 +255,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
       result = await this.getFile(
         {
           drive_id,
+          share_id,
           file_id,
         },
         options,
@@ -273,6 +272,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
         }
       } else throw error
     }
+
     if (result.file_id) {
       this.folderIdMap[file_id] = {
         name: result.name,
@@ -294,14 +294,20 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
    * @param end_parent_id 截止父目录ID， 默认 root
    * @returns 多级面包屑目录信息 [{file_id, name, is_forbidden?:true},...]
    */
-  async getBreadcrumbFolders(drive_id: string, file_id: string, end_parent_id: string = 'root') {
+  getBreadcrumbFolders(drive_id: string, file_id: string, end_parent_id: string = 'root') {
+    return this.getBreadcrumbFolderList({drive_id, file_id, end_parent_id})
+  }
+  async getBreadcrumbFolderList(req: IGetBreadcrumbReq, options?: AxiosRequestConfig) {
+    let {file_id, end_parent_id = 'root'} = req
+
     const t: Omit<IParentFolderNameId, 'parent_file_id'>[] = []
     do {
       if (file_id === end_parent_id) {
         break
       }
+      req.file_id = file_id
+      const result = await this.getFolderFromCache(req, options)
 
-      const result = await this.getFolderFromCache(drive_id, file_id)
       if (!result) break // 404
       t.unshift({
         is_forbidden: result.is_forbidden,
@@ -799,7 +805,8 @@ interface IFileItemStandard {
   domain_id: string
   download_url: string
 
-  drive_id: string
+  drive_id?: string
+  share_id?: string
   encrypt_mode?: string
 
   file_extension?: string
@@ -873,7 +880,8 @@ interface IListFileReq {
 }
 
 interface IUpdateFileReq {
-  drive_id: string
+  drive_id?: string
+  share_id?: string
   file_id: string
 
   custom_index_key?: string
@@ -1080,6 +1088,15 @@ interface IGetFileDownloadUrlRes {
   [key: string]: any
 }
 
+interface IGetBreadcrumbReq extends IGetFolderReq {
+  end_parent_id?: string
+}
+interface IGetFolderReq {
+  drive_id?: string
+  share_id?: string
+  file_id: string
+}
+
 export {
   IFileItem,
   IFileItemStandard,
@@ -1095,4 +1112,6 @@ export {
   ICopyFileRes,
   IGetFileReq,
   IToParentFileKey,
+  IGetBreadcrumbReq,
+  IGetFolderReq,
 }

@@ -34,7 +34,7 @@ describe('FileAPI', function () {
     client = await getClient(PATH_TYPE)
     drive_id = client.token_info.default_drive_id
 
-    test_folder = await client.deleteFile(
+    await client.deleteFile(
       {
         drive_id,
         file_id: test_folder.file_id,
@@ -314,6 +314,18 @@ describe('FileAPI', function () {
 
     // 向上查父级目录
     let arr = await client.getBreadcrumbFolders(drive_id, folder_id)
+
+    assert(arr.length == 4)
+    assert(arr[0].name == 'folder-01')
+    assert(arr[0].file_id == folderRes.file_id)
+
+    assert(arr[1].name == 'a')
+    assert(arr[2].name == 'b')
+    assert(arr[3].name == 'c')
+    assert(arr[3].file_id == folder_id)
+
+    // 向上查父级目录
+    arr = await client.getBreadcrumbFolderList({drive_id, file_id: folder_id})
 
     assert(arr.length == 4)
     assert(arr[0].name == 'folder-01')

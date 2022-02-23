@@ -8,7 +8,7 @@ const {getClient} = require('./token-util')
 const PATH_TYPE = 'StandardMode'
 
 describe('file_ext', function () {
-  this.timeout(60000)
+  this.timeout(60 * 1000)
   let domainId: string
   let drive_id: string
   let client: PDSClient

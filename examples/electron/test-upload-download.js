@@ -10,7 +10,7 @@ window.onload = function () {
     uploadTest({ignore_rapid: true, parallel_upload: false})
   }
   document.getElementById('btn-upload-hosting').onclick = () => {
-    uploadHostingTest( )
+    uploadHostingTest()
   }
   document.getElementById('btn-download').onclick = () => {
     downloadTest()
@@ -61,7 +61,7 @@ async function uploadTest({ignore_rapid, parallel_upload}) {
   document.getElementById('btn-download').disabled = false
 }
 
-async function uploadHostingTest(){
+async function uploadHostingTest() {
   var client = await window.getPDSClient('HostingMode')
 
   let p = await window.getUploadFile()
@@ -72,7 +72,7 @@ async function uploadHostingTest(){
     parent_file_path: '/',
   }
   let task
-  cp = await client.uploadFile(p, to, { 
+  cp = await client.uploadFile(p, to, {
     verbose: true,
     onReady(t) {
       task = t
@@ -80,7 +80,7 @@ async function uploadHostingTest(){
     onStateChange(cp, state, error) {
       if (state == 'success') {
         showMessage('上传成功')
-      }  else {
+      } else {
         showMessage(state, error)
       }
 
