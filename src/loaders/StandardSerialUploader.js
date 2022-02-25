@@ -181,9 +181,9 @@ export class StandardSerialUploader extends BaseUploader {
 
     this.startCalcSpeed()
 
-    let throttleFn = throttleInTimes(fn => {
-      fn()
-    })
+    // let throttleFn = throttleInTimes(fn => {
+    //   fn()
+    // })
 
     try {
       let partInfo = this.getNextPart()
@@ -224,10 +224,13 @@ export class StandardSerialUploader extends BaseUploader {
               part_progress_keep = e
               this.loaded = this.done_part_loaded + e.loaded || 0
 
-              throttleFn(() => {
-                this.progress = formatPercentsToFixed(this.loaded / this.file.size)
-                this.notifyProgress(this.state, this.progress)
-              })
+              // throttleFn(() => {
+              //   this.progress = formatPercentsToFixed(this.loaded / this.file.size)
+
+              //   this.notifyProgress(this.state, this.progress)
+              // })
+
+              this.updateProgressStep()
             },
           })
 

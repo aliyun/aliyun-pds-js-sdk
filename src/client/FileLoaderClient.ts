@@ -188,7 +188,7 @@ class FileLoaderClient extends PDSUserApiClient {
       checkpoint,
       {
         limit_part_num: 9000,
-        max_chunk_size: 5 * 1024 * 1024, //每片5MB
+        max_chunk_size: 10 * 1024 * 1024, //每片5MB
         init_chunk_con: 3,
         chunk_con_auto: true,
         high_speed_mode: false, //for electron
@@ -213,7 +213,7 @@ class FileLoaderClient extends PDSUserApiClient {
       {
         checking_crc: true,
         limit_part_num: 9000,
-        max_chunk_size: 5 * 1024 * 1024, //每片5MB
+        max_chunk_size: 10 * 1024 * 1024, //每片5MB
         init_chunk_con: 3,
         chunk_con_auto: true,
         high_speed_mode: false, //for electron

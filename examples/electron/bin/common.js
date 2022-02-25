@@ -36,6 +36,15 @@ function selectFileInBrowser() {
   })
 }
 
-function showMessage(msg) {
-  document.getElementById('msg').innerHTML = msg || ''
+function showMessage(msg, id = 'abc') {
+  let d = document.getElementById(id)
+  if (!d) {
+    d = document.createElement('div')
+    d.id = id
+    document.getElementById('msg').appendChild(d)
+  }
+  d.innerHTML = msg || ''
+}
+function clearMessage(id) {
+  document.getElementById(id).remove()
 }

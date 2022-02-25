@@ -5,8 +5,8 @@ import {readBlock, readStream, getArrayBufferFromBlob} from './StreamUtil.js'
 import {nodeProcessCalc, webWorkerCalc} from './ForkUtil'
 import {createSha1WebWorkerBlob} from './sha1/webworker'
 
-const CHUNK_SIZE = 1024 * 1024 //1MB
-const PROGRESS_EMIT_STEP = 0.1 // 进度超过多少,回调onProgress
+const CHUNK_SIZE = 512 * 1024 // 512MB
+const PROGRESS_EMIT_STEP = 0.2 // 进度超过多少,回调onProgress
 
 export {
   ready, // wasm是异步载入的， await ready() 后才能使用 crc64 方法。

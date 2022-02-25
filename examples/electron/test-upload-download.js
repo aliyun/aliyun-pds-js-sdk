@@ -22,11 +22,13 @@ async function uploadTest({ignore_rapid, parallel_upload}) {
 
   let p = await window.getUploadFile()
   if (!p) return
+  let msg_id = Math.random(36).toString().substring(2)
 
   const to = {
     drive_id: conf['domains']['StandardMode'].drive_id,
     parent_file_id: 'root',
   }
+
   let task
   cp = await client.uploadFile(p, to, {
     ignore_rapid,
@@ -37,20 +39,21 @@ async function uploadTest({ignore_rapid, parallel_upload}) {
     },
     onStateChange(cp, state, error) {
       if (state == 'success') {
-        showMessage('上传成功')
+        showMessage('上传成功', msg_id)
       } else if (state == 'rapic_success') {
-        showMessage('秒传成功')
+        showMessage('秒传成功', msg_id)
       } else {
-        showMessage(state, error)
+        showMessage(state, msg_id)
       }
 
       console.log('🏞🏞🏞🏞', state)
     },
     onProgress(state, prog) {
-      if (state == 'running') showMessage('正在上传:' + prog + '%, 速度' + window.PDS_SDK.formatSize(task.speed) + '/s')
-      else if (state == 'computing_hash') showMessage('正在计算:' + prog + '%')
+      if (state == 'running')
+        showMessage('正在上传:' + prog + '%, 速度' + window.PDS_SDK.formatSize(task.speed) + '/s', msg_id)
+      else if (state == 'computing_hash') showMessage('正在计算:' + prog + '%', msg_id)
       else if (state == 'checking') {
-        showMessage('正在校验:' + prog + '%')
+        showMessage('正在校验:' + prog + '%', msg_id)
       }
       console.log('🤘🏻🤘🏻🤘🏻🤘🏻', state, prog + '%', window.PDS_SDK.formatSize(task.speed) + '/s')
     },
@@ -66,6 +69,7 @@ async function uploadHostingTest() {
 
   let p = await window.getUploadFile()
   if (!p) return
+  let msg_id = Math.random(36).toString().substring(2)
 
   const to = {
     drive_id: conf['domains']['HostingMode'].drive_id,
@@ -79,18 +83,19 @@ async function uploadHostingTest() {
     },
     onStateChange(cp, state, error) {
       if (state == 'success') {
-        showMessage('上传成功')
+        showMessage('上传成功', msg_id)
       } else {
-        showMessage(state, error)
+        showMessage(state, msg_id)
       }
 
       console.log('🏞🏞🏞🏞', state)
     },
     onProgress(state, prog) {
-      if (state == 'running') showMessage('正在上传:' + prog + '%, 速度' + window.PDS_SDK.formatSize(task.speed) + '/s')
-      else if (state == 'computing_hash') showMessage('正在计算:' + prog + '%')
+      if (state == 'running')
+        showMessage('正在上传:' + prog + '%, 速度' + window.PDS_SDK.formatSize(task.speed) + '/s', msg_id)
+      else if (state == 'computing_hash') showMessage('正在计算:' + prog + '%', msg_id)
       else if (state == 'checking') {
-        showMessage('正在校验:' + prog + '%')
+        showMessage('正在校验:' + prog + '%', msg_id)
       }
       console.log('🤘🏻🤘🏻🤘🏻🤘🏻', state, prog + '%', window.PDS_SDK.formatSize(task.speed) + '/s')
     },
@@ -101,36 +106,41 @@ async function uploadHostingTest() {
   document.getElementById('btn-download').disabled = false
 }
 async function downloadTest() {
-  if (!cp) {
-    console.warn('请先上传文件')
-    return
-  }
+  download(cp.drive_id, cp.file_id)
+
+  // const drive_id = conf['domains']['StandardMode'].drive_id
+  // download(drive_id,'6218e4f8f97d4698ed964349855ec3c1dc7e4db4')
+  // download(drive_id,'6218d58f1ef5651bde994b7b93fa56bcbd9e7d1a')
+}
+
+async function download(drive_id, file_id) {
+  let msg_id = Math.random(36).toString().substring(2)
   var client = await window.getPDSClient('StandardMode')
 
-  const {drive_id, file_id} = cp
   let pdsFile = await client.getFile({drive_id, file_id})
 
   const downloadTo = 'bin/tmp-' + pdsFile.name
-
+  var task
   var cp2 = await client.downloadFile(pdsFile, downloadTo, {
     verbose: true,
     onReady(t) {
       task = t
     },
     onProgress(state, prog) {
-      if (state == 'running') showMessage('正在上传:' + prog + '%, 速度' + window.PDS_SDK.formatSize(task.speed) + '/s')
-      else if (state == 'computing_hash') showMessage('正在计算:' + prog + '%')
+      if (state == 'running')
+        showMessage('正在下载:' + prog + '%, 速度' + window.PDS_SDK.formatSize(task.speed) + '/s', msg_id)
+      else if (state == 'computing_hash') showMessage('正在计算:' + prog + '%', msg_id)
       else if (state == 'checking') {
-        showMessage('正在校验:' + prog + '%')
+        showMessage('正在校验:' + prog + '%', msg_id)
       }
 
       console.log('👇🏻👇🏻👇🏻👇🏻', state, prog + '%', window.PDS_SDK.formatSize(task.speed) + '/s')
     },
     onStateChange(cp, state, error) {
       if (state == 'success') {
-        showMessage('下载成功')
+        showMessage('下载成功', msg_id)
       } else {
-        showMessage(state, error)
+        showMessage(state, msg_id)
       }
       console.log('🏞🏞🏞🏞', state)
     },

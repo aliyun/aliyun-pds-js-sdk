@@ -42,7 +42,7 @@ export class BaseLoader extends EventEmitter {
     const load_elapsed = load_item ? load_item.end - pre_end : 0
     const post_elapsed = load_item ? task_item.end - load_item.end : 0
 
-    console.log(`pre: ${pre_elapsed}ms -- ${action}: ${load_elapsed}ms -- post: ${post_elapsed}ms`)
+    console.log(`pre: ${pre_elapsed}ms -- ${action}: ${load_elapsed}ms (parts:${parts_len}) -- post: ${post_elapsed}ms`)
 
     if (parts_len > 1000) {
       console.log(`parts[${parts_len}]太多，不展示甘特图`)
@@ -62,8 +62,8 @@ export class BaseLoader extends EventEmitter {
       part: '#67C23A',
       // upload: 'red',
       // download: 'red',
-      axiosUploadPart: 'green',
-      axiosDownloadPart: 'green',
+      // axiosUploadPart: 'green',
+      // axiosDownloadPart: 'green',
       createFile: '#673AB7',
       completeFile: '#3F51B5',
       getFileUploadUrl: '#26C6DA',

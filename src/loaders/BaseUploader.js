@@ -11,7 +11,7 @@ import {BaseLoader} from './BaseLoader'
 import {doesFileExist} from '../utils/FileUtil'
 import {calc_uploaded} from '../utils/ChunkUtil'
 import {isNetworkError} from '../utils/HttpUtil'
-import {formatSize} from '../utils/Formatter'
+import {formatSize, elapse} from '../utils/Formatter'
 import {formatCheckpoint, initCheckpoint} from '../utils/CheckpointUtil'
 import {formatPercentsToFixed, calcUploadMaxConcurrency, removeItem} from '../utils/LoadUtil'
 
@@ -23,10 +23,11 @@ const MAX_SIZE_LIMIT = 10 * 1024 * 1024 * 1024 * 1024 // 10 TB
 const MAX_CHUNK_SIZE = 100 * 1024 * 1024 // 100MB
 const LIMIT_PART_NUM = 9000 // OSS分片数最多不能超过1w片，这里取值 9000
 
-const MAX_SIZE_FOR_SHA1 = 10 * 1024 * 1024 * 1024 // 10GB
-const MIN_SIZE_FOR_PRE_SHA1 = 100 * 1024 * 1024 // 100MB
+const MAX_SIZE_FOR_SHA1 = 10 * 1024 * 1024 * 1024 // 小于 10GB 计算秒传
+const MIN_SIZE_FOR_PRE_SHA1 = 100 * 1024 * 1024 // 大于 100MB 计算预秒传
 const PROCESS_CALC_CRC64_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 crc64
 const PROCESS_CALC_SHA1_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 sha1
+const PROGRESS_EMIT_STEP = 0.2 // 进度通知 step
 
 console.timeLog = console.timeLog || console.timeEnd
 
@@ -170,7 +171,7 @@ export class BaseUploader extends BaseLoader {
     this.parent_file_path = parent_file_path
 
     // 调优
-    this.max_chunk_size = parseInt(max_chunk_size || MAX_CHUNK_SIZE)
+    this.max_chunk_size = parseInt(max_chunk_size) || MAX_CHUNK_SIZE
     this.init_chunk_con = init_chunk_con || INIT_MAX_CON
     this.chunk_con_auto = chunk_con_auto || false
 
@@ -439,7 +440,12 @@ export class BaseUploader extends BaseLoader {
 
       lastLoaded = this.loaded
 
-      this.maxConcurrency = this.set_calc_max_con(this.speed, this.part_info_list[0].part_size, this.maxConcurrency)
+      this.maxConcurrency = this.set_calc_max_con(
+        this.speed,
+        this.part_info_list[0].part_size,
+        this.maxConcurrency,
+        this.init_chunk_con,
+      )
 
       // check timeout
       this.checkTimeout()
@@ -640,7 +646,9 @@ export class BaseUploader extends BaseLoader {
       )
       this.printTimeLogs()
 
-      console.log(`avg speed: ${formatSize(this.used_avg_speed)}/s`)
+      console.log(
+        `avg speed: ${formatSize(this.used_avg_speed)}/s, elapsed: ${elapse(this.end_time - this.start_time)}`,
+      )
     }
 
     return this
@@ -828,9 +836,9 @@ export class BaseUploader extends BaseLoader {
     const running_parts = {}
 
     // 缓冲修改 progress
-    this.updateProgressThrottle = throttleInTimes(() => {
-      this.updateProgress(running_parts)
-    })
+    // this.updateProgressThrottle = throttleInTimes(() => {
+    //   this.updateProgress(running_parts)
+    // })
 
     try {
       await new Promise((resolve, reject) => {
@@ -923,9 +931,13 @@ export class BaseUploader extends BaseLoader {
 
                 running_parts[partInfo.part_number] = e.loaded || 0
 
+                let running_part_loaded = 0
+                for (const k in running_parts) running_part_loaded += running_parts[k]
+                that.loaded = that.done_part_loaded + running_part_loaded
+
                 // 更新进度，缓冲
-                that.updateProgressThrottle(running_parts)
-                // that.updateProgressStep(running_parts, 0.1)
+                // that.updateProgressThrottle()
+                that.updateProgressStep()
 
                 // let running_part_loaded = 0
                 // for (var k in running_parts) running_part_loaded += running_parts[k]
@@ -1038,25 +1050,21 @@ export class BaseUploader extends BaseLoader {
     this.emit('progress', state, progress)
   }
 
-  updateProgress(running_parts) {
-    let running_part_loaded = 0
-    for (const k in running_parts) running_part_loaded += running_parts[k]
+  // updateProgress(running_parts) {
+  //   let running_part_loaded = 0
+  //   for (const k in running_parts) running_part_loaded += running_parts[k]
 
-    this.loaded = this.done_part_loaded + running_part_loaded
-    this.progress = formatPercentsToFixed(this.loaded / this.file.size)
+  //   this.loaded = this.done_part_loaded + running_part_loaded
+  //   this.progress = formatPercentsToFixed(this.loaded / this.file.size)
 
-    this.notifyProgress(this.state, this.progress)
-  }
+  //   this.notifyProgress(this.state, this.progress)
+  // }
 
-  updateProgressStep(running_parts, step) {
-    let running_part_loaded = 0
-    for (const k in running_parts) running_part_loaded += running_parts[k]
-
-    this.loaded = this.done_part_loaded + running_part_loaded
+  updateProgressStep() {
     let prog = (this.loaded * 100) / this.file.size
     this._last_prog = this._last_prog || 0
 
-    if (prog - this._last_prog > step) {
+    if (prog - this._last_prog > PROGRESS_EMIT_STEP) {
       this.progress = Math.floor(prog * 100) / 100
       this._last_prog = prog
       this.notifyProgress(this.state, this.progress)

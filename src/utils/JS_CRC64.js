@@ -4,7 +4,7 @@ import {readBlock, readStream} from './StreamUtil.js'
 import {nodeProcessCalc} from './ForkUtil'
 
 const CHUNK_SIZE = 256 * 1024 //前端分块大小 500KB
-const PROGRESS_EMIT_STEP = 0.1 // 进度超过多少,回调onProgress
+const PROGRESS_EMIT_STEP = 0.2 // 进度超过多少,回调onProgress
 
 export {
   ready, // wasm是异步载入的， await ready() 后才能使用 crc64 方法。

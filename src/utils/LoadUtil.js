@@ -78,7 +78,7 @@ function removeItem(arr, item) {
 }
 
 // 根据网速调整下载并发量
-function calcDownloadMaxConcurrency(speed, chunkSize, lastConcurrency) {
+function calcDownloadMaxConcurrency(speed, chunkSize, lastConcurrency, init_chunk_con = 5) {
   const block = chunkSize * lastConcurrency
   if (speed > block * 0.9) {
     // 激进上涨
@@ -86,13 +86,13 @@ function calcDownloadMaxConcurrency(speed, chunkSize, lastConcurrency) {
   } else if (speed > block * 0.2) {
     // 保守下跌
     if (lastConcurrency > 5) return lastConcurrency - 1
-    return 5
+    return init_chunk_con
   } else {
     return lastConcurrency
   }
 }
 
-function calcUploadMaxConcurrency(speed, chunkSize, lastConcurrency) {
+function calcUploadMaxConcurrency(speed, chunkSize, lastConcurrency, init_chunk_con = 5) {
   const block = chunkSize * lastConcurrency
   if (speed > block * 0.9) {
     // 激进上涨
@@ -100,7 +100,7 @@ function calcUploadMaxConcurrency(speed, chunkSize, lastConcurrency) {
   } else if (speed > block * 0.2) {
     // 保守下跌
     if (lastConcurrency > 5) return lastConcurrency - 1
-    return 5
+    return init_chunk_con
   } else {
     return lastConcurrency
   }

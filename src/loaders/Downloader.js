@@ -12,15 +12,17 @@ import {
 import {BaseLoader} from './BaseLoader'
 import {isNetworkError} from '../utils/HttpUtil'
 import {calc_downloaded} from '../utils/ChunkUtil'
-import {formatSize} from '../utils/Formatter'
+import {formatSize, elapse} from '../utils/Formatter'
 import {getFreeDiskSize} from '../utils/FileUtil'
 
 import {formatCheckpoint, initCheckpoint} from '../utils/CheckpointUtil'
+
 const INIT_MAX_CON = 10 // 初始并发
 const MAX_CHUNK_SIZE = 100 * 1024 * 1024 // 100MB
 const SUFFIX = '.download'
 const LIMIT_PART_NUM = 9000 // 最多分片数量
 const PROCESS_CALC_CRC64_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 crc64
+const PROGRESS_EMIT_STEP = 0.2 // 进度通知 step
 
 import Debug from 'debug'
 const debug = Debug('PDSJS:BaseUploader')
@@ -130,7 +132,7 @@ export class Downloader extends BaseLoader {
     this.file_id = file_id
     this.file_path = file_path
 
-    this.max_chunk_size = parseInt(max_chunk_size || MAX_CHUNK_SIZE)
+    this.max_chunk_size = parseInt(max_chunk_size) || MAX_CHUNK_SIZE
     this.init_chunk_con = init_chunk_con || INIT_MAX_CON
     this.chunk_con_auto = chunk_con_auto || false
     this.checking_crc = checking_crc !== false
@@ -497,7 +499,9 @@ export class Downloader extends BaseLoader {
         'background:green;color:white;padding:2px 4px;',
       )
       this.printTimeLogs()
-      console.log(`avg speed: ${formatSize(this.used_avg_speed)}/s`)
+      console.log(
+        `avg speed: ${formatSize(this.used_avg_speed)}/s, elapsed: ${elapse(this.end_time - this.start_time)}`,
+      )
     }
 
     return this
@@ -604,7 +608,12 @@ export class Downloader extends BaseLoader {
 
       lastLoaded = this.loaded
 
-      this.maxConcurrency = this.set_calc_max_con(this.speed, this.part_info_list[0].part_size, this.maxConcurrency)
+      this.maxConcurrency = this.set_calc_max_con(
+        this.speed,
+        this.part_info_list[0].part_size,
+        this.maxConcurrency,
+        this.init_chunk_con,
+      )
 
       // check timeout
       this.checkTimeout()
@@ -664,9 +673,9 @@ export class Downloader extends BaseLoader {
   async download() {
     await this.changeState('running')
 
-    this.loaded = calc_downloaded(this.part_info_list, true)
-    this.start_done_part_loaded = this.loaded // 用于计算平均速度
-    // this.loaded = this.done_part_loaded
+    this.done_part_loaded = calc_downloaded(this.part_info_list, true)
+    this.start_done_part_loaded = this.done_part_loaded // 用于计算平均速度
+    this.loaded = this.done_part_loaded
 
     this.startCalcSpeed()
 
@@ -674,10 +683,12 @@ export class Downloader extends BaseLoader {
     let con = 0
     this.maxConcurrency = this.init_chunk_con
 
+    const running_parts = {}
+
     // 缓冲修改 progress
-    this.updateProgressThrottle = throttleInTimes(() => {
-      this.updateProgress()
-    })
+    // this.updateProgressThrottle = throttleInTimes(() => {
+    //   this.updateProgress()
+    // }, 20, 300)
 
     try {
       await new Promise((resolve, reject) => {
@@ -714,7 +725,8 @@ export class Downloader extends BaseLoader {
                 return
               }
               con++
-              await that.down_part(partInfo)
+              running_parts[partInfo.part_number] = 0
+              await that.down_part(partInfo, running_parts)
               con--
               check_download_next_part()
             })()
@@ -733,7 +745,7 @@ export class Downloader extends BaseLoader {
     }
   }
 
-  async down_part(partInfo) {
+  async down_part(partInfo, running_parts) {
     partInfo.start_time = Date.now()
     this.timeLogStart('part-' + partInfo.part_number, Date.now())
 
@@ -766,7 +778,16 @@ export class Downloader extends BaseLoader {
         maxRedirects: 5,
       })
 
-      await this.pipeWS(streamResult.data, partInfo)
+      await this.pipeWS(streamResult.data, partInfo, ({loaded}) => {
+        running_parts[partInfo.part_number] = loaded || 0
+
+        let running_part_loaded = Object.values(running_parts).reduce((a, b) => a + b)
+
+        this.loaded = this.done_part_loaded + running_part_loaded
+        // 回调太频繁，需要缓冲，不然会影响下载速度
+        // this.updateProgressThrottle()
+        this.updateProgressStep()
+      })
 
       partInfo.loaded = partInfo.part_size
       partInfo.done = true
@@ -775,7 +796,9 @@ export class Downloader extends BaseLoader {
       partInfo.end_time = Date.now()
       this.timeLogEnd('part-' + partInfo.part_number, Date.now())
 
-      this.loaded = calc_downloaded(this.part_info_list)
+      delete running_parts[partInfo.part_number]
+      this.done_part_loaded += partInfo.part_size
+      // this.loaded = calc_downloaded(this.part_info_list)
 
       if (this.verbose) {
         console.log(
@@ -891,16 +914,16 @@ export class Downloader extends BaseLoader {
       // content-length
       // x-oss-hash-crc64ecma
       // content-md5
-      this.checkMatch(
-        this.content_md5,
-        result.headers['content-md5'],
-        'Content-MD5 not match, The file has been modified',
-      )
-      this.checkMatch(
-        this.crc64ecma,
-        result.headers['x-oss-hash-crc64ecma'],
-        'x-oss-hash-crc64ecma not match, The file has been modified',
-      )
+      // this.checkMatch(
+      //   this.content_md5,
+      //   result.headers['content-md5'],
+      //   'Content-MD5 not match, The file has been modified',
+      // )
+      // this.checkMatch(
+      //   this.crc64ecma,
+      //   result.headers['x-oss-hash-crc64ecma'],
+      //   'x-oss-hash-crc64ecma not match, The file has been modified',
+      // )
       // 这个content-length 不是整个文件的，无法判断
       // this.checkMatch(
       //   this.file.size,
@@ -920,7 +943,7 @@ export class Downloader extends BaseLoader {
   checkMatch(a, b, msg) {
     if (a != null && a != b) throw new Error(msg)
   }
-  pipeWS(stream, partInfo) {
+  pipeWS(stream, partInfo, onPartProgress) {
     const {fs} = this.context
 
     // partInfo.loaded = 0
@@ -944,9 +967,7 @@ export class Downloader extends BaseLoader {
           return
         }
         partInfo.loaded += chunk.byteLength
-
-        // 回调太频繁，需要缓冲，不然会影响下载速度
-        this.updateProgressThrottle()
+        onPartProgress(partInfo)
       })
 
       stream.pipe(ws)
@@ -968,17 +989,36 @@ export class Downloader extends BaseLoader {
     })
   }
 
-  updateProgress() {
-    let running_loaded = 0
-    this.part_info_list.forEach(n => {
-      running_loaded += n.loaded
-    })
-    this.loaded = running_loaded
+  // updateProgress() {
+  //   let running_loaded = 0
+  //   this.part_info_list.forEach(n => {
+  //     running_loaded += n.loaded
+  //   })
+  //   this.loaded = running_loaded
 
-    // console.log('---on data',partInfo.part_number, partInfo.part_size, partInfo.loaded,  this.loaded, this.done_part_loaded, chunk.byteLength)
-    this.progress = formatProgress(this.loaded / this.file.size)
+  //   // console.log('---on data',partInfo.part_number, partInfo.part_size, partInfo.loaded,  this.loaded, this.done_part_loaded, chunk.byteLength)
+  //   this.progress = formatProgress(this.loaded / this.file.size)
 
-    this.notifyProgress(this.state, this.progress)
+  //   this.notifyProgress(this.state, this.progress)
+  // }
+  updateProgressStep() {
+    // let running_loaded = 0
+
+    // this.part_info_list.forEach(n => {
+    //   running_loaded += n.loaded
+    // })
+    // this.loaded = this.part_info_list.map(n=>n.loaded).reduce((a,b)=>a+b)
+
+    // this.loaded = running_loaded
+
+    let prog = (this.loaded * 100) / this.file.size
+    this._last_prog = this._last_prog || 0
+
+    if (prog - this._last_prog > PROGRESS_EMIT_STEP) {
+      this.progress = Math.floor(prog * 100) / 100
+      this._last_prog = prog
+      this.notifyProgress(this.state, this.progress)
+    }
   }
 
   notifyProgress(state, progress) {
