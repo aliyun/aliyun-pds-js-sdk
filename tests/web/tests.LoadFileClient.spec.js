@@ -15,7 +15,7 @@ async function uploadFile(file, path_type, config) {
       // console.log('------set_calc_max_con', task)
     },
     onProgress(status, prog) {
-      // console.log(status, prog, task.speed/1024/1024)
+      console.log(status, prog + '%', task.speed / 1024 / 1024 + 'MB/s')
     },
     onStateChange(cp, state, error) {
       console.log('=====state:', state)

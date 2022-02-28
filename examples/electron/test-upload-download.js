@@ -123,6 +123,8 @@ async function download(drive_id, file_id) {
   var task
   var cp2 = await client.downloadFile(pdsFile, downloadTo, {
     verbose: true,
+    max_chunk_size: 10 * 1024 * 1024, //每片10MB
+    init_chunk_con: 5,
     onReady(t) {
       task = t
     },

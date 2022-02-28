@@ -43,7 +43,8 @@ onMounted(async () => {
           parallel_upload: true,
           ignore_rapid: true,
           
-          
+          max_chunk_size: 10 * 1024 * 1024, //每片10MB
+          init_chunk_con: 5,
 
           onReady(t) {
             task = t
