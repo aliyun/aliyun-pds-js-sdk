@@ -2,7 +2,8 @@
 
 ## 0.1.8
 
-* refactor: 刷新token时如果没有 access_token，报错code 由 TokenExpired 改为 AccessTokenInvalid。
+* refactor: 刷新 token 时如果没有设置 `access_token`，报错 `code` 由 `TokenExpired` 改为 `AccessTokenInvalid`。
+* fix: 没有权限下载时不创建本地 `.download` 临时文件
 
 ## 0.1.7
 
