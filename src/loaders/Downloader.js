@@ -445,16 +445,14 @@ export class Downloader extends BaseLoader {
       this.initChunks()
     }
 
-    // 只有create了，task id 才正式生成。
+    // 1. 先获取 download_url （遇到没有权限的情况，会直接报错，就不会调用 create 创建本地临时文件了）
+    await this.getDownloadUrl()
+
+    // 2. 只有create了，task id 才正式生成。
     await this.create()
 
-    // check 本地磁盘空间
-
+    // 3. check 本地磁盘空间
     await this.checkLocalDiskSize()
-
-    // 获取 download_url
-
-    await this.getDownloadUrl()
 
     this.download_start_time = Date.now()
     this.timeLogStart('download', Date.now())
@@ -469,10 +467,12 @@ export class Downloader extends BaseLoader {
       return
     }
 
+    // 4. 开始下载
     await this.download()
 
     this.timeLogEnd('download', Date.now())
 
+    // 统计
     this.calcTotalAvgSpeed()
 
     if (this.verbose) {
@@ -482,10 +482,12 @@ export class Downloader extends BaseLoader {
       console.log('---------------')
     }
 
+    // 5. 校验文件完整性， crc64
     if (this.checking_crc) {
       await this.checkFileHash()
     }
 
+    // 6. 完成。 重命名去掉 .download 后缀
     await this.complete()
 
     this.end_time = Date.now()
