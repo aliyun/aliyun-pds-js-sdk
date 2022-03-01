@@ -93,7 +93,7 @@ export class StandardParallelUploader extends BaseUploader {
   async calcHash(file, onProgress = () => {}, getStopFlagFun = () => {}) {
     this.timeLogStart('multi_sha1', Date.now())
 
-    let _parts_sha1_fun = this.custom_part_sha1_fun || this.vendors.calc_util.calcFilePartsSha1
+    let _parts_sha1_fun = this.custom_parts_sha1_fun || this.vendors.calc_util.calcFilePartsSha1
 
     let {part_info_list, content_hash} = await _parts_sha1_fun({
       file,

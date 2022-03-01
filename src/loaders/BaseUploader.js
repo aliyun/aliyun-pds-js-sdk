@@ -180,7 +180,7 @@ export class BaseUploader extends BaseLoader {
 
     this.custom_crc64_fun = custom_crc64_fun
     this.custom_sha1_fun = custom_sha1_fun
-    this.custom_part_sha1_fun = custom_parts_sha1_fun
+    this.custom_parts_sha1_fun = custom_parts_sha1_fun
 
     this.process_calc_crc64_size = process_calc_crc64_size || PROCESS_CALC_CRC64_SIZE
     this.process_calc_sha1_size = process_calc_sha1_size || PROCESS_CALC_SHA1_SIZE

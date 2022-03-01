@@ -194,7 +194,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   /* istanbul ignore next */
   async checkRefreshToken(req_opt: AxiosRequestConfig) {
     if (!this.token_info || !this.token_info.access_token) {
-      this.throwError(new PDSError('access_token is required', 'TokenExpired'), req_opt)
+      this.throwError(new PDSError('access_token is required', 'AccessTokenInvalid'), req_opt)
     }
     if (Date.now() > Date.parse(this.token_info.expire_time)) {
       if (this.refresh_token_fun) {

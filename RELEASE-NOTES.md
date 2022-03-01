@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.1.8
+
+* refactor: 刷新token时如果没有 access_token，报错code 由 TokenExpired 改为 AccessTokenInvalid。
+
 ## 0.1.7
 
 feat: 增加 getBreadcrumbFolderList 方法，支持 share_id 参数。
