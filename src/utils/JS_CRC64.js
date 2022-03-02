@@ -24,8 +24,10 @@ export {
  * @returns {string} 返回文件的 crc64 值，应为 bigint 的 string 类型
  */
 /* istanbul ignore next */
-async function crc64File(file, onProgress, getStopFlag, {chunkSize = CHUNK_SIZE} = {}) {
+async function crc64File(file, onProgress, getStopFlag, opt) {
   await ready()
+
+  let {chunkSize = CHUNK_SIZE} = opt || {}
 
   onProgress = onProgress || (prog => {})
   getStopFlag = getStopFlag || (() => false)

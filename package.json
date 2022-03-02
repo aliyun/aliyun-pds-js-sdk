@@ -1,6 +1,6 @@
 {
   "name": "aliyun-pds-js-sdk",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "PDS SDK for javascript",
   "main": "lib/cjs/index.js",
   "module": "lib/esm/index.browser.js",
@@ -74,6 +74,7 @@
     "axios": "^0.24.0",
     "debug": "^4.3.2",
     "js-sha1": "^0.6.0",
+    "js-sha256": "^0.9.0",
     "jsonwebtoken": "^8.5.1",
     "uuid": "^8.3.2"
   },

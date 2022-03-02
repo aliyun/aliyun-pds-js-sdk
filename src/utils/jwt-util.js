@@ -3,7 +3,7 @@
 export {signJWT}
 
 function signJWT(a, b, c) {
-  if (typeof process) {
+  if (typeof process == 'object') {
     const JWT = require('jsonwebtoken')
     return JWT.sign(a, b, c)
   } else {

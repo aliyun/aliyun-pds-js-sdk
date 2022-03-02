@@ -22,7 +22,8 @@ web:
 
 worker:
 	npm run build:worker:sha1
-
+publish:build
+	npm publish
 cov:
 	npm run cov
 	open coverage/lcov-report/index.html

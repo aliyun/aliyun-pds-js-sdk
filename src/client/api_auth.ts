@@ -3,7 +3,6 @@
 import {IContext, IClientParams, ITokenInfo, AxiosRequestConfig} from '../Types'
 import {signJWT} from '../utils/jwt-util'
 import {HttpClient} from '../http/HttpClient'
-import {URLSearchParams} from 'url'
 
 export interface IGetJWTTokenReq {
   client_id: string
@@ -123,7 +122,9 @@ export class PDSAuthClient extends HttpClient {
     return await this.postAuthAnonymous(
       `/oauth/token`,
       //注意：请求参数要放在body里
-      new URLSearchParams(data).toString(),
+      Object.keys(data)
+        .map(k => `${k}=${encodeURIComponent(data[k])}`)
+        .join('&'),
       //注意：要设置请求的 content-type 为 application/x-www-form-urlencoded
       {
         ...options,

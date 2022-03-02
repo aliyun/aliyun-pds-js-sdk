@@ -148,22 +148,18 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
    * 递归创建目录，返回最后一级目录的 folderId , 或者 folderPath
    * @param folderNames ['a','b','c']  需要创建的子目录， pid下/a/b/c/
    * @param parentInfo { parent_file_id, parent_file_path, drive_id, share_id ,check_name_mode}
-   * @param createdFolderCache
+   * @param createFoldersConfig { create_folder_cache, onFolderRepeat, onFolderCreated }
    * @return c 对应的 folderId, 或者 folderPath
    */
   async createFolders(folderNames: string[], data: IParentFileKey, createFoldersConfig: ICreateFoldersConfig = {}) {
     let {parent_file_id, parent_file_path, drive_id, share_id} = data
 
-    const {check_name_mode = 'refuse', createdFolderCache, onFolderRepeat, onFolderCreated} = createFoldersConfig
-    let folderPathMap: {[key: string]: string} = {}
-
-    if (createdFolderCache) {
-      folderPathMap = createdFolderCache
-    }
+    const {check_name_mode = 'refuse', create_folder_cache, onFolderRepeat, onFolderCreated} = createFoldersConfig
+    let folderPathMap: {[key: string]: string} = create_folder_cache || {}
 
     const that = this
 
-    async function createFolderCache(opt: ICreateFileReq): Promise<string> {
+    async function _createFolderAndCache(opt: ICreateFileReq): Promise<string> {
       const key = `${opt.drive_id || opt.share_id}/${opt.parent_file_id || opt.parent_file_path}/${opt.name}`
       if (!folderPathMap[key]) {
         // cache
@@ -235,7 +231,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
     let _path
     for (const n of folderNames) {
       opt.name = n
-      _path = await createFolderCache(opt)
+      _path = await _createFolderAndCache(opt)
       if (parent_file_id) opt.parent_file_id = _path
       else opt.parent_file_path = _path
     }
@@ -1063,6 +1059,7 @@ interface IGetFileReq {
 interface ICreateFoldersConfig {
   check_name_mode?: TCheckNameMode
   // 用来缓存的方法
+  create_folder_cache?: {[key: string]: string}
   createdFolderCache?: {[key: string]: string}
   // 发现同名目录已经存在，会回调这个方法。
   onFolderRepeat?: (folderInfo: IFileItem) => boolean // return  true, 继续执行，false throw new PDSError
