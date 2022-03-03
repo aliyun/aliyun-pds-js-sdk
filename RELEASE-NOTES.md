@@ -1,5 +1,10 @@
 # Release Notes
 
+## 0.1.10
+
+* fix: 修复上传下载无法立即暂停。
+* fix: 修复标准模式并发上传断点信息。 上传 checkpoint 的 part_info_list item 暴露 parallel_sha1_ctx 字段。
+
 ## 0.1.9
 
 * fix: 去掉 URLSearchParams 的依赖。

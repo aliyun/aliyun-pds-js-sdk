@@ -906,7 +906,8 @@ export class Downloader extends BaseLoader {
     this.cancelSources.push(source)
 
     try {
-      const result = await this.http_client_call('axiosDownloadPart', opt, {
+      const result = await this.http_client_call('axiosDownloadPart', {
+        ...opt,
         key: partInfo.part_number,
         cancelToken: source.token,
       })

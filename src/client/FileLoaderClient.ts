@@ -193,7 +193,7 @@ class FileLoaderClient extends PDSUserApiClient {
         chunk_con_auto: true,
         ignore_rapid: false, //忽略秒传，测试时使用。
 
-        verbose: false, //显示详细日志
+        verbose: true, //显示详细日志
 
         path_type: this.path_type,
         parent_file_id: this.path_type == 'StandardMode' ? 'root' : undefined,
@@ -215,7 +215,7 @@ class FileLoaderClient extends PDSUserApiClient {
         max_chunk_size: 10 * 1024 * 1024, //每片10MB
         init_chunk_con: 5,
         chunk_con_auto: true,
-        verbose: false, //显示详细日志
+        verbose: true, //显示详细日志
 
         path_type: this.path_type,
 

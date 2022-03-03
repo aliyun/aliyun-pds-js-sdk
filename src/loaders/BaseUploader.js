@@ -326,6 +326,7 @@ export class BaseUploader extends BaseLoader {
         return {
           part_number: n.part_number,
           part_size: n.part_size,
+          ...(this.parallel_upload ? {parallel_sha1_ctx: n.parallel_sha1_ctx} : {}),
           etag: n.etag,
           from: n.from,
           to: n.to,
@@ -1112,7 +1113,8 @@ export class BaseUploader extends BaseLoader {
     this.cancelSources.push(source)
 
     try {
-      return await this.http_client_call('axiosUploadPart', opt, {
+      return await this.http_client_call('axiosUploadPart', {
+        ...opt,
         cancelToken: source.token,
         key: partInfo.part_number,
       })
