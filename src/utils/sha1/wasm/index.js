@@ -45,9 +45,10 @@ function createSha1() {
   const prevPtr = binding._malloc(300)
   const resultPtr = binding._malloc(21)
   raw.sha1Init(prevPtr)
-
+  let ret
   return {
     update(buff) {
+      if(ret) throw Error('cannot call update() after hex()')
       const buffPtr = buffToPtr(buff, binding)
       raw.sha1Update(prevPtr, buffPtr, buff.length)
       binding._free(buffPtr)
@@ -73,8 +74,9 @@ function createSha1() {
       // return h;
     },
     hex() {
+      if(ret)return ret
       raw.sha1Final(resultPtr, prevPtr)
-      const ret = binding.UTF8ToString(resultPtr)
+      ret = binding.UTF8ToString(resultPtr)
 
       binding._free(prevPtr)
       binding._free(resultPtr)

@@ -376,25 +376,22 @@ export class BaseUploader extends BaseLoader {
     this.used_avg_speed = this.avg_speed
   }
 
-  doStop() {
+  async stop(doNotChangeStatus) {
     this.calcTotalAvgSpeed()
     this.stopCalcSpeed()
 
     this.stopFlag = true
 
-    if (['stopped', 'success', 'rapid_success', 'error'].includes(this.state)) return
+    if (['stopped', 'success', 'rapid_success', 'error', 'cancelled'].includes(this.state)) return
 
     this.cancelAllUploadRequests()
     this.on_calc_crc_success = false
     this.on_calc_crc_failed = false
-  }
-  async stop() {
-    this.doStop()
-    await this.changeState('stopped')
+    if (!doNotChangeStatus) await this.changeState('stopped')
   }
   async cancel() {
     this.cancelFlag = true
-    this.doStop()
+    this.stop(true)
     await this.changeState('cancelled')
   }
 
@@ -472,7 +469,7 @@ export class BaseUploader extends BaseLoader {
 
   /* istanbul ignore next */
   async retryAllUploadRequest() {
-    this.doStop()
+    this.stop(true)
     // wait for 1 second
     // stop是异步的，需要等待 getStopFlagFun 都执行到。
     await new Promise(a => setTimeout(a, 1000))

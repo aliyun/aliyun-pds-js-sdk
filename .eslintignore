@@ -1,5 +1,6 @@
 dist
-lib 
-src/utils/crc64-wasm.js
+lib
 node_modules
 tests/web/
+src/utils/sha1/wasm/sha1-wasm.js
+src/utils/crc64/wasm/crc64-wasm.js

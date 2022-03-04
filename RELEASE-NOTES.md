@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.1.11
+
+* fix: success, rapid_success, error, cancelled 状态调用 stop 方法应该无效。
+
 ## 0.1.10
 
 * fix: 修复上传下载无法立即暂停。
