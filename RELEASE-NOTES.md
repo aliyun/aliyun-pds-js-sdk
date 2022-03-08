@@ -3,6 +3,7 @@
 ## 0.1.11
 
 * fix: success, rapid_success, error, cancelled 状态调用 stop 方法应该无效。
+* fix: 修复自动调节分片数逻辑。
 
 ## 0.1.10
 

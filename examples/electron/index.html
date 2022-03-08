@@ -20,7 +20,7 @@
       <script>
         let fileEle = document.getElementById('file1')
         fileEle.onchange = function (e) {
-          if (handle_select_file_browser) handle_select_file_browser(e.target.files?.[0])
+          if (window.handle_select_file_browser) window.handle_select_file_browser(e.target.files?.[0])
           setTimeout(() => {
             fileEle.value = ''
           }, 100)

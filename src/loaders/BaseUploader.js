@@ -173,7 +173,7 @@ export class BaseUploader extends BaseLoader {
     // 调优
     this.max_chunk_size = parseInt(max_chunk_size) || MAX_CHUNK_SIZE
     this.init_chunk_con = init_chunk_con || INIT_MAX_CON
-    this.chunk_con_auto = chunk_con_auto || false
+    this.chunk_con_auto = chunk_con_auto !== false
 
     this.max_size_for_sha1 = max_size_for_sha1 || MAX_SIZE_FOR_SHA1
     this.min_size_for_pre_sha1 = min_size_for_pre_sha1 || MIN_SIZE_FOR_PRE_SHA1
@@ -824,14 +824,14 @@ export class BaseUploader extends BaseLoader {
     this.start_done_part_loaded = this.done_part_loaded // 用于计算平均速度
     this.loaded = this.done_part_loaded
 
-    this.startCalcSpeed()
-
     const that = this
     let con = 0
 
     this.maxConcurrency = this.init_chunk_con
 
     const running_parts = {}
+
+    this.startCalcSpeed()
 
     // 缓冲修改 progress
     // this.updateProgressThrottle = throttleInTimes(() => {

@@ -28,7 +28,7 @@ async function getUploadFile() {
 
 function selectFileInBrowser() {
   return new Promise(resolve => {
-    handle_select_file_browser = file => {
+    window.handle_select_file_browser = file => {
       if (file) resolve(file)
     }
     let fileEle = document.getElementById('file1')

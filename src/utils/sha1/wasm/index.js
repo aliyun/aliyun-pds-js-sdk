@@ -48,7 +48,7 @@ function createSha1() {
   let ret
   return {
     update(buff) {
-      if(ret) throw Error('cannot call update() after hex()')
+      if (ret) throw Error('cannot call update() after hex()')
       const buffPtr = buffToPtr(buff, binding)
       raw.sha1Update(prevPtr, buffPtr, buff.length)
       binding._free(buffPtr)
@@ -74,7 +74,7 @@ function createSha1() {
       // return h;
     },
     hex() {
-      if(ret)return ret
+      if (ret) return ret
       raw.sha1Final(resultPtr, prevPtr)
       ret = binding.UTF8ToString(resultPtr)
 

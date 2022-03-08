@@ -134,7 +134,7 @@ export class Downloader extends BaseLoader {
 
     this.max_chunk_size = parseInt(max_chunk_size) || MAX_CHUNK_SIZE
     this.init_chunk_con = init_chunk_con || INIT_MAX_CON
-    this.chunk_con_auto = chunk_con_auto || false
+    this.chunk_con_auto = chunk_con_auto !== false
     this.checking_crc = checking_crc !== false
 
     // 可选
@@ -677,13 +677,13 @@ export class Downloader extends BaseLoader {
     this.start_done_part_loaded = this.done_part_loaded // 用于计算平均速度
     this.loaded = this.done_part_loaded
 
-    this.startCalcSpeed()
-
     const that = this
     let con = 0
     this.maxConcurrency = this.init_chunk_con
 
     const running_parts = {}
+
+    this.startCalcSpeed()
 
     // 缓冲修改 progress
     // this.updateProgressThrottle = throttleInTimes(() => {
