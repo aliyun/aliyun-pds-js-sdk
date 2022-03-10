@@ -953,6 +953,7 @@ export class Downloader extends BaseLoader {
         // autoClose: true,
         flags: 'r+',
         start: partInfo.from + partInfo.loaded,
+        highWaterMark: 128 * 1024,
       })
 
       stream.on('data', chunk => {

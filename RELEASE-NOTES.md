@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.1.12
+
+fix: 上传下载增加缓冲区配置。
+
 ## 0.1.11
 
 * fix: success, rapid_success, error, cancelled 状态调用 stop 方法应该无效。

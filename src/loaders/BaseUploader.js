@@ -1268,6 +1268,7 @@ export class BaseUploader extends BaseLoader {
       return fs.createReadStream(this.file.path, {
         start,
         end,
+        highWaterMark: 512 * 1024,
       })
     } else {
       // 浏览器
