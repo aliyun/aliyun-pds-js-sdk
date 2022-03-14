@@ -22,7 +22,7 @@ const MAX_CHUNK_SIZE = 100 * 1024 * 1024 // 100MB
 const SUFFIX = '.download'
 const LIMIT_PART_NUM = 9000 // 最多分片数量
 const PROCESS_CALC_CRC64_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 crc64
-const PROGRESS_EMIT_STEP = 0.2 // 进度通知 step
+const PROGRESS_EMIT_STEP = 0.4 // 进度通知 step
 
 import Debug from 'debug'
 const debug = Debug('PDSJS:BaseUploader')
@@ -683,11 +683,13 @@ export class Downloader extends BaseLoader {
 
     const running_parts = {}
 
+    const last_prog = 0
+
     this.startCalcSpeed()
 
     // 缓冲修改 progress
-    // this.updateProgressThrottle = throttleInTimes(() => {
-    //   this.updateProgress()
+    // this.updateProgressThrottle = throttleInTimes((opt) => {
+    //   this.updateProgressStep(opt)
     // }, 20, 300)
 
     try {
@@ -726,7 +728,7 @@ export class Downloader extends BaseLoader {
               }
               con++
               running_parts[partInfo.part_number] = 0
-              await that.down_part(partInfo, running_parts)
+              await that.down_part(partInfo, running_parts, {last_prog})
               con--
               check_download_next_part()
             })()
@@ -745,7 +747,7 @@ export class Downloader extends BaseLoader {
     }
   }
 
-  async down_part(partInfo, running_parts) {
+  async down_part(partInfo, running_parts, last_opt) {
     partInfo.start_time = Date.now()
     this.timeLogStart('part-' + partInfo.part_number, Date.now())
 
@@ -778,7 +780,9 @@ export class Downloader extends BaseLoader {
         maxRedirects: 5,
       })
 
-      await this.pipeWS(streamResult.data, partInfo, ({loaded}) => {
+      let cache_block_size = Math.max(512 * 1024, Math.floor(this.file.size / 500))
+
+      await this.pipeWS(streamResult.data, partInfo, cache_block_size, ({loaded}) => {
         running_parts[partInfo.part_number] = loaded || 0
 
         let running_part_loaded = Object.values(running_parts).reduce((a, b) => a + b)
@@ -786,7 +790,7 @@ export class Downloader extends BaseLoader {
         this.loaded = this.done_part_loaded + running_part_loaded
         // 回调太频繁，需要缓冲，不然会影响下载速度
         // this.updateProgressThrottle()
-        this.updateProgressStep()
+        this.updateProgressStep(last_opt)
       })
 
       partInfo.loaded = partInfo.part_size
@@ -944,23 +948,21 @@ export class Downloader extends BaseLoader {
   checkMatch(a, b, msg) {
     if (a != null && a != b) throw new Error(msg)
   }
-  pipeWS(stream, partInfo, onPartProgress) {
+  pipeWS(stream, partInfo, block_size, onPartProgress) {
     const {fs} = this.context
-
+    let c = 0
     // partInfo.loaded = 0
     return new Promise((resolve, reject) => {
       const ws = fs.createWriteStream(this.file.temp_path, {
         // autoClose: true,
         flags: 'r+',
         start: partInfo.from + partInfo.loaded,
-        highWaterMark: 128 * 1024,
       })
 
       stream.on('data', chunk => {
-        // if (!chunk) return;
         if (this.stopFlag) {
           const stopErr = new Error('stopped')
-
+          partInfo.loaded = 0
           // 流要destroy掉
           stream.destroy(stopErr)
           ws.destroy(stopErr)
@@ -968,16 +970,25 @@ export class Downloader extends BaseLoader {
           reject(stopErr)
           return
         }
+
         partInfo.loaded += chunk.byteLength
-        onPartProgress(partInfo)
+        c += chunk.byteLength
+
+        if (c >= block_size) {
+          c = 0
+          onPartProgress(partInfo)
+        }
       })
 
       stream.pipe(ws)
 
       stream.on('error', e => {
+        partInfo.loaded = 0
         reject(e)
       })
       ws.on('finish', () => {
+        onPartProgress(partInfo)
+
         if (partInfo.loaded != partInfo.part_size) {
           console.log('---------ws finish', partInfo.loaded, partInfo.part_size, 'retry_download_part')
           reject(new Error('retry_download_part'))
@@ -986,39 +997,19 @@ export class Downloader extends BaseLoader {
         }
       })
       ws.on('error', e => {
+        partInfo.loaded = 0
         reject(e)
       })
     })
   }
 
-  // updateProgress() {
-  //   let running_loaded = 0
-  //   this.part_info_list.forEach(n => {
-  //     running_loaded += n.loaded
-  //   })
-  //   this.loaded = running_loaded
-
-  //   // console.log('---on data',partInfo.part_number, partInfo.part_size, partInfo.loaded,  this.loaded, this.done_part_loaded, chunk.byteLength)
-  //   this.progress = formatProgress(this.loaded / this.file.size)
-
-  //   this.notifyProgress(this.state, this.progress)
-  // }
-  updateProgressStep() {
-    // let running_loaded = 0
-
-    // this.part_info_list.forEach(n => {
-    //   running_loaded += n.loaded
-    // })
-    // this.loaded = this.part_info_list.map(n=>n.loaded).reduce((a,b)=>a+b)
-
-    // this.loaded = running_loaded
-
+  updateProgressStep(opt) {
     let prog = (this.loaded * 100) / this.file.size
-    this._last_prog = this._last_prog || 0
+    opt.last_prog = opt.last_prog || 0
 
-    if (prog - this._last_prog > PROGRESS_EMIT_STEP) {
+    if (prog - opt.last_prog > PROGRESS_EMIT_STEP) {
       this.progress = Math.floor(prog * 100) / 100
-      this._last_prog = prog
+      opt.last_prog = prog
       this.notifyProgress(this.state, this.progress)
     }
   }

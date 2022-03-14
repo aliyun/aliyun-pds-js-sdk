@@ -27,7 +27,7 @@ const MAX_SIZE_FOR_SHA1 = 10 * 1024 * 1024 * 1024 // 小于 10GB 计算秒传
 const MIN_SIZE_FOR_PRE_SHA1 = 100 * 1024 * 1024 // 大于 100MB 计算预秒传
 const PROCESS_CALC_CRC64_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 crc64
 const PROCESS_CALC_SHA1_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 sha1
-const PROGRESS_EMIT_STEP = 0.2 // 进度通知 step
+const PROGRESS_EMIT_STEP = 0.3 // 进度通知 step
 
 console.timeLog = console.timeLog || console.timeEnd
 
@@ -826,6 +826,7 @@ export class BaseUploader extends BaseLoader {
 
     const that = this
     let con = 0
+    let last_opt = {last_prog: 0}
 
     this.maxConcurrency = this.init_chunk_con
 
@@ -880,13 +881,13 @@ export class BaseUploader extends BaseLoader {
             }
 
             running_parts[partInfo.part_number] = 0
-            up_part(partInfo)
+            up_part(partInfo, last_opt)
 
             check_upload_next_part()
           }
         }
 
-        async function up_part(partInfo) {
+        async function up_part(partInfo, last_opt) {
           if (that.stopFlag) {
             reject(new Error('stopped'))
             return
@@ -935,7 +936,7 @@ export class BaseUploader extends BaseLoader {
 
                 // 更新进度，缓冲
                 // that.updateProgressThrottle()
-                that.updateProgressStep()
+                that.updateProgressStep(last_opt)
 
                 // let running_part_loaded = 0
                 // for (var k in running_parts) running_part_loaded += running_parts[k]
@@ -1058,13 +1059,13 @@ export class BaseUploader extends BaseLoader {
   //   this.notifyProgress(this.state, this.progress)
   // }
 
-  updateProgressStep() {
+  updateProgressStep(opt) {
     let prog = (this.loaded * 100) / this.file.size
-    this._last_prog = this._last_prog || 0
+    opt.last_prog = opt.last_prog || 0
 
-    if (prog - this._last_prog > PROGRESS_EMIT_STEP) {
+    if (prog - opt.last_prog > PROGRESS_EMIT_STEP) {
       this.progress = Math.floor(prog * 100) / 100
-      this._last_prog = prog
+      opt.last_prog = prog
       this.notifyProgress(this.state, this.progress)
     }
   }

@@ -178,6 +178,7 @@ export class StandardSerialUploader extends BaseUploader {
     this.done_part_loaded = calc_uploaded(this.part_info_list)
     this.start_done_part_loaded = this.done_part_loaded // 用于计算平均速度
     this.loaded = this.done_part_loaded
+    let last_opt = {last_prog: 0}
 
     this.startCalcSpeed()
 
@@ -230,7 +231,7 @@ export class StandardSerialUploader extends BaseUploader {
               //   this.notifyProgress(this.state, this.progress)
               // })
 
-              this.updateProgressStep()
+              this.updateProgressStep(last_opt)
             },
           })
 
