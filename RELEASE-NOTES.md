@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.1.14
+
+* fix: 修复sha1 wasm报错: Memery out of bound 导致上传失败。
+
 ## 0.1.13
 
 * fix: 修复上传下载progree更新太过频繁。
