@@ -27,7 +27,7 @@ const MAX_SIZE_FOR_SHA1 = 10 * 1024 * 1024 * 1024 // 小于 10GB 计算秒传
 const MIN_SIZE_FOR_PRE_SHA1 = 100 * 1024 * 1024 // 大于 100MB 计算预秒传
 const PROCESS_CALC_CRC64_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 crc64
 const PROCESS_CALC_SHA1_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 sha1
-const PROGRESS_EMIT_STEP = 0.3 // 进度通知 step
+const PROGRESS_EMIT_STEP = 0.2 // 进度通知 step
 
 console.timeLog = console.timeLog || console.timeEnd
 

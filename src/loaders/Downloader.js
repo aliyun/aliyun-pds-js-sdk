@@ -22,7 +22,7 @@ const MAX_CHUNK_SIZE = 100 * 1024 * 1024 // 100MB
 const SUFFIX = '.download'
 const LIMIT_PART_NUM = 9000 // 最多分片数量
 const PROCESS_CALC_CRC64_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 crc64
-const PROGRESS_EMIT_STEP = 0.4 // 进度通知 step
+const PROGRESS_EMIT_STEP = 0.2 // 进度通知 step
 
 import Debug from 'debug'
 const debug = Debug('PDSJS:BaseUploader')

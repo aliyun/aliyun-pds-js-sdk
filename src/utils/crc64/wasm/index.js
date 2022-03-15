@@ -32,7 +32,7 @@ function strToUint64Ptr(str) {
 
   const uint64Ptr = binding._malloc(8)
   raw.strToUint64Ptr(strPtr, uint64Ptr)
-  binding._free(strPtr)
+  safeFree(strPtr)
 
   return uint64Ptr
 }
@@ -41,7 +41,7 @@ function uint64PtrToStr(uint64Ptr) {
   const strPtr = binding._malloc(32)
   raw.uint64PtrToStr(strPtr, uint64Ptr)
   const str = binding.UTF8ToString(strPtr)
-  binding._free(strPtr)
+  safeFree(strPtr)
   return str
 }
 /**
@@ -57,10 +57,18 @@ function crc64(buff, prev = '0') {
   raw.crc64(prevPtr, buffPtr, buff.length)
   const ret = uint64PtrToStr(prevPtr)
 
-  binding._free(prevPtr)
-  binding._free(buffPtr)
+  safeFree(prevPtr)
+  safeFree(buffPtr)
 
   return ret
+}
+
+function safeFree(prevPtr) {
+  try {
+    binding._free(prevPtr)
+  } catch (e) {
+    console.warn('wasm _free error:', e)
+  }
 }
 
 export {ready, crc64}

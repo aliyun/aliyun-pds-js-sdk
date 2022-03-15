@@ -35,15 +35,14 @@ function sha1(buff) {
   raw.sha1(prevPtr, buffPtr, buff.length)
   const ret = binding.UTF8ToString(prevPtr)
 
-  binding._free(buffPtr)
-  binding._free(prevPtr)
+  safeFree(buffPtr)
+  safeFree(prevPtr)
 
   return ret.toUpperCase()
 }
 
 function createSha1() {
   const prevPtr = binding._malloc(300)
-  const resultPtr = binding._malloc(21)
   raw.sha1Init(prevPtr)
   let ret
   return {
@@ -51,7 +50,7 @@ function createSha1() {
       if (ret) throw Error('cannot call update() after hex()')
       const buffPtr = buffToPtr(buff, binding)
       raw.sha1Update(prevPtr, buffPtr, buff.length)
-      binding._free(buffPtr)
+      this.free(buffPtr)
     },
     getH() {
       /*
@@ -75,12 +74,26 @@ function createSha1() {
     },
     hex() {
       if (ret) return ret
+
+      const resultPtr = binding._malloc(21)
       raw.sha1Final(resultPtr, prevPtr)
       ret = binding.UTF8ToString(resultPtr)
 
-      binding._free(prevPtr)
-      binding._free(resultPtr)
+      this.free(resultPtr)
+      this.free(prevPtr)
+
       return ret.toUpperCase()
     },
+    free(prevPtr) {
+      safeFree(prevPtr)
+    },
+  }
+}
+
+function safeFree(prevPtr) {
+  try {
+    binding._free(prevPtr)
+  } catch (e) {
+    console.warn('wasm _free error:', e)
   }
 }

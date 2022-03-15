@@ -11,12 +11,13 @@ module.exports = {
 }
 async function run(obj, sendMessage) {
   await SHA1_WASM.ready()
+  let hash
   try {
     let {file_path, highWaterMark, parts} = obj
 
     let total = fs.statSync(file_path).size
 
-    let hash = SHA1_WASM.createSha1()
+    hash = SHA1_WASM.createSha1()
     let loaded = 0
     let stream
     let lastH = []
@@ -82,5 +83,7 @@ async function run(obj, sendMessage) {
   } catch (e) {
     console.error(__filename + ' error:', e)
     sendMessage({type: 'error', error: e.stack})
+  } finally {
+    if (hash) hash.free()
   }
 }
