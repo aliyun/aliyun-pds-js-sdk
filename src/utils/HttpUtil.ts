@@ -67,7 +67,8 @@ function isNetworkError(e: Error): boolean {
     e.message.indexOf('socket hang up') != -1 ||
     e.message.indexOf('getaddrinfo ENOTFOUND') != -1 ||
     e.message.indexOf('timeout of') != -1 ||
-    e.message.indexOf('connect ECONNRESET') != -1
+    e.message.indexOf('connect ECONNRESET') != -1 ||
+    e.message.indexOf('connect ETIMEDOUT') != -1
   )
 }
 export {callRetry, delay, getStreamBody, isNetworkError}

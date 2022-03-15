@@ -11,6 +11,19 @@ import assert = require('assert')
 
 describe('ChunkUtil', () => {
   describe('init_chunks_sha1', () => {
+    it('file_size 0', ()=>{
+      let parts = []
+      let [part_list, chunk_size] = init_chunks_sha1(0, parts, 5242944) 
+      //[ { part_number: 1, part_size: 0, from: 0, to: 0 } ] 5242944
+      assert(part_list.length==1)
+      assert(part_list[0].part_number==1)
+      assert(part_list[0].part_size==0)
+      assert(part_list[0].from==0)
+      assert(part_list[0].to==0)
+      assert(chunk_size==5242944)
+    })
+
+
     it('reload part', () => {
       let parts = [
         {
@@ -30,7 +43,7 @@ describe('ChunkUtil', () => {
         },
       ]
       let [part_list, chunk_size] = init_chunks_sha1(10240000, parts, 5242944)
-      console.log(part_list, chunk_size)
+      // console.log(part_list, chunk_size)
       assert(chunk_size == 5243008)
 
       assert(part_list[0].part_size == 5242000)

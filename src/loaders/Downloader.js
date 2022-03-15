@@ -76,10 +76,7 @@ export class Downloader extends BaseLoader {
       // 均速计算
       used_avg_speed,
       used_time_len,
-
-      content_type,
-      thumbnail,
-      remote_updated_at,
+ 
     } = initCheckpoint(checkpoint)
 
     const {
@@ -138,10 +135,6 @@ export class Downloader extends BaseLoader {
     this.checking_crc = checking_crc !== false
 
     // 可选
-    this.content_type = content_type
-    this.thumbnail = thumbnail
-    this.remote_updated_at = remote_updated_at
-
     this.download_url = download_url
 
     // funs

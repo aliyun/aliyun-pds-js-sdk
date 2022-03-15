@@ -5,7 +5,7 @@ import {readBlock, readStream, getArrayBufferFromBlob} from './StreamUtil.js'
 import {nodeProcessCalc, webWorkerCalc} from './ForkUtil'
 import {createSha1WebWorkerBlob} from './sha1/webworker'
 
-const CHUNK_SIZE = 512 * 1024 // 512MB
+const CHUNK_SIZE = 512 * 1024 // 512KB
 const PROGRESS_EMIT_STEP = 0.2 // 进度超过多少,回调onProgress
 
 export {
