@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.1.15
+
+fix: 修复 isNetworkError 方法
+
 ## 0.1.14
 
 * fix: 修复sha1 wasm报错: Memery out of bound 导致上传失败。
