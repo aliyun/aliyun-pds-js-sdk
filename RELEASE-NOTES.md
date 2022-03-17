@@ -1,5 +1,11 @@
 # Release Notes
 
+
+## 0.1.16
+
+fix: 暂时去掉浏览器使用worker计算sha1逻辑。
+fix: 优化下载逻辑。
+
 ## 0.1.15
 
 fix: 修复 isNetworkError 方法

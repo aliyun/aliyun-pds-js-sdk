@@ -1,7 +1,7 @@
 /** @format */
 
 const conf = window.Config
-
+const showMsg = window.showMessage
 window.onload = function () {
   document.getElementById('btn-upload').onclick = () => {
     uploadTest({ignore_rapid: true, parallel_upload: true})
@@ -39,21 +39,21 @@ async function uploadTest({ignore_rapid, parallel_upload}) {
     },
     onStateChange(cp, state, error) {
       if (state == 'success') {
-        showMessage('上传成功', msg_id)
+        showMsg('上传成功', msg_id)
       } else if (state == 'rapic_success') {
-        showMessage('秒传成功', msg_id)
+        showMsg('秒传成功', msg_id)
       } else {
-        showMessage(state, msg_id)
+        showMsg(state, msg_id)
       }
 
       console.log('🏞🏞🏞🏞', state)
     },
     onProgress(state, prog) {
       if (state == 'running')
-        showMessage('正在上传:' + prog + '%, 速度' + window.PDS_SDK.formatSize(task.speed) + '/s', msg_id)
-      else if (state == 'computing_hash') showMessage('正在计算:' + prog + '%', msg_id)
+        showMsg('正在上传:' + prog + '%, 速度' + window.PDS_SDK.formatSize(task.speed) + '/s', msg_id)
+      else if (state == 'computing_hash') showMsg('正在计算:' + prog + '%', msg_id)
       else if (state == 'checking') {
-        showMessage('正在校验:' + prog + '%', msg_id)
+        showMsg('正在校验:' + prog + '%', msg_id)
       }
       console.log('🤘🏻🤘🏻🤘🏻🤘🏻', state, prog + '%', window.PDS_SDK.formatSize(task.speed) + '/s')
     },
@@ -83,41 +83,42 @@ async function uploadHostingTest() {
     },
     onStateChange(cp, state, error) {
       if (state == 'success') {
-        showMessage('上传成功', msg_id)
+        showMsg('上传成功', msg_id)
       } else {
-        showMessage(state, msg_id)
+        showMsg(state, msg_id)
       }
 
       console.log('🏞🏞🏞🏞', state)
     },
     onProgress(state, prog) {
       if (state == 'running')
-        showMessage('正在上传:' + prog + '%, 速度' + window.PDS_SDK.formatSize(task.speed) + '/s', msg_id)
-      else if (state == 'computing_hash') showMessage('正在计算:' + prog + '%', msg_id)
+        showMsg('正在上传:' + prog + '%, 速度' + window.PDS_SDK.formatSize(task.speed) + '/s', msg_id)
+      else if (state == 'computing_hash') showMsg('正在计算:' + prog + '%', msg_id)
       else if (state == 'checking') {
-        showMessage('正在校验:' + prog + '%', msg_id)
+        showMsg('正在校验:' + prog + '%', msg_id)
       }
       console.log('🤘🏻🤘🏻🤘🏻🤘🏻', state, prog + '%', window.PDS_SDK.formatSize(task.speed) + '/s')
     },
   })
 
-  console.log('上传成功: ', cp.state, ', file id:', cp.file_id)
+  console.log('上传成功: ', cp.state, ', file path:', cp.file_path)
 
   document.getElementById('btn-download').disabled = false
 }
 async function downloadTest() {
-  download(cp.drive_id, cp.file_id)
+  download(cp)
 
   // const drive_id = conf['domains']['StandardMode'].drive_id
-  // download(drive_id,'622e9e0ffa09742f013f4075a07d3b7be796f762')
+  // download(drive_id,'6231e19731047395c7c143a8806ee8b73d4392a0')
   // download(drive_id,'6218d58f1ef5651bde994b7b93fa56bcbd9e7d1a')
 }
 
-async function download(drive_id, file_id) {
+async function download(cp) {
+  let {drive_id, file_id, file_path} = cp
   let msg_id = Math.random(36).toString().substring(2)
-  var client = await window.getPDSClient('StandardMode')
+  var client = await window.getPDSClient(cp.path_type)
 
-  let pdsFile = await client.getFile({drive_id, file_id})
+  let pdsFile = await client.getFile({drive_id, file_path, file_id})
 
   const downloadTo = 'bin/tmp-' + pdsFile.name
   var task
@@ -130,19 +131,19 @@ async function download(drive_id, file_id) {
     },
     onProgress(state, prog) {
       if (state == 'running')
-        showMessage('正在下载:' + prog + '%, 速度' + window.PDS_SDK.formatSize(task.speed) + '/s', msg_id)
-      else if (state == 'computing_hash') showMessage('正在计算:' + prog + '%', msg_id)
+        showMsg('正在下载:' + prog + '%, 速度' + window.PDS_SDK.formatSize(task.speed) + '/s', msg_id)
+      else if (state == 'computing_hash') showMsg('正在计算:' + prog + '%', msg_id)
       else if (state == 'checking') {
-        showMessage('正在校验:' + prog + '%', msg_id)
+        showMsg('正在校验:' + prog + '%', msg_id)
       }
 
       console.log('👇🏻👇🏻👇🏻👇🏻', state, prog + '%', window.PDS_SDK.formatSize(task.speed) + '/s')
     },
     onStateChange(cp, state, error) {
       if (state == 'success') {
-        showMessage('下载成功', msg_id)
+        showMsg('下载成功', msg_id)
       } else {
-        showMessage(state, msg_id)
+        showMsg(state, msg_id)
       }
       console.log('🏞🏞🏞🏞', state)
     },

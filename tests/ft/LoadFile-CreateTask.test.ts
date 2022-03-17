@@ -10,7 +10,7 @@ const {existsSync, writeFileSync, statSync, unlinkSync} = require('fs')
 const {getClient} = require('./token-util')
 
 describe('LoadFile', function () {
-  this.timeout(60000)
+  this.timeout(600000)
 
   describe('createTask', () => {
     it('uploadTask standard mode', async () => {

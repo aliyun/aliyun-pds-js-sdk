@@ -28,13 +28,7 @@ async function calcFileSha1({
     }
   } else {
     // 浏览器
-    let size = pre_size || file.size
-    if (size > process_calc_sha1_size) {
-      if (verbose) console.log(`使用 web worker计算 sha1`)
-      return await JS_SHA1.calcFileSha1Worker(file, pre_size, onProgress, getStopFlagFun)
-    } else {
-      return await JS_SHA1.calcFileSha1(file, pre_size, onProgress, getStopFlagFun)
-    }
+    return await JS_SHA1.calcFileSha1(file, pre_size, onProgress, getStopFlagFun)
   }
 }
 async function calcFilePartsSha1({
@@ -53,7 +47,7 @@ async function calcFilePartsSha1({
     let size = context.fs.statSync(file_path).size
 
     if (size > process_calc_sha1_size) {
-      if (verbose) console.log(`使用 node 子进程计算 sha1`)
+      if (verbose) console.log(`使用 node 子进程计算 sha1 (分片)`)
       return await JS_SHA1.calcFilePartsSha1NodeProcess(file_path, part_info_list, onProgress, getStopFlagFun, context)
     } else {
       return await JS_SHA1.calcFilePartsSha1Node(
@@ -66,13 +60,7 @@ async function calcFilePartsSha1({
     }
   } else {
     // 浏览器
-    let size = file.size
-    if (size > process_calc_sha1_size) {
-      if (verbose) console.log(`使用 web worker计算 sha1`)
-      return await JS_SHA1.calcFilePartsSha1Worker(file, part_info_list, onProgress, getStopFlagFun)
-    } else {
-      return await JS_SHA1.calcFilePartsSha1(file, part_info_list, onProgress, getStopFlagFun)
-    }
+    return await JS_SHA1.calcFilePartsSha1(file, part_info_list, onProgress, getStopFlagFun)
   }
 }
 

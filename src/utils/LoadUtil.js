@@ -80,9 +80,9 @@ function removeItem(arr, item) {
 // 根据网速调整下载并发量
 function calcDownloadMaxConcurrency(speed, chunkSize, lastConcurrency, init_chunk_con = 5) {
   const block = chunkSize * lastConcurrency
-  if (speed > block * 0.7) {
+  if (speed > block * 0.9) {
     // 激进上涨
-    return lastConcurrency + 3
+    return lastConcurrency + 5
   } else if (speed > block * 0.2) {
     // 保守下跌
     if (lastConcurrency > 5) return lastConcurrency - 1

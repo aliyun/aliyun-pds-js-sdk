@@ -1,9 +1,8 @@
 /** @format */
 import {ready, sha1, createSha1} from './sha1/js-sha1-origin'
 import {ready as wasmReady, createSha1 as wasmCreateSha1} from './sha1/wasm'
-import {readBlock, readStream, getArrayBufferFromBlob} from './StreamUtil.js'
-import {nodeProcessCalc, webWorkerCalc} from './ForkUtil'
-import {createSha1WebWorkerBlob} from './sha1/webworker'
+import {readBlock, readStream} from './StreamUtil.js'
+import {nodeProcessCalc} from './ForkUtil'
 
 const CHUNK_SIZE = 512 * 1024 // 512KB
 const PROGRESS_EMIT_STEP = 0.2 // 进度超过多少,回调onProgress
@@ -14,9 +13,7 @@ export {
   createSha1,
   // 下面几个个方法会自动调用 await ready()
   calcFileSha1,
-  calcFileSha1Worker,
   calcFilePartsSha1,
-  calcFilePartsSha1Worker,
   // for node.js
   calcFileSha1Node, // 串行
   calcFileSha1NodeProcess,
@@ -24,48 +21,6 @@ export {
   calcFilePartsSha1NodeProcess,
   calcFilePartsSha1NodeWorker,
 }
-/* istanbul ignore next */
-async function calcFileSha1Worker(file, preSize, onProgress, getStopFlag) {
-  await ready()
-
-  onProgress = onProgress || (prog => {})
-  getStopFlag = getStopFlag || (() => false)
-
-  let obj = {
-    action: 'sha1',
-    preSize,
-    chunkSize: CHUNK_SIZE,
-    file: await getArrayBufferFromBlob(file, new FileReader()),
-    progress_emit_step: PROGRESS_EMIT_STEP,
-  }
-
-  let blob = createSha1WebWorkerBlob()
-  return await webWorkerCalc(blob, obj, onProgress, getStopFlag)
-}
-/* istanbul ignore next */
-async function calcFilePartsSha1Worker(file, parts, onProgress, getStopFlag) {
-  await ready()
-
-  onProgress = onProgress || (prog => {})
-  getStopFlag = getStopFlag || (() => false)
-
-  let obj = {
-    action: 'sha1Parts',
-    parts,
-    chunkSize: CHUNK_SIZE,
-    file: await getArrayBufferFromBlob(file, new FileReader()),
-    progress_emit_step: PROGRESS_EMIT_STEP,
-  }
-
-  let blob = createSha1WebWorkerBlob()
-  let result = await webWorkerCalc(blob, obj, onProgress, getStopFlag)
-  return {
-    part_info_list: result.part_info_list,
-    content_hash: result.content_hash,
-    content_hash_name: result.content_hash_name,
-  }
-}
-
 /**
  * 浏览器中计算文件的 sha1
  * @param {*} file  HTML File 对象
@@ -238,6 +193,7 @@ async function calcFileSha1NodeProcess(file_path, size, onProgress, getStopFlag,
 
 async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, context) {
   await wasmReady()
+
   const {fs, highWaterMark} = context
   let total = fs.statSync(file_path).size
 
@@ -248,7 +204,7 @@ async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, 
   let loaded = 0
   let stream
   let lastH = []
-  var buf = Buffer.allocUnsafe(0)
+  var buf = null
   let progress = 0
   let last_progress = 0
 
@@ -269,11 +225,16 @@ async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, 
       await readStream(
         stream,
         chunk => {
-          buf = Buffer.concat([buf, chunk], buf.length + chunk.length)
+          if (buf) {
+            buf = Buffer.concat([buf, chunk], buf.length + chunk.length)
+          } else {
+            buf = chunk
+          }
+
           // 减少js和wasm交互： 攒够 chunkSize 才 update
           if (buf.length >= CHUNK_SIZE) {
             hash.update(buf)
-            buf = Buffer.allocUnsafe(0)
+            buf = null
           }
 
           loaded += chunk.length
@@ -294,7 +255,7 @@ async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, 
 
       if (buf && buf.length > 0) {
         hash.update(buf)
-        buf = Buffer.allocUnsafe(0)
+        buf = null
       }
 
       // 获取中间值
@@ -306,7 +267,7 @@ async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, 
 
   return {
     part_info_list: parts,
-    content_hash: hash.hex().toUpperCase(),
+    content_hash: hash.hex(),
     content_hash_name: 'sha1',
   }
 }

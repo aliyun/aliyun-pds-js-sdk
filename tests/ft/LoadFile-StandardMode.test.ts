@@ -12,20 +12,20 @@ const {getClient} = require('./token-util')
 const PATH_TYPE = 'StandardMode'
 
 describe('LoadFile', function () {
-  this.timeout(60000)
+  this.timeout(600000)
 
   describe('StandardMode', () => {
     it('parallel_upload: true', async () => {
       const {domain_id, drive_id} = Config['domains'][PATH_TYPE]
 
-      let from = join(__dirname, `tmp/tmp-${domain_id}-upload.txt`)
+      let from = join(__dirname, `tmp/tmp-${domain_id}-std-upload.txt`)
 
       // mock 文件
       writeFileSync(from, '')
       // if (!existsSync(from)) execSync(`dd if=/dev/zero of=${from} bs=1024 count=10000`)
 
       let client = await getClient(PATH_TYPE)
-
+      let task
       // 上传
       var cp = await client.uploadFile(
         from,
@@ -38,11 +38,12 @@ describe('LoadFile', function () {
           parallel_upload: true,
           verbose: true, //显示详细日志
 
-          onReady(task) {
-            console.log('-------onReady')
+          onReady(t) {
+            console.log('-------onReady1')
+            task = t
           },
           onProgress(state, progress) {
-            console.log(state, progress)
+            console.log(state, progress, task.speed / 1024 / 1024 + 'MB/s')
           },
           onPartComplete(cp, partInfo) {
             console.log('onPartComplete:', partInfo.part_number, '---done-------')
@@ -68,11 +69,12 @@ describe('LoadFile', function () {
           parallel_upload: true,
           verbose: true, //显示详细日志
 
-          onReady(task) {
-            console.log('-------onReady')
+          onReady(t) {
+            task = t
+            console.log('-------onReady2')
           },
           onProgress(state, progress) {
-            console.log(state, progress)
+            console.log(state, progress, task.speed / 1024 / 1024, 'MB/s')
           },
           onPartComplete(cp, partInfo) {
             console.log('onPartComplete:', partInfo.part_number, '---done-------')
@@ -91,16 +93,18 @@ describe('LoadFile', function () {
     it('parallel_upload: false, rapid', async () => {
       const {domain_id, drive_id} = Config['domains'][PATH_TYPE]
 
-      let from = join(__dirname, 'tmp', `tmp-${domain_id}-upload-2.txt`)
+      let from = join(__dirname, 'tmp', `tmp-${domain_id}-upload-10MB.txt`)
+      let local_name = `tmp-${domain_id}-10MB-2.txt`
+      let to = join(__dirname, 'tmp', local_name)
+      if (existsSync(to)) unlinkSync(to)
 
-      // writeFileSync(from, Math.random().toString(36).substring(2))
       // mock 文件
-      execSync(`dd if=/dev/zero of=${from} bs=1024 count=10000`)
+      if (!existsSync(from)) execSync(`dd if=/dev/zero of=${from} bs=1024 count=10000`)
 
       var client = await getClient(PATH_TYPE)
 
       console.log('---------------开始上传-----------------------')
-
+      let task
       // 上传
       var cp = await client.uploadFile(
         from,
@@ -113,12 +117,15 @@ describe('LoadFile', function () {
           max_size_for_sha1: 5 * 1024 * 1024,
 
           verbose: true, //显示详细日志
+          onReady(t) {
+            task = t
+          },
           onStateChange(cp, state, err) {
             // rapid_success
             console.log('---------state', state, err)
           },
           onProgress(state, progress) {
-            console.log('onProgress:', state, progress)
+            console.log('onProgress:', state, progress, task.speed / 1024 / 1024 + 'MB/s')
           },
           onPartComplete(cp, partInfo) {
             console.log('onPartComplete:', partInfo.part_number, '---done-------')
@@ -143,9 +150,11 @@ describe('LoadFile', function () {
           parallel_upload: false,
           verbose: true, //显示详细日志
           min_size_for_pre_sha1: 4 * 1024 * 1024,
-
+          onReady(t) {
+            task = t
+          },
           onProgress(state, progress) {
-            console.log('onProgress:', state, progress)
+            console.log('onProgress:', state, progress, task.speed / 1024 / 1024 + 'MB/s')
           },
           onPartComplete(cp, partInfo) {
             console.log('onPartComplete:', partInfo.part_number, '---done-------')
@@ -165,12 +174,15 @@ describe('LoadFile', function () {
       // 下载
       let fileInfo = await client.postAPI('/file/get', {drive_id, file_id})
       console.log(fileInfo)
-      let local_name = `tmp-${domain_id}-download-2.txt`
-      var cp2 = await client.downloadFile(fileInfo, join(__dirname, 'tmp', local_name), {
+
+      var cp2 = await client.downloadFile(fileInfo, to, {
         max_chunk_size: 3 * 1024 * 1024,
         verbose: true, //显示详细日志
+        onReady(t) {
+          task = t
+        },
         onProgress(state, progress) {
-          console.log(state, progress)
+          console.log(state, progress, task.speed / 1024 / 1024 + 'MB/s')
         },
         onPartComplete(cp, partInfo) {
           console.log('onPartComplete:', partInfo.part_number, '---done-------')
@@ -188,13 +200,15 @@ describe('LoadFile', function () {
       console.log('---------------删除-----------------------', file_id)
 
       await client.postAPI('/file/delete', {drive_id, file_id, permanently: true})
+
+      if (existsSync(to)) unlinkSync(to)
     })
 
     it('empty', async () => {
       const {domain_id, drive_id} = Config['domains'][PATH_TYPE]
 
       let from = join(__dirname, 'tmp', `tmp-${domain_id}-upload-123.txt`)
-
+      let task
       // mock 文件
       writeFileSync(from, '')
 
@@ -209,8 +223,11 @@ describe('LoadFile', function () {
         {
           parallel_upload: false,
           verbose: true, //显示详细日志
+          onReady(t) {
+            task = t
+          },
           onProgress(state, progress) {
-            console.log(state, progress)
+            console.log(state, progress, task.speed / 1024 / 1024 + 'MB/s')
           },
           onPartComplete(cp, partInfo) {
             console.log('onPartComplete:', partInfo.part_number, '---done-------')
@@ -232,8 +249,11 @@ describe('LoadFile', function () {
       var cp2 = await client.downloadFile(fileInfo, join(__dirname, 'tmp', local_name), {
         max_chunk_size: 3 * 1024 * 1024,
         verbose: true, //显示详细日志
+        onReady(t) {
+          task = t
+        },
         onProgress(state, progress) {
-          console.log(state, progress)
+          console.log(state, progress, task.speed / 1024 / 1024 + 'MB/s')
         },
         onPartComplete(cp, partInfo) {
           console.log('onPartComplete:', partInfo.part_number, '---done-------')

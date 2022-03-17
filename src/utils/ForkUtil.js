@@ -1,33 +1,6 @@
 /** @format */
 
-export {nodeProcessCalc, nodeWorkerCalc, webWorkerCalc}
-/* istanbul ignore next */
-async function webWorkerCalc(script_path, params, onProgress, getStopFlag) {
-  return await new Promise((resolve, reject) => {
-    const worker = new Worker(script_path)
-    worker.onmessage = ({data}) => {
-      switch (data.type) {
-        case 'ready':
-          worker.postMessage({type: 'init', workerData: params}, [params.file])
-          break
-        case 'progress':
-          if (getStopFlag()) {
-            worker.terminate()
-            reject(new Error('stopped'))
-            return
-          }
-          onProgress(data.progress)
-          break
-        case 'result':
-          resolve(data.result)
-          break
-        case 'error':
-          reject(typeof data.error == 'string' ? new Error(data.error) : data.error)
-          break
-      }
-    }
-  })
-}
+export {nodeProcessCalc}
 
 /* istanbul ignore next */
 async function nodeProcessCalc(script_path, params, onProgress, getStopFlag, context) {
@@ -55,39 +28,6 @@ async function nodeProcessCalc(script_path, params, onProgress, getStopFlag, con
           b(typeof data.error == 'string' ? new Error(data.error) : data.error)
           break
       }
-    })
-  })
-}
-/* istanbul ignore next */
-async function nodeWorkerCalc(script_path, params, onProgress, getStopFlag, context) {
-  const {worker_threads} = context
-  const {Worker} = worker_threads
-  return await new Promise((resolve, reject) => {
-    const worker = new Worker(script_path, {workerData: params})
-
-    worker.on('message', data => {
-      switch (data.type) {
-        case 'progress':
-          if (getStopFlag()) {
-            worker.terminate()
-            reject(new Error('stopped'))
-            return
-          }
-          onProgress(data.progress)
-          break
-        case 'result':
-          resolve(data.result)
-          break
-        case 'error':
-          reject(typeof data.error == 'string' ? new Error(data.error) : data.error)
-          break
-      }
-    })
-    worker.on('error', err => {
-      reject(err)
-    })
-    worker.on('exit', code => {
-      if (code !== 0) reject(new Error(`Worker stopped with exit code ${code}`))
     })
   })
 }

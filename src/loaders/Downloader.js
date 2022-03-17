@@ -76,7 +76,6 @@ export class Downloader extends BaseLoader {
       // 均速计算
       used_avg_speed,
       used_time_len,
- 
     } = initCheckpoint(checkpoint)
 
     const {
@@ -621,7 +620,7 @@ export class Downloader extends BaseLoader {
     } else {
       this.speed_0_count = 0
     }
-    if (this.verbose && this.speed_0_count > 0) console.log(`speed==0 ${this.speed_0_count}次, 1000次将暂停任务`)
+    if (this.verbose && this.speed_0_count > 0) console.log(`speed==0 ${this.speed_0_count}次, 10次将重新请求`)
 
     if (this.speed_0_count >= 10) {
       // this.stop()
@@ -761,8 +760,9 @@ export class Downloader extends BaseLoader {
       )
     }
 
+    let streamResult
     try {
-      const streamResult = await this.downloadPartRetry(partInfo, {
+      streamResult = await this.downloadPartRetry(partInfo, {
         method: 'get',
         url: this.download_url,
         headers: {
@@ -772,7 +772,31 @@ export class Downloader extends BaseLoader {
         maxContentLength: Infinity,
         maxRedirects: 5,
       })
+    } catch (e) {
+      delete partInfo.done
+      delete partInfo.running
+      delete partInfo.loaded
 
+      /* istanbul ignore next */
+      /* istanbul ignore if */
+      if (e.response) {
+        if (e.response.status == 404) {
+          if (e.response.data.indexOf('The specified download_url does not exist') != -1) {
+            delete this.download_id
+            this.part_info_list.forEach(n => {
+              delete n.crc64
+              delete n.crc64_st
+              delete n.loaded
+              delete n.running
+              delete n.done
+            })
+          }
+        }
+      }
+      throw e
+    }
+
+    try {
       let cache_block_size = Math.max(512 * 1024, Math.floor(this.file.size / 500))
 
       await this.pipeWS(streamResult.data, partInfo, cache_block_size, ({loaded}) => {
@@ -795,7 +819,6 @@ export class Downloader extends BaseLoader {
 
       delete running_parts[partInfo.part_number]
       this.done_part_loaded += partInfo.part_size
-      // this.loaded = calc_downloaded(this.part_info_list)
 
       if (this.verbose) {
         console.log(
@@ -805,52 +828,21 @@ export class Downloader extends BaseLoader {
         )
       }
 
-      // if (that.checking_crc) {
-      //   // 分片下载完，计算crc
-      //   if (that.crc64_running_mode == 'part') {
-      //     // 异步计算part 的 crc64
-      //     that.asyncPartCrc(partInfo, () => {
-      //       that.notifyPartCompleted(partInfo)
-      //     })
-      //   } else {
-      //     that.notifyPartCompleted(partInfo)
-      //   }
-      // } else {
-      //   that.notifyPartCompleted(partInfo)
-      // }
       this.notifyPartCompleted(partInfo)
     } catch (e) {
       delete partInfo.done
       delete partInfo.running
-      // delete partInfo.loaded
-
-      /* istanbul ignore next */
-      /* istanbul ignore if */
-      if (e.response) {
-        if (e.response.status == 404) {
-          if (e.response.data.indexOf('The specified download_url does not exist') != -1) {
-            delete this.download_id
-            this.part_info_list.forEach(n => {
-              delete n.crc64
-              delete n.crc64_st
-              // delete n.loaded
-              delete n.running
-              delete n.done
-            })
-          }
-        }
-      }
+      partInfo.loaded = 0
 
       if (this.verbose) {
         console.warn(`[${this.file.name}] download error part_number=${partInfo.part_number}: ${e.message}`)
       }
+
       if (e.message == 'retry_download_part') {
         // pass
       } else {
         throw e
       }
-    } finally {
-      partInfo.end_time = Date.now()
     }
   }
 
@@ -944,18 +936,17 @@ export class Downloader extends BaseLoader {
   pipeWS(stream, partInfo, block_size, onPartProgress) {
     const {fs} = this.context
     let c = 0
-    // partInfo.loaded = 0
+
     return new Promise((resolve, reject) => {
       const ws = fs.createWriteStream(this.file.temp_path, {
         // autoClose: true,
         flags: 'r+',
-        start: partInfo.from + partInfo.loaded,
+        start: partInfo.from + partInfo.loaded, // 从上次断点开始
       })
 
       stream.on('data', chunk => {
         if (this.stopFlag) {
           const stopErr = new Error('stopped')
-          partInfo.loaded = 0
           // 流要destroy掉
           stream.destroy(stopErr)
           ws.destroy(stopErr)
@@ -976,21 +967,20 @@ export class Downloader extends BaseLoader {
       stream.pipe(ws)
 
       stream.on('error', e => {
-        partInfo.loaded = 0
         reject(e)
       })
       ws.on('finish', () => {
-        onPartProgress(partInfo)
-
         if (partInfo.loaded != partInfo.part_size) {
           console.log('---------ws finish', partInfo.loaded, partInfo.part_size, 'retry_download_part')
+
+          onPartProgress(partInfo)
           reject(new Error('retry_download_part'))
         } else {
+          onPartProgress(partInfo)
           resolve()
         }
       })
       ws.on('error', e => {
-        partInfo.loaded = 0
         reject(e)
       })
     })
@@ -1001,7 +991,7 @@ export class Downloader extends BaseLoader {
     opt.last_prog = opt.last_prog || 0
 
     if (prog - opt.last_prog > PROGRESS_EMIT_STEP) {
-      this.progress = Math.floor(prog * 100) / 100
+      this.progress = Math.floor(prog * 100) / 100.0
       opt.last_prog = prog
       this.notifyProgress(this.state, this.progress)
     }

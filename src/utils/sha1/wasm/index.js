@@ -50,11 +50,10 @@ function createSha1() {
       if (ret) throw Error('cannot call update() after hex()')
       const buffPtr = buffToPtr(buff, binding)
       raw.sha1Update(prevPtr, buffPtr, buff.length)
-      this.free(buffPtr)
+      safeFree(buffPtr)
     },
     getH() {
       /*
-      
       typedef struct
       {
           uint32_t state[5];
@@ -73,14 +72,17 @@ function createSha1() {
       // return h;
     },
     hex() {
-      if (ret) return ret
+      if (ret) {
+        safeFree(prevPtr)
+        return ret
+      }
 
-      const resultPtr = binding._malloc(21)
+      const resultPtr = binding._malloc(30)
       raw.sha1Final(resultPtr, prevPtr)
       ret = binding.UTF8ToString(resultPtr)
 
-      this.free(resultPtr)
-      this.free(prevPtr)
+      safeFree(resultPtr)
+      safeFree(prevPtr)
 
       return ret.toUpperCase()
     },

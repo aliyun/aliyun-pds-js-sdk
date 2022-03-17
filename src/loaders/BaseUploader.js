@@ -1064,7 +1064,7 @@ export class BaseUploader extends BaseLoader {
     opt.last_prog = opt.last_prog || 0
 
     if (prog - opt.last_prog > PROGRESS_EMIT_STEP) {
-      this.progress = Math.floor(prog * 100) / 100
+      this.progress = Math.floor(prog * 100) / 100.0
       opt.last_prog = prog
       this.notifyProgress(this.state, this.progress)
     }

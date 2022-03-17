@@ -222,6 +222,9 @@ interface IUpConfig {
   // 标准模式是否启用分片并发上传
   parallel_upload?: boolean
 
+  process_calc_crc64_size?: number // 文件大小超过多少，将启用子进程计算 crc64
+  process_calc_sha1_size?: number // 文件大小超过多少，将启用子进程计算 sha1
+
   // 最大分片数：10000片
   limit_part_num?: number
 
@@ -281,6 +284,8 @@ interface IDownConfig {
 
   // 最大分片数：10000片
   limit_part_num?: number
+
+  process_calc_crc64_size?: number // 文件大小超过多少，将启用子进程计算 crc64
 
   // 调优
   max_chunk_size?: number

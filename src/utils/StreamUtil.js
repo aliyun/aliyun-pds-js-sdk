@@ -41,7 +41,7 @@ function getArrayBufferFromBlob(blob, fileReader) {
   return new Promise((a, b) => {
     // var fileReader = new FileReader()
     fileReader.onload = e => a(e.target.result)
-    fileReader.onerror = b
+    fileReader.onerror = e => b(e.target.error)
     fileReader.readAsArrayBuffer(blob)
   })
 }
