@@ -82,7 +82,7 @@ function calcDownloadMaxConcurrency(speed, chunkSize, lastConcurrency, init_chun
   const block = chunkSize * lastConcurrency
   if (speed > block * 0.9) {
     // 激进上涨
-    return lastConcurrency + 5
+    return Math.min(lastConcurrency + 5, 15)
   } else if (speed > block * 0.2) {
     // 保守下跌
     if (lastConcurrency > 5) return lastConcurrency - 1
@@ -96,7 +96,7 @@ function calcUploadMaxConcurrency(speed, chunkSize, lastConcurrency, init_chunk_
   const block = chunkSize * lastConcurrency
   if (speed > block * 0.9) {
     // 激进上涨
-    return lastConcurrency + 5
+    return Math.min(lastConcurrency + 5, 15)
   } else if (speed > block * 0.2) {
     // 保守下跌
     if (lastConcurrency > 5) return lastConcurrency - 1
