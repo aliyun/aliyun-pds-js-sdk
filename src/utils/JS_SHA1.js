@@ -19,7 +19,6 @@ export {
   calcFileSha1NodeProcess,
   calcFilePartsSha1Node, // 并行，按part计算中间值
   calcFilePartsSha1NodeProcess,
-  calcFilePartsSha1NodeWorker,
 }
 /**
  * 浏览器中计算文件的 sha1
@@ -187,8 +186,19 @@ async function calcFileSha1NodeProcess(file_path, size, onProgress, getStopFlag,
     size,
     progress_emit_step: PROGRESS_EMIT_STEP,
   }
-
-  return await nodeProcessCalc(path.join(__dirname, 'sha1/node-process-sha1.js'), obj, onProgress, getStopFlag, context)
+  try {
+    return await nodeProcessCalc(
+      path.join(__dirname, 'sha1/node-process-sha1.js'),
+      obj,
+      onProgress,
+      getStopFlag,
+      context,
+    )
+  } catch (e) {
+    if (e.message.includes('ENAMETOOLONG')) {
+      return await calcFileSha1Node(file_path, size, onProgress, getStopFlag, context)
+    } else throw e
+  }
 }
 
 async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, context) {
@@ -287,45 +297,23 @@ async function calcFilePartsSha1NodeProcess(file_path, parts, onProgress, getSto
     progress_emit_step: PROGRESS_EMIT_STEP,
   }
 
-  let result = await nodeProcessCalc(
-    path.join(__dirname, 'sha1/node-parts-process-sha1.js'),
-    obj,
-    onProgress,
-    getStopFlag,
-    context,
-  )
+  try {
+    let result = await nodeProcessCalc(
+      path.join(__dirname, 'sha1/node-parts-process-sha1.js'),
+      obj,
+      onProgress,
+      getStopFlag,
+      context,
+    )
 
-  return {
-    part_info_list: result.part_info_list,
-    content_hash: result.content_hash,
-    content_hash_name: result.content_hash_name,
-  }
-}
-// 启动 worker_threads
-/* istanbul ignore next */
-async function calcFilePartsSha1NodeWorker(file_path, parts, onProgress, getStopFlag, context) {
-  const {path, highWaterMark = 64 * 1024} = context
-
-  onProgress = onProgress || (prog => {})
-  getStopFlag = getStopFlag || (() => false)
-
-  let obj = {
-    highWaterMark,
-    file_path,
-    parts,
-    progress_emit_step: PROGRESS_EMIT_STEP,
-  }
-
-  let result = await nodeProcessCalc(
-    path.join(__dirname, 'sha1/node-parts-worker-sha1.js'),
-    obj,
-    onProgress,
-    getStopFlag,
-    context,
-  )
-  return {
-    part_info_list: result.part_info_list,
-    content_hash: result.content_hash,
-    content_hash_name: result.content_hash_name,
+    return {
+      part_info_list: result.part_info_list,
+      content_hash: result.content_hash,
+      content_hash_name: result.content_hash_name,
+    }
+  } catch (e) {
+    if (e.message.includes('ENAMETOOLONG')) {
+      return await calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, context)
+    } else throw e
   }
 }

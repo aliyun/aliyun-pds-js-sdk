@@ -8,12 +8,12 @@ window.addEventListener('load', function () {
   document.getElementById('btn-sha1-mul-browser').onclick = () => {
     sha1Browser_mul()
   }
-  document.getElementById('btn-sha1-worker-browser').onclick = () => {
-    sha1BrowserWorker()
-  }
-  document.getElementById('btn-sha1-mul-worker-browser').onclick = () => {
-    sha1BrowserWorker_mul()
-  }
+  // document.getElementById('btn-sha1-worker-browser').onclick = () => {
+  //   sha1BrowserWorker()
+  // }
+  // document.getElementById('btn-sha1-mul-worker-browser').onclick = () => {
+  //   sha1BrowserWorker_mul()
+  // }
   document.getElementById('btn-sha1-node').onclick = () => {
     sha1Node()
   }
