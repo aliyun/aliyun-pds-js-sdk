@@ -19,7 +19,6 @@
     "test:web_sv": "static .",
     "test:web_open": "open http://localhost:8080/tests/web/",
     "test:ts": "mocha -r espower-typescript/guess tests/ut/index.ts",
-    "test:js": "mocha tests/js/**/*.test.{js,mjs}",
     "format": "prettier --write 'src/**/*.{js,mjs,ts}' 'tests/**/*.{js,mjs,ts}' 'examples/**/*.{js,mjs,ts}'",
     "lint": "eslint src --fix --ext .ts,.tsx ",
     "cov": "npm run build:lib && npm run build:dist && nyc --reporter=lcov mocha -r espower-typescript/guess tests/ut/index.ts tests/ut/*.test.{ts,mjs,js}  tests/ft/*.test.{ts,mjs,js}",

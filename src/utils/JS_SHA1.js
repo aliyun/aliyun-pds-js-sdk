@@ -33,13 +33,15 @@ async function calcFileSha1(file, preSize, onProgress, getStopFlag) {
   onProgress = onProgress || (prog => {})
   getStopFlag = getStopFlag || (() => false)
 
+  var blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice
+
   let hash = createSha1()
 
   let blob
 
   if (preSize) {
     // 预秒传只需计算前1000KB
-    blob = file.slice(0, preSize)
+    blob = blobSlice.call(file, 0, preSize)
   } else {
     //计算整个文件的
     blob = file
@@ -72,6 +74,7 @@ async function calcFileSha1(file, preSize, onProgress, getStopFlag) {
 /* istanbul ignore next */
 async function calcFilePartsSha1(file, parts, onProgress, getStopFlag) {
   await ready()
+  var blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice
 
   onProgress = onProgress || (prog => {})
   getStopFlag = getStopFlag || (() => false)
@@ -96,7 +99,7 @@ async function calcFilePartsSha1(file, parts, onProgress, getStopFlag) {
     }
 
     await readBlock(
-      file.slice(n.from, n.to),
+      blobSlice.call(file, n.from, n.to),
       CHUNK_SIZE,
       buf => {
         hash.update(buf)

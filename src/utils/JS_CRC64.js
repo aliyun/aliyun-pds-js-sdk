@@ -26,6 +26,7 @@ export {
 /* istanbul ignore next */
 async function crc64File(file, onProgress, getStopFlag, opt) {
   await ready()
+  var blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice
 
   let {chunkSize = CHUNK_SIZE} = opt || {}
 
@@ -46,7 +47,7 @@ async function crc64File(file, onProgress, getStopFlag, opt) {
     var end = start + chunkSize
     end = Math.min(end, total)
 
-    await readBlock(file.slice(start, end), chunkSize, buf => {
+    await readBlock(blobSlice.call(file, start, end), chunkSize, buf => {
       // 计算
       last = crc64(buf, last + '')
       loaded += buf.length

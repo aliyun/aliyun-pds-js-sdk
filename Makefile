@@ -15,8 +15,6 @@ ut:
 	npm run test:ut
 ft:
 	npm run test:ft
-js:
-	npm run test:js
 web:
 	npm run test:web
 

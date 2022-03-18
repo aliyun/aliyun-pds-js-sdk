@@ -1279,7 +1279,8 @@ export class BaseUploader extends BaseLoader {
       })
     } else {
       // 浏览器
-      return this.file.slice(start, end)
+      var blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice
+      return blobSlice.call(this.file, start, end)
     }
   }
 }
