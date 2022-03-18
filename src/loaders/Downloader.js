@@ -424,8 +424,10 @@ export class Downloader extends BaseLoader {
     }
   }
   async run() {
-    this.start_time = Date.now()
-    this.timeLogStart('task', Date.now())
+    if (!this.start_time) {
+      this.start_time = Date.now()
+      this.timeLogStart('task', Date.now())
+    }
 
     if (!this.part_info_list || this.part_info_list.length == 0) {
       this.initChunks()

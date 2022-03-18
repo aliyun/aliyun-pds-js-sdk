@@ -543,9 +543,10 @@ export class BaseUploader extends BaseLoader {
       throw new PDSError(`File size exceeds limit: ${MAX_SIZE_LIMIT / 1024 / 1024 / 1024}GB`)
     }
 
-    this.start_time = Date.now()
-
-    this.timeLogStart('task', Date.now())
+    if (!this.start_time) {
+      this.start_time = Date.now()
+      this.timeLogStart('task', Date.now())
+    }
 
     // 1. 启动异步 worker, 计算 crc64
     this.startCrc64Worker()
