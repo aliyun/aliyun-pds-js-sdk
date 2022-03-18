@@ -194,9 +194,7 @@ export class Downloader extends BaseLoader {
       }`,
     )
     if (this.verbose) {
-      if (e.response) {
-        console.error(e.stack)
-      } else console.error(e.stack)
+      console.error(e.stack)
     }
 
     if (isNetworkError(e)) {
@@ -740,7 +738,9 @@ export class Downloader extends BaseLoader {
     partInfo.start_time = Date.now()
     this.timeLogStart('part-' + partInfo.part_number, Date.now())
 
-    partInfo.loaded = partInfo.loaded || 0
+    // 暂停后，再次从0开始
+    partInfo.loaded = 0
+    // partInfo.loaded = partInfo.loaded || 0
     partInfo.running = true
     partInfo.done = false
 
@@ -804,7 +804,7 @@ export class Downloader extends BaseLoader {
     } catch (e) {
       delete partInfo.done
       delete partInfo.running
-      delete partInfo.loaded
+      partInfo.loaded = 0
 
       if (this.verbose) {
         console.warn(`[${this.file.name}] download error part_number=${partInfo.part_number}: ${e.message}`)
