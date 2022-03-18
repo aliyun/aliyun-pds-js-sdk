@@ -1,14 +1,7 @@
 /** @format */
 
 import Axios from 'axios'
-import {
-  uuid,
-  throttleInTimes,
-  randomHex,
-  fixFileName4Windows,
-  formatProgress,
-  calcDownloadMaxConcurrency,
-} from '../utils/LoadUtil'
+import {uuid, randomHex, fixFileName4Windows, calcDownloadMaxConcurrency} from '../utils/LoadUtil'
 import {BaseLoader} from './BaseLoader'
 import {isNetworkError} from '../utils/HttpUtil'
 import {calc_downloaded} from '../utils/ChunkUtil'
@@ -213,6 +206,11 @@ export class Downloader extends BaseLoader {
       this.cancelAllDownloadRequests()
       this.calcTotalAvgSpeed()
       this.stopCalcSpeed()
+
+      // 报错，下次要重头开始
+      this.download_id = ''
+      this.part_info_list = []
+
       this.on_calc_part_crc_success = false
       await this.changeState('error', e)
     }
@@ -221,6 +219,7 @@ export class Downloader extends BaseLoader {
 
   getCheckpoint() {
     let cp = {
+      id: this.id,
       // progress & state
       loaded: this.loaded,
       size: this.file.size,
@@ -266,7 +265,6 @@ export class Downloader extends BaseLoader {
           to: n.to,
           start_time: n.start_time,
           end_time: n.end_time,
-          running: n.running || false,
           done: n.done || false,
           crc64_st: n.crc64_st,
           crc64_et: n.crc64_et,
@@ -423,7 +421,7 @@ export class Downloader extends BaseLoader {
         // 忽略
         return
       }
-      debug('下载文件失败:', `[${this.file.name}]`, e)
+      console.error('下载文件失败:', `[${this.file.name}]`, e)
       return await this.handleError(e || new Error(`download failed:${this.file.name}`))
     }
   }
@@ -531,7 +529,7 @@ export class Downloader extends BaseLoader {
     try {
       return await this.vendors.http_client[action](opt, options)
     } catch (e) {
-      console.error(action, 'ERROR:', e.response || e)
+      if (e.message != 'stopped') console.error(action, 'ERROR:', e.response || e)
       throw e
     } finally {
       this.timeLogEnd(action + '-' + _key, Date.now())
@@ -648,19 +646,19 @@ export class Downloader extends BaseLoader {
 
   getNextPart() {
     let allDone = true
-    let allRunning = true
+    // let allRunning = true
     let nextPart = null
     for (const n of this.part_info_list) {
       if (!n.done) {
         allDone = false
         if (!n.running) {
           nextPart = n
-          allRunning = false
+          // allRunning = false
           break
         }
       }
     }
-    return {allDone, allRunning, nextPart}
+    return {allDone, nextPart}
   }
   async download() {
     await this.changeState('running')
@@ -669,7 +667,6 @@ export class Downloader extends BaseLoader {
     this.start_done_part_loaded = this.done_part_loaded // 用于计算平均速度
     this.loaded = this.done_part_loaded
 
-    const that = this
     let con = 0
     this.maxConcurrency = this.init_chunk_con
 
@@ -683,54 +680,54 @@ export class Downloader extends BaseLoader {
     // this.updateProgressThrottle = throttleInTimes((opt) => {
     //   this.updateProgressStep(opt)
     // }, 20, 300)
-
+    let keep_going = false
     try {
-      await new Promise((resolve, reject) => {
-        check_download_next_part()
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        if (this.stopFlag) {
+          throw new Error('stopped')
+        }
+        let {allDone, nextPart: partInfo} = this.getNextPart()
+        if (allDone) {
+          //所有分片都完成
+          break
+        }
 
-        function check_download_next_part() {
-          if (that.stopFlag) {
-            reject(new Error('stopped'))
-            return
-          }
+        if (partInfo && con < this.maxConcurrency) {
+          if (this.verbose)
+            console.log('并发: ', con + 1, '/', this.maxConcurrency)
 
-          let {allDone, allRunning, nextPart} = that.getNextPart()
-
-          if (allDone) {
-            resolve()
-            return
-          }
-
-          if (allRunning) {
-            return
-          }
-
-          if (con < that.maxConcurrency) {
-            if (that.verbose) console.log('并发: ', con + 1, '/', that.maxConcurrency)
-            const partInfo = nextPart
-
-            if (!partInfo) {
+            // 异步执行
+          ;(async () => {
+            if (this.stopFlag) {
               return
             }
 
-            ;(async () => {
-              if (that.stopFlag) {
-                reject(new Error('stopped'))
-                return
-              }
-              con++
-              running_parts[partInfo.part_number] = 0
-              await that.down_part(partInfo, running_parts, {last_prog})
-              con--
-              check_download_next_part()
-            })()
+            con++
+            running_parts[partInfo.part_number] = 0
+            try {
+              await this.down_part(partInfo, running_parts, {last_prog})
+            } catch (e) {
+              // 异步的，不要 throw 了
+              return
+            }
+            con--
 
-            check_download_next_part()
-          }
+            // 通知有下一个了
+            if (keep_going) {
+              keep_going()
+              keep_going = false
+            }
+          })()
+        } else {
+          // 等待下一个
+          await new Promise(a => {
+            keep_going = a
+          })
         }
-      })
+      }
     } catch (e) {
-      console.error(e.stack)
+      if (e.message != 'stopped') console.error(e)
       throw e
     } finally {
       // 最后
@@ -760,9 +757,8 @@ export class Downloader extends BaseLoader {
       )
     }
 
-    let streamResult
     try {
-      streamResult = await this.downloadPartRetry(partInfo, {
+      let streamResult = await this.downloadPartRetry(partInfo, {
         method: 'get',
         url: this.download_url,
         headers: {
@@ -772,31 +768,7 @@ export class Downloader extends BaseLoader {
         maxContentLength: Infinity,
         maxRedirects: 5,
       })
-    } catch (e) {
-      delete partInfo.done
-      delete partInfo.running
-      delete partInfo.loaded
 
-      /* istanbul ignore next */
-      /* istanbul ignore if */
-      if (e.response) {
-        if (e.response.status == 404) {
-          if (e.response.data.indexOf('The specified download_url does not exist') != -1) {
-            delete this.download_id
-            this.part_info_list.forEach(n => {
-              delete n.crc64
-              delete n.crc64_st
-              delete n.loaded
-              delete n.running
-              delete n.done
-            })
-          }
-        }
-      }
-      throw e
-    }
-
-    try {
       let cache_block_size = Math.max(512 * 1024, Math.floor(this.file.size / 500))
 
       await this.pipeWS(streamResult.data, partInfo, cache_block_size, ({loaded}) => {
@@ -832,10 +804,28 @@ export class Downloader extends BaseLoader {
     } catch (e) {
       delete partInfo.done
       delete partInfo.running
-      partInfo.loaded = 0
+      delete partInfo.loaded
 
       if (this.verbose) {
         console.warn(`[${this.file.name}] download error part_number=${partInfo.part_number}: ${e.message}`)
+      }
+
+      /* istanbul ignore next */
+      /* istanbul ignore if */
+      if (e.response) {
+        if (e.response.status == 404) {
+          if (e.response.data.indexOf('The specified download_url does not exist') != -1) {
+            // 清空，报错，重来
+            delete this.download_id
+            this.part_info_list.forEach(n => {
+              delete n.crc64
+              delete n.crc64_st
+              delete n.running
+              delete n.loaded
+              delete n.done
+            })
+          }
+        }
       }
 
       if (e.message == 'retry_download_part') {
@@ -899,28 +889,6 @@ export class Downloader extends BaseLoader {
         cancelToken: source.token,
       })
 
-      // check size 和 md5 等值，如果文件有变化，则失败
-      // console.log(result.headers)
-      // content-length
-      // x-oss-hash-crc64ecma
-      // content-md5
-      // this.checkMatch(
-      //   this.content_md5,
-      //   result.headers['content-md5'],
-      //   'Content-MD5 not match, The file has been modified',
-      // )
-      // this.checkMatch(
-      //   this.crc64ecma,
-      //   result.headers['x-oss-hash-crc64ecma'],
-      //   'x-oss-hash-crc64ecma not match, The file has been modified',
-      // )
-      // 这个content-length 不是整个文件的，无法判断
-      // this.checkMatch(
-      //   this.file.size,
-      //   parseInt(result.headers['content-length']),
-      //   'Content-Length not match, The file has been modified'
-      // )
-
       return result
     } catch (e) {
       if (Axios.isCancel(e)) {
@@ -930,9 +898,7 @@ export class Downloader extends BaseLoader {
       removeItem(this.cancelSources, source)
     }
   }
-  checkMatch(a, b, msg) {
-    if (a != null && a != b) throw new Error(msg)
-  }
+
   pipeWS(stream, partInfo, block_size, onPartProgress) {
     const {fs} = this.context
     let c = 0
@@ -971,7 +937,12 @@ export class Downloader extends BaseLoader {
       })
       ws.on('finish', () => {
         if (partInfo.loaded != partInfo.part_size) {
-          console.log('---------ws finish', partInfo.loaded, partInfo.part_size, 'retry_download_part')
+          console.warn(
+            '--------------------块下载失败(需重试)',
+            partInfo.loaded,
+            partInfo.part_size,
+            'retry_download_part',
+          )
 
           onPartProgress(partInfo)
           reject(new Error('retry_download_part'))

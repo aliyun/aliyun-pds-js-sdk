@@ -1,5 +1,8 @@
 # Release Notes
 
+## 0.1.17
+
+fix: 修复上传下载bug
 
 ## 0.1.16
 

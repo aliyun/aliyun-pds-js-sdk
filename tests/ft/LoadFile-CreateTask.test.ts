@@ -47,7 +47,7 @@ describe('LoadFile', function () {
           },
         )
 
-        uploadTask.on('statechange', (cp, error) => {
+        uploadTask.on('statechange', (cp, state, error) => {
           console.log('-----------statechange', cp.state)
           state_arr.push(cp.state)
 
@@ -118,7 +118,7 @@ describe('LoadFile', function () {
           },
         )
 
-        uploadTask.on('statechange', (cp, error) => {
+        uploadTask.on('statechange', (cp, state, error) => {
           console.log('-----------statechange', cp.state)
           state_arr.push(cp.state)
 
@@ -190,7 +190,7 @@ describe('LoadFile', function () {
           },
         )
 
-        uploadTask.on('statechange', (cp, error) => {
+        uploadTask.on('statechange', (cp, state, error) => {
           console.log('-----------statechange', cp.state)
           state_arr.push(cp.state)
 
@@ -265,7 +265,7 @@ describe('LoadFile', function () {
           },
         )
 
-        uploadTask.on('statechange', (cp, error) => {
+        uploadTask.on('statechange', (cp, state, error) => {
           console.log('-----------statechange', cp.state)
           state_arr.push(cp.state)
 
@@ -359,7 +359,7 @@ describe('LoadFile', function () {
           },
         )
 
-        downTask.on('statechange', (cp, error) => {
+        downTask.on('statechange', (cp, state, error) => {
           console.log('-----------statechange', cp.state)
           state_arr.push(cp.state)
 
@@ -451,7 +451,7 @@ describe('LoadFile', function () {
           },
         )
 
-        downTask.on('statechange', (cp, error) => {
+        downTask.on('statechange', (cp, state, error) => {
           console.log('-----------statechange', cp.state)
           state_arr.push(cp.state)
 

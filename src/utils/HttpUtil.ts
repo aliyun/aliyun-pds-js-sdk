@@ -19,10 +19,10 @@ async function callRetry(func: Function, binding: any, arr: Array<any>, opt?: IC
     try {
       return await func.apply(binding, arr)
     } catch (e) {
-      console.log('callRetry error:', e.message)
-      if (typeof getStopFlagFun == 'function' && getStopFlagFun() === true) {
+      if (e.message == 'stopped' || (typeof getStopFlagFun == 'function' && getStopFlagFun() === true)) {
         throw e
       }
+
       //比如: getaddrinfo ENOTFOUND pds-daily-hz65-hz-1564648220.oss-cn-hangzhou.aliyuncs.com
       if (isNetworkError(e)) {
         retryTimes--

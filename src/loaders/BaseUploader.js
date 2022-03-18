@@ -287,6 +287,7 @@ export class BaseUploader extends BaseLoader {
 
   getCheckpoint() {
     let cp = {
+      id: this.id,
       // progress & state
       loaded: this.loaded,
       size: this.file.size,
@@ -377,16 +378,19 @@ export class BaseUploader extends BaseLoader {
   }
 
   async stop(doNotChangeStatus) {
-    this.calcTotalAvgSpeed()
     this.stopCalcSpeed()
+    this.calcTotalAvgSpeed()
 
     this.stopFlag = true
 
     if (['stopped', 'success', 'rapid_success', 'error', 'cancelled'].includes(this.state)) return
 
     this.cancelAllUploadRequests()
-    this.on_calc_crc_success = false
-    this.on_calc_crc_failed = false
+
+    if (!this.calc_crc64) {
+      this.on_calc_crc_success = false
+      this.on_calc_crc_failed = false
+    }
     if (!doNotChangeStatus) await this.changeState('stopped')
   }
   async cancel() {
@@ -603,6 +607,8 @@ export class BaseUploader extends BaseLoader {
     // 4. 分片上传
     await this.upload()
 
+    this.stopCalcSpeed()
+
     // 5. 统计平均网速和总上传时长
     this.calcTotalAvgSpeed()
 
@@ -665,8 +671,7 @@ export class BaseUploader extends BaseLoader {
         if (this.on_calc_crc_failed) this.on_calc_crc_failed(new PDSError(e.message))
       }
     }
-    this.calc_crc64 = ''
-    if (this.checking_crc) {
+    if (this.checking_crc && !this.calc_crc64) {
       workerRun()
     }
   }
@@ -705,7 +710,7 @@ export class BaseUploader extends BaseLoader {
     try {
       return await this.vendors.http_client[action](opt, options)
     } catch (e) {
-      console.error(action, 'ERROR:', e.response || e)
+      if (e.message != 'stopped') console.error(action, 'ERROR:', e.response || e)
       throw e
     } finally {
       this.timeLogEnd(action + '-' + _key, Date.now())
@@ -832,7 +837,7 @@ export class BaseUploader extends BaseLoader {
 
     const running_parts = {}
 
-    this.startCalcSpeed()
+    // this.startCalcSpeed()
 
     // 缓冲修改 progress
     // this.updateProgressThrottle = throttleInTimes(() => {
@@ -990,6 +995,12 @@ export class BaseUploader extends BaseLoader {
             // check upload next part
             check_upload_next_part()
           } catch (e) {
+            delete partInfo.loaded
+            delete partInfo.running
+            delete partInfo.etag
+
+            running_parts[partInfo.part_number] = 0
+
             // console.log('------------------------------')
             if (e.message == 'stopped') {
               if (!that.stopFlag) {
@@ -1031,14 +1042,9 @@ export class BaseUploader extends BaseLoader {
           }
         }
       })
-    } catch (e) {
-      // if(this.verbose) console.error(e)
-      console.error(e.stack)
-      throw e
     } finally {
       // 最后
-
-      this.stopCalcSpeed()
+      // this.stopCalcSpeed()
     }
   }
   notifyProgress(state, progress) {

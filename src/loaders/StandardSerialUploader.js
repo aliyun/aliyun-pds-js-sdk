@@ -3,7 +3,7 @@
 import {BaseUploader} from './BaseUploader'
 import {calc_uploaded, init_chunks_sha1} from '../utils/ChunkUtil'
 import {formatPercentsToFixed, throttleInTimes} from '../utils/LoadUtil'
-
+import {isNetworkError} from '../utils/HttpUtil'
 import Debug from 'debug'
 const debug = Debug('PDSJS:StandardSerialUploader')
 
@@ -180,7 +180,7 @@ export class StandardSerialUploader extends BaseUploader {
     this.loaded = this.done_part_loaded
     let last_opt = {last_prog: 0}
 
-    this.startCalcSpeed()
+    // this.startCalcSpeed()
 
     // let throttleFn = throttleInTimes(fn => {
     //   fn()
@@ -189,7 +189,9 @@ export class StandardSerialUploader extends BaseUploader {
     try {
       let partInfo = this.getNextPart()
 
+      // 串行
       while (partInfo != null) {
+        if (this.verbose) console.log('串行上传 part_number=', partInfo.part_number)
         try {
           if (this.stopFlag) {
             throw new Error('stopped')
@@ -246,12 +248,14 @@ export class StandardSerialUploader extends BaseUploader {
             continue
           }
 
-          this.done_part_loaded += partInfo.part_size
           partInfo.etag = result.headers.etag
-
           if (!partInfo.etag) {
-            throw new Error('请确定Bucket是否配置了正确的跨域配置')
+            console.error('Not found etag, res.headers:', result.headers)
+            throw new Error('请确定Bucket是否配置了正确的跨域设置')
           }
+
+          this.done_part_loaded += partInfo.part_size
+
           // this.uploadResult = result;
           delete partInfo.running
           partInfo.end_time = Date.now()
@@ -259,31 +263,27 @@ export class StandardSerialUploader extends BaseUploader {
 
           this.notifyPartCompleted(partInfo)
         } catch (e) {
-          if (e.message == 'stopped' && !this.stopFlag) {
-            continue
-          }
-
-          // 开了sha1，有可能已经上传过了，返回409
+          // 浏览器无法设置 content-length, 有可能已经上传成功了一部分，返回409
           if (e.response) {
             if (e.response.status == 409) {
+              // 处理该 part 未完成部分，放到下一片
               await this.fixUploadParts_StandardMode(partInfo)
               // 下一片
               partInfo = this.getNextPart()
               continue
-            } else if (e.response.status == 504) {
+            } else if (e.response.status == 504 || isNetworkError(e)) {
               // 海外连国内，可能会504
+              // 重试当前片
               continue
             }
           }
+
           throw e
         }
         partInfo = this.getNextPart()
       }
-    } catch (e) {
-      console.error(e.stack)
-      throw e
     } finally {
-      this.stopCalcSpeed()
+      // this.stopCalcSpeed()
     }
   }
 
@@ -299,6 +299,19 @@ export class StandardSerialUploader extends BaseUploader {
     if (!up_part) return
     if (!up_part.etag) return
 
+    /*
+    up_part 样例：
+    { content_type: "",
+      etag: "\"F2A43A97777D22FC44186B46777469C9\"",
+      internal_upload_form_info: null,
+      internal_upload_url: "",
+      part_number: 1,
+      part_size: 10485824,
+      upload_form_info: null,
+      upload_url: "" 
+    }
+    */
+
     const part_info = this.part_info_list[partInfo.part_number - 1] // 和传入的变量 partInfo 应该引用一样的。
     // assert part_info.etag == null
     part_info.etag = up_part.etag
@@ -308,12 +321,12 @@ export class StandardSerialUploader extends BaseUploader {
     this.timeLogEnd('part-' + partInfo.part_number, Date.now())
 
     // fix done_part_loaded
-    this.done_part_loaded += partInfo.part_size
+    this.done_part_loaded += up_part.part_size
 
     const p_size = part_info.part_size - up_part.part_size
     if (p_size > 0) {
       // 提前完成，后半部放到下一片中
-      console.warn(`part [${part_info.part_number}] 提前完成，后半部放到下一片中..`)
+      console.warn(`part [${part_info.part_number}](${part_info.part_size}-${p_size}) 提前完成，后半部放到下一片中..`)
 
       // 修复本片
       part_info.part_size = up_part.part_size
