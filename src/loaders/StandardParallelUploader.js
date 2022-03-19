@@ -1,13 +1,14 @@
 /** @format */
 
-import {BaseUploader} from './BaseUploader'
+import {ParallelUploader} from './ParallelUploader'
 import {init_chunks_parallel} from '../utils/ChunkUtil'
 
 import Debug from 'debug'
 import {throttleInTimes} from '../utils/LoadUtil'
 const debug = Debug('PDSJS:StandardParallelUploader')
+console.timeLog = console.timeLog || console.timeEnd
 
-export class StandardParallelUploader extends BaseUploader {
+export class StandardParallelUploader extends ParallelUploader {
   /**
    * 标准模式 多分片 并行分片
    * @param parts
@@ -108,9 +109,5 @@ export class StandardParallelUploader extends BaseUploader {
 
     this.timeLogEnd('multi_sha1', Date.now())
     return content_hash
-  }
-
-  async upload() {
-    return await this.upload_parallel()
   }
 }

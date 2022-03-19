@@ -2,10 +2,11 @@
 
 import {BaseUploader} from './BaseUploader'
 import {calc_uploaded, init_chunks_sha1} from '../utils/ChunkUtil'
-import {formatPercentsToFixed, throttleInTimes} from '../utils/LoadUtil'
+import {throttleInTimes} from '../utils/LoadUtil'
 import {isNetworkError} from '../utils/HttpUtil'
 import Debug from 'debug'
 const debug = Debug('PDSJS:StandardSerialUploader')
+console.timeLog = console.timeLog || console.timeEnd
 
 // const MAX_SIZE_FOR_SHA1 = 10 * 1024 * 1024 * 1024 // 10GB
 // const MIN_SIZE_FOR_PRE_SHA1 = 100 * 1024 * 1024 // 100MB
@@ -183,7 +184,7 @@ export class StandardSerialUploader extends BaseUploader {
     while (true) {
       let partInfo = this.getNextPart()
       if (!partInfo) return
-      if (this.verbose) console.log('串行上传 part_number=', partInfo.part_number)
+      if (this.verbose) console.log('串行上传 part_number=', partInfo.part_number, ', part_size=', partInfo.part_size)
       try {
         if (this.stopFlag) {
           throw new Error('stopped')
@@ -203,7 +204,7 @@ export class StandardSerialUploader extends BaseUploader {
         }
 
         // if(this.verbose) console.log(`[${this.file.name}] upload part_number:`, partInfo.part_number, partInfo.from,'~', partInfo.to)
-        let part_progress_keep = {}
+        let keep_part_loaded = 0
 
         // eslint-disable-next-line no-await-in-loop
         const result = await this.uploadPartRetry(partInfo, {
@@ -213,9 +214,9 @@ export class StandardSerialUploader extends BaseUploader {
           maxContentLength: Infinity,
           maxRedirects: 5,
           data: this.sliceFile(partInfo),
-          onUploadProgress: e => {
-            part_progress_keep = e
-            this.loaded = this.done_part_loaded + e.loaded || 0
+          onUploadProgress: ({loaded}) => {
+            keep_part_loaded = loaded
+            this.loaded = this.done_part_loaded + loaded || 0
 
             this.updateProgressStep(last_opt)
           },
@@ -227,8 +228,8 @@ export class StandardSerialUploader extends BaseUploader {
           this.notifyProgress(this.state, this.progress)
         }
 
-        if ((part_progress_keep.loaded || 0) != partInfo.part_size) {
-          console.warn('--------------------块上传失败(需重试)', part_progress_keep.loaded, partInfo.part_size)
+        if ((keep_part_loaded || 0) != partInfo.part_size) {
+          console.warn('--------------------块上传失败(需重试)', keep_part_loaded, partInfo.part_size)
           continue
         }
 
@@ -251,10 +252,13 @@ export class StandardSerialUploader extends BaseUploader {
           if (e.response.status == 409) {
             // 由于浏览器无法设置 content-length, 有可能已经上传成功了一部分，返回409
             // 处理该 part 未完成部分，放到下一片
-            await this.fixUploadParts_StandardMode(partInfo)
+            await this.fix409(partInfo)
             continue
           } else if (e.response.status == 400 && e.response.code == 'PartNotSequential') {
-            // 浏览器端上传会遇到次问题，重试
+            // 浏览器端上传会遇到此问题，重试
+            console.warn(
+              `upload part ${partInfo.part_number} error: ${e.response.code}: ${e.response.message}, retry..`,
+            )
             continue
           } else if (e.response.status == 504 || isNetworkError(e)) {
             // 海外连国内，可能会504
@@ -268,12 +272,12 @@ export class StandardSerialUploader extends BaseUploader {
     }
   }
 
-  async fixUploadParts_StandardMode(partInfo) {
+  async fix409(partInfo) {
     // 假设第3片上传失败  partInfo.part_number == 3
     // 第3片本来要上传10MB，但是上传了6MB，网络断了，服务端认为本片完成。客户端没有etag，认为没完成。
     // 客户端重复上传第3片，报409 已经存在。进入此方法。
     //* ********************** */
-    console.warn('**fix upload parts for StandardMode**', partInfo.part_number)
+    console.warn('fix upload part for 409 error', partInfo.part_number)
 
     // 向服务端查询本片的 etag （6MB）
     const up_part = await this.getUploadPart(partInfo.part_number)

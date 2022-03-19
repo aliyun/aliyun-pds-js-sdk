@@ -1,10 +1,9 @@
 /** @format */
 
 import Axios from 'axios'
-import {uuid, randomHex, fixFileName4Windows, calcDownloadMaxConcurrency} from '../utils/LoadUtil'
+import {uuid, formatPercents, randomHex, fixFileName4Windows, calcDownloadMaxConcurrency} from '../utils/LoadUtil'
 import {BaseLoader} from './BaseLoader'
 import {isNetworkError} from '../utils/HttpUtil'
-import {calc_downloaded} from '../utils/ChunkUtil'
 import {formatSize, elapse} from '../utils/Formatter'
 import {getFreeDiskSize} from '../utils/FileUtil'
 
@@ -18,12 +17,21 @@ const PROCESS_CALC_CRC64_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用�
 const PROGRESS_EMIT_STEP = 0.2 // 进度通知 step
 const MAX_SPEED_0_COUNT = 10 // 速度为0 连续超过几次，将cancel所有请求重来
 
-import Debug from 'debug'
-const debug = Debug('PDSJS:BaseUploader')
+// import Debug from 'debug'
+// const debug = Debug('PDSJS:BaseDownloader')
 
 console.timeLog = console.timeLog || console.timeEnd
 
-export class Downloader extends BaseLoader {
+export class BaseDownloader extends BaseLoader {
+  /**
+   * abstract 需要重写实现, 返回是否秒传成功
+   * @return Promise<void>
+   */
+  /* istanbul ignore next */
+  async download() {
+    throw new Error('Method not implemented.')
+  }
+
   constructor(checkpoint, configs = {}, vendors = {}, context = {}) {
     super()
 
@@ -172,6 +180,7 @@ export class Downloader extends BaseLoader {
 
     this.cancelSources = []
     this.checking_progress = 0
+    this.start_done_part_loaded = 0
   }
 
   async handleError(e) {
@@ -653,190 +662,6 @@ export class Downloader extends BaseLoader {
     this.speed = 0
   }
 
-  getNextPart() {
-    let allDone = true
-    // let allRunning = true
-    let nextPart = null
-    for (const n of this.part_info_list) {
-      if (!n.done) {
-        allDone = false
-        if (!n.running) {
-          nextPart = n
-          // allRunning = false
-          break
-        }
-      }
-    }
-    return {allDone, nextPart}
-  }
-  async download() {
-    this.done_part_loaded = calc_downloaded(this.part_info_list)
-    this.start_done_part_loaded = this.done_part_loaded // 用于计算平均速度
-    this.loaded = this.done_part_loaded
-
-    let con = 0
-    this.maxConcurrency = this.init_chunk_con
-
-    const running_parts = {}
-
-    const last_prog = 0
-
-    // 缓冲修改 progress
-    // this.updateProgressThrottle = throttleInTimes((opt) => {
-    //   this.updateProgressStep(opt)
-    // }, 20, 300)
-    let keep_going = false
-
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      if (this.stopFlag) {
-        throw new Error('stopped')
-      }
-      let {allDone, nextPart: partInfo} = this.getNextPart()
-      if (allDone) {
-        //所有分片都完成
-        break
-      }
-
-      if (partInfo && con < this.maxConcurrency) {
-        if (this.verbose)
-          console.log('并发: ', con + 1, '/', this.maxConcurrency)
-
-          // 异步执行
-        ;(async () => {
-          if (this.stopFlag) {
-            return
-          }
-
-          con++
-          running_parts[partInfo.part_number] = 0
-          try {
-            await this.down_part(partInfo, running_parts, {last_prog})
-          } catch (e) {
-            // 异步的，不要 throw 了
-            return
-          }
-          con--
-
-          // 通知有下一个了
-          if (keep_going) {
-            keep_going()
-            keep_going = false
-          }
-        })()
-      } else {
-        // 等待下一个
-        await new Promise(a => {
-          keep_going = a
-        })
-      }
-    }
-    // 最后
-    this.notifyProgress(this.state, 100)
-  }
-
-  async down_part(partInfo, running_parts, last_opt) {
-    partInfo.start_time = Date.now()
-    this.timeLogStart('part-' + partInfo.part_number, Date.now())
-
-    // 暂停后，再次从0开始
-    partInfo.loaded = 0
-    // partInfo.loaded = partInfo.loaded || 0
-    partInfo.running = true
-    partInfo.done = false
-
-    if (this.verbose) {
-      console.log(
-        `[${this.file.name}] downloading part:`,
-        partInfo.part_number,
-        ` : ${this.part_info_list.length}`,
-        partInfo.from,
-        '~',
-        partInfo.to,
-        ', totol size:',
-        this.file.size,
-      )
-    }
-
-    try {
-      let streamResult = await this.downloadPartRetry(partInfo, {
-        method: 'get',
-        url: this.download_url,
-        headers: {
-          Range: `bytes=${partInfo.from + partInfo.loaded}-${partInfo.to - 1}`,
-        },
-        responseType: 'stream',
-        maxContentLength: Infinity,
-        maxRedirects: 5,
-      })
-
-      let cache_block_size = Math.max(512 * 1024, Math.floor(this.file.size / 500))
-
-      await this.pipeWS(streamResult.data, partInfo, cache_block_size, ({loaded}) => {
-        running_parts[partInfo.part_number] = loaded || 0
-
-        let running_part_loaded = Object.values(running_parts).reduce((a, b) => a + b)
-
-        this.loaded = this.done_part_loaded + running_part_loaded
-        // 回调太频繁，需要缓冲，不然会影响下载速度
-        // this.updateProgressThrottle()
-        this.updateProgressStep(last_opt)
-      })
-
-      partInfo.loaded = partInfo.part_size
-      partInfo.done = true
-      delete partInfo.running
-
-      partInfo.end_time = Date.now()
-      this.timeLogEnd('part-' + partInfo.part_number, Date.now())
-
-      delete running_parts[partInfo.part_number]
-      this.done_part_loaded += partInfo.part_size
-
-      if (this.verbose) {
-        console.log(
-          `[${this.file.name}] download part complete: `,
-          partInfo.part_number,
-          ` : ${this.part_info_list.length}, elapse:${partInfo.end_time - partInfo.start_time}ms`,
-        )
-      }
-
-      this.notifyPartCompleted(partInfo)
-    } catch (e) {
-      delete partInfo.done
-      delete partInfo.running
-      partInfo.loaded = 0
-
-      if (this.verbose) {
-        console.warn(`[${this.file.name}] download error part_number=${partInfo.part_number}: ${e.message}`)
-      }
-
-      /* istanbul ignore next */
-      /* istanbul ignore if */
-      if (e.response) {
-        if (e.response.status == 404) {
-          if (e.response.data.indexOf('The specified download_url does not exist') != -1) {
-            // 清空，报错，重来
-            delete this.download_id
-            this.part_info_list.forEach(n => {
-              delete n.crc64
-              delete n.crc64_st
-              delete n.running
-              delete n.loaded
-              delete n.done
-            })
-          }
-        }
-      }
-
-      if (e.message == 'retry_download_part') {
-        // pass
-      } else {
-        throw e
-      }
-    }
-  }
-
   notifyPartCompleted(partInfo) {
     const cp = this.getCheckpoint()
     let part = JSON.parse(JSON.stringify(partInfo))
@@ -963,7 +788,7 @@ export class Downloader extends BaseLoader {
     opt.last_prog = opt.last_prog || 0
 
     if (prog - opt.last_prog > PROGRESS_EMIT_STEP) {
-      this.progress = Math.floor(prog * 100) / 100.0
+      this.progress = formatPercents(prog)
       opt.last_prog = prog
       this.notifyProgress(this.state, this.progress)
     }

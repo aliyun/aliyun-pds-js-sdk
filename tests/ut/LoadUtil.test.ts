@@ -6,8 +6,8 @@ describe('LoadUtil', function () {
   this.timeout(60 * 1000)
 
   it('formatToFixed', async () => {
-    assert(LoadUtil.formatPercentsToFixed(12.11234) == 1211.23)
-    assert(LoadUtil.formatPercentsToFixed(12.11235) == 1211.24)
+    assert(LoadUtil.formatPercents(12.11234) == 12.11)
+    assert(LoadUtil.formatPercents(12.11235) == 12.11)
   })
 
   it('calcUploadMaxConcurrency', () => {

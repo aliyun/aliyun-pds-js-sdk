@@ -6,7 +6,7 @@ export {
   randomHex,
   uuid,
   fixFileName4Windows,
-  formatPercentsToFixed,
+  formatPercents,
   removeItem,
   calcUploadMaxConcurrency,
   calcDownloadMaxConcurrency,
@@ -61,9 +61,9 @@ function randomHex() {
 function uuid() {
   return uuid_v4()
 }
-function formatPercentsToFixed(process) {
-  if (typeof process === 'number') {
-    return Math.round(process * 10000) / 100
+function formatPercents(progress) {
+  if (typeof progress === 'number') {
+    return Math.round(progress * 100) / 100.0
   }
   return 0
 }

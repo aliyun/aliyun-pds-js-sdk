@@ -29,7 +29,7 @@ describe('StandardSerialUploader', function () {
       sinon.stub(client, 'getUploadUrl').callsFake(async () => {})
       sinon.stub(client, 'notifyPartCompleted').callsFake(async part => {})
 
-      await client.fixUploadParts_StandardMode(partInfo)
+      await client.fix409(partInfo)
 
       assert(part_info_list[0].part_size == 3000000)
       assert(part_info_list[0].etag == '"xxxx"')

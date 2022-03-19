@@ -1,12 +1,12 @@
 /** @format */
 
-import {BaseUploader} from './BaseUploader'
+import {ParallelUploader} from './ParallelUploader'
 import {init_chunks_parallel} from '../utils/ChunkUtil'
 
 import Debug from 'debug'
 const debug = Debug('PDSJS:HostingUploader')
 
-export class HostingUploader extends BaseUploader {
+export class HostingUploader extends ParallelUploader {
   /**
    * 托管模式 分片
    *   并行上传
@@ -33,11 +33,5 @@ export class HostingUploader extends BaseUploader {
     await this.create()
     // 没有秒传，返回false
     return false
-  }
-
-  // 并发上传
-  async upload() {
-    debug('start uploading...')
-    return await this.upload_parallel()
   }
 }

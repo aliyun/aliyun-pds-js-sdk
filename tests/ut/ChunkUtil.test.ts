@@ -194,7 +194,7 @@ describe('ChunkUtil', () => {
           to: 10240000,
         },
       ]
-      let num = calc_downloaded(parts, true)
+      let num = calc_downloaded(parts)
 
       assert(num == 5242944)
       assert(!parts[0].running)
