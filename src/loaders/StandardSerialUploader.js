@@ -173,117 +173,98 @@ export class StandardSerialUploader extends BaseUploader {
 
   // for StandardMode
   async upload_serial() {
-    await this.changeState('running')
-
     this.done_part_loaded = calc_uploaded(this.part_info_list)
     this.start_done_part_loaded = this.done_part_loaded // 用于计算平均速度
     this.loaded = this.done_part_loaded
     let last_opt = {last_prog: 0}
 
-    // this.startCalcSpeed()
-
-    // let throttleFn = throttleInTimes(fn => {
-    //   fn()
-    // })
-
-    try {
+    // 串行
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
       let partInfo = this.getNextPart()
+      if (!partInfo) return
+      if (this.verbose) console.log('串行上传 part_number=', partInfo.part_number)
+      try {
+        if (this.stopFlag) {
+          throw new Error('stopped')
+        }
 
-      // 串行
-      while (partInfo != null) {
-        if (this.verbose) console.log('串行上传 part_number=', partInfo.part_number)
-        try {
-          if (this.stopFlag) {
-            throw new Error('stopped')
-          }
+        partInfo.start_time = Date.now()
+        this.timeLogStart('part-' + partInfo.part_number, Date.now())
+        partInfo.running = true
 
-          // var partInfo = this.getNextPart()
-          // if (!partInfo) return;
+        const reqHeaders = {
+          'Content-Type': '',
+        }
 
-          partInfo.start_time = Date.now()
-          this.timeLogStart('part-' + partInfo.part_number, Date.now())
-          partInfo.running = true
+        if (this.context.isNode) {
+          // 浏览器由于安全限制无法设置 Content-Length,  node.js 可以的
+          reqHeaders['Content-Length'] = partInfo.part_size
+        }
 
-          const reqHeaders = {
-            'Content-Type': '',
-          }
+        // if(this.verbose) console.log(`[${this.file.name}] upload part_number:`, partInfo.part_number, partInfo.from,'~', partInfo.to)
+        let part_progress_keep = {}
 
-          if (this.context.isNode) {
-            reqHeaders['Content-Length'] = partInfo.part_size
-          }
+        // eslint-disable-next-line no-await-in-loop
+        const result = await this.uploadPartRetry(partInfo, {
+          method: 'put',
+          url: partInfo.upload_url,
+          headers: reqHeaders,
+          maxContentLength: Infinity,
+          maxRedirects: 5,
+          data: this.sliceFile(partInfo),
+          onUploadProgress: e => {
+            part_progress_keep = e
+            this.loaded = this.done_part_loaded + e.loaded || 0
 
-          // if(this.verbose) console.log(`[${this.file.name}] upload part_number:`, partInfo.part_number, partInfo.from,'~', partInfo.to)
-          let part_progress_keep = {}
+            this.updateProgressStep(last_opt)
+          },
+        })
 
-          // eslint-disable-next-line no-await-in-loop
-          const result = await this.uploadPartRetry(partInfo, {
-            method: 'put',
-            url: partInfo.upload_url,
-            headers: reqHeaders,
-            maxContentLength: Infinity,
-            maxRedirects: 5,
-            data: this.sliceFile(partInfo),
-            onUploadProgress: e => {
-              part_progress_keep = e
-              this.loaded = this.done_part_loaded + e.loaded || 0
+        if (this.file.size == 0) {
+          // fix size=0 的情况
+          this.progress = 100
+          this.notifyProgress(this.state, this.progress)
+        }
 
-              // throttleFn(() => {
-              //   this.progress = formatPercentsToFixed(this.loaded / this.file.size)
+        if ((part_progress_keep.loaded || 0) != partInfo.part_size) {
+          console.warn('--------------------块上传失败(需重试)', part_progress_keep.loaded, partInfo.part_size)
+          continue
+        }
 
-              //   this.notifyProgress(this.state, this.progress)
-              // })
+        partInfo.etag = result.headers.etag
+        if (!partInfo.etag) {
+          console.error('Not found etag, res.headers:', result.headers)
+          throw new Error('请确定Bucket是否配置了正确的跨域设置')
+        }
 
-              this.updateProgressStep(last_opt)
-            },
-          })
+        this.done_part_loaded += partInfo.part_size
 
-          if (this.file.size == 0) {
-            // fix size=0 的情况
-            this.progress = 100
-            this.notifyProgress(this.state, this.progress)
-          }
+        // this.uploadResult = result;
+        delete partInfo.running
+        partInfo.end_time = Date.now()
+        this.timeLogEnd('part-' + partInfo.part_number, Date.now())
 
-          if ((part_progress_keep.loaded || 0) != partInfo.part_size) {
-            console.warn('--------------------块上传失败(需重试)', part_progress_keep.loaded, partInfo.part_size)
+        this.notifyPartCompleted(partInfo)
+      } catch (e) {
+        if (e.response) {
+          if (e.response.status == 409) {
+            // 由于浏览器无法设置 content-length, 有可能已经上传成功了一部分，返回409
+            // 处理该 part 未完成部分，放到下一片
+            await this.fixUploadParts_StandardMode(partInfo)
+            continue
+          } else if (e.response.status == 400 && e.response.code == 'PartNotSequential') {
+            // 浏览器端上传会遇到次问题，重试
+            continue
+          } else if (e.response.status == 504 || isNetworkError(e)) {
+            // 海外连国内，可能会504
+            // 重试当前片
             continue
           }
-
-          partInfo.etag = result.headers.etag
-          if (!partInfo.etag) {
-            console.error('Not found etag, res.headers:', result.headers)
-            throw new Error('请确定Bucket是否配置了正确的跨域设置')
-          }
-
-          this.done_part_loaded += partInfo.part_size
-
-          // this.uploadResult = result;
-          delete partInfo.running
-          partInfo.end_time = Date.now()
-          this.timeLogEnd('part-' + partInfo.part_number, Date.now())
-
-          this.notifyPartCompleted(partInfo)
-        } catch (e) {
-          // 浏览器无法设置 content-length, 有可能已经上传成功了一部分，返回409
-          if (e.response) {
-            if (e.response.status == 409) {
-              // 处理该 part 未完成部分，放到下一片
-              await this.fixUploadParts_StandardMode(partInfo)
-              // 下一片
-              partInfo = this.getNextPart()
-              continue
-            } else if (e.response.status == 504 || isNetworkError(e)) {
-              // 海外连国内，可能会504
-              // 重试当前片
-              continue
-            }
-          }
-
-          throw e
         }
-        partInfo = this.getNextPart()
+
+        throw e
       }
-    } finally {
-      // this.stopCalcSpeed()
     }
   }
 

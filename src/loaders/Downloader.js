@@ -16,6 +16,7 @@ const SUFFIX = '.download'
 const LIMIT_PART_NUM = 9000 // 最多分片数量
 const PROCESS_CALC_CRC64_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 crc64
 const PROGRESS_EMIT_STEP = 0.2 // 进度通知 step
+const MAX_SPEED_0_COUNT = 10 // 速度为0 连续超过几次，将cancel所有请求重来
 
 import Debug from 'debug'
 const debug = Debug('PDSJS:BaseUploader')
@@ -456,13 +457,20 @@ export class Downloader extends BaseLoader {
     }
 
     // 4. 开始下载
-    await this.download()
+    await this.changeState('running')
+
+    try {
+      this.startCalcSpeed()
+
+      // 分片并发下载
+      await this.download()
+    } finally {
+      this.stopCalcSpeed()
+    }
 
     this.timeLogEnd('download', Date.now())
-
     // 统计
     this.calcTotalAvgSpeed()
-
     if (this.verbose) {
       console.log(`[${this.file.name}] all part downloaded`)
       console.log('---------------')
@@ -618,9 +626,10 @@ export class Downloader extends BaseLoader {
     } else {
       this.speed_0_count = 0
     }
-    if (this.verbose && this.speed_0_count > 0) console.log(`speed==0 ${this.speed_0_count}次, 10次将重新请求`)
+    if (this.verbose && this.speed_0_count > 0)
+      console.log(`speed==0 ${this.speed_0_count}次, ${MAX_SPEED_0_COUNT}次将重新请求`)
 
-    if (this.speed_0_count >= 10) {
+    if (this.speed_0_count >= MAX_SPEED_0_COUNT) {
       // this.stop()
       this.speed_0_count = 0
       this.retryAllUploadRequest()
@@ -661,9 +670,7 @@ export class Downloader extends BaseLoader {
     return {allDone, nextPart}
   }
   async download() {
-    await this.changeState('running')
-
-    this.done_part_loaded = calc_downloaded(this.part_info_list, true)
+    this.done_part_loaded = calc_downloaded(this.part_info_list)
     this.start_done_part_loaded = this.done_part_loaded // 用于计算平均速度
     this.loaded = this.done_part_loaded
 
@@ -674,66 +681,58 @@ export class Downloader extends BaseLoader {
 
     const last_prog = 0
 
-    this.startCalcSpeed()
-
     // 缓冲修改 progress
     // this.updateProgressThrottle = throttleInTimes((opt) => {
     //   this.updateProgressStep(opt)
     // }, 20, 300)
     let keep_going = false
-    try {
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        if (this.stopFlag) {
-          throw new Error('stopped')
-        }
-        let {allDone, nextPart: partInfo} = this.getNextPart()
-        if (allDone) {
-          //所有分片都完成
-          break
-        }
 
-        if (partInfo && con < this.maxConcurrency) {
-          if (this.verbose)
-            console.log('并发: ', con + 1, '/', this.maxConcurrency)
-
-            // 异步执行
-          ;(async () => {
-            if (this.stopFlag) {
-              return
-            }
-
-            con++
-            running_parts[partInfo.part_number] = 0
-            try {
-              await this.down_part(partInfo, running_parts, {last_prog})
-            } catch (e) {
-              // 异步的，不要 throw 了
-              return
-            }
-            con--
-
-            // 通知有下一个了
-            if (keep_going) {
-              keep_going()
-              keep_going = false
-            }
-          })()
-        } else {
-          // 等待下一个
-          await new Promise(a => {
-            keep_going = a
-          })
-        }
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      if (this.stopFlag) {
+        throw new Error('stopped')
       }
-    } catch (e) {
-      if (e.message != 'stopped') console.error(e)
-      throw e
-    } finally {
-      // 最后
-      this.notifyProgress(this.state, 100)
-      this.stopCalcSpeed()
+      let {allDone, nextPart: partInfo} = this.getNextPart()
+      if (allDone) {
+        //所有分片都完成
+        break
+      }
+
+      if (partInfo && con < this.maxConcurrency) {
+        if (this.verbose)
+          console.log('并发: ', con + 1, '/', this.maxConcurrency)
+
+          // 异步执行
+        ;(async () => {
+          if (this.stopFlag) {
+            return
+          }
+
+          con++
+          running_parts[partInfo.part_number] = 0
+          try {
+            await this.down_part(partInfo, running_parts, {last_prog})
+          } catch (e) {
+            // 异步的，不要 throw 了
+            return
+          }
+          con--
+
+          // 通知有下一个了
+          if (keep_going) {
+            keep_going()
+            keep_going = false
+          }
+        })()
+      } else {
+        // 等待下一个
+        await new Promise(a => {
+          keep_going = a
+        })
+      }
     }
+    // 最后
+    this.notifyProgress(this.state, 100)
   }
 
   async down_part(partInfo, running_parts, last_opt) {

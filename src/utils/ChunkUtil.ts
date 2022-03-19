@@ -25,16 +25,14 @@ function calc_uploaded(part_info_list: IUpPartInfo[]): number {
   return loaded
 }
 
-function calc_downloaded(part_info_list: IUpPartInfo[], isInit: boolean = false): number {
+function calc_downloaded(part_info_list: IUpPartInfo[]): number {
   let loaded = 0
   if (part_info_list) {
     part_info_list.forEach(n => {
       if (n.done) {
         loaded += n.part_size || 0
-      } else {
-        loaded += n.loaded || 0
       }
-      if (isInit && n.running) delete n.running
+      if (n.running) delete n.running
     })
   }
   return loaded

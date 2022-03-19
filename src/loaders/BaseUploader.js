@@ -28,6 +28,7 @@ const MIN_SIZE_FOR_PRE_SHA1 = 100 * 1024 * 1024 // 大于 100MB 计算预秒传
 const PROCESS_CALC_CRC64_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 crc64
 const PROCESS_CALC_SHA1_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 sha1
 const PROGRESS_EMIT_STEP = 0.2 // 进度通知 step
+const MAX_SPEED_0_COUNT = 10 // 速度为0 连续超过几次，将cancel所有请求重来
 
 console.timeLog = console.timeLog || console.timeEnd
 
@@ -463,8 +464,10 @@ export class BaseUploader extends BaseLoader {
     } else {
       this.speed_0_count = 0
     }
-    if (this.verbose && this.speed_0_count > 0) console.log(`speed==0 ${this.speed_0_count}次, 10次将重新请求`)
-    if (this.speed_0_count >= 10) {
+    if (this.verbose && this.speed_0_count > 0) {
+      console.log(`speed==0 ${this.speed_0_count}次, ${MAX_SPEED_0_COUNT}次将重新请求`)
+    }
+    if (this.speed_0_count >= MAX_SPEED_0_COUNT) {
       // this.stop();
       this.speed_0_count = 0
       this.retryAllUploadRequest()
@@ -603,12 +606,15 @@ export class BaseUploader extends BaseLoader {
     this.upload_start_time = Date.now()
     this.timeLogStart('upload', Date.now())
 
-    this.startCalcSpeed()
+    await this.changeState('running')
 
-    // 4. 分片上传
-    await this.upload()
-
-    this.stopCalcSpeed()
+    try {
+      this.startCalcSpeed()
+      // 4. 分片上传
+      await this.upload()
+    } finally {
+      this.stopCalcSpeed()
+    }
 
     // 5. 统计平均网速和总上传时长
     this.calcTotalAvgSpeed()
@@ -824,8 +830,6 @@ export class BaseUploader extends BaseLoader {
   }
 
   async upload_parallel() {
-    await this.changeState('running')
-
     this.done_part_loaded = calc_uploaded(this.part_info_list)
     this.start_done_part_loaded = this.done_part_loaded // 用于计算平均速度
     this.loaded = this.done_part_loaded
@@ -838,215 +842,191 @@ export class BaseUploader extends BaseLoader {
 
     const running_parts = {}
 
-    // this.startCalcSpeed()
-
     // 缓冲修改 progress
     // this.updateProgressThrottle = throttleInTimes(() => {
     //   this.updateProgress(running_parts)
     // })
 
-    try {
-      await new Promise((resolve, reject) => {
-        check_upload_next_part()
+    await new Promise((resolve, reject) => {
+      check_upload_next_part()
 
-        function check_upload_next_part() {
-          if (that.stopFlag) {
-            reject(new Error('stopped'))
-            return
-          }
+      function check_upload_next_part() {
+        if (that.stopFlag) {
+          reject(new Error('stopped'))
+          return
+        }
 
-          let allDone = true
-          let allRunning = true
-          let nextPart = null
-          for (const n of that.part_info_list) {
-            if (!n.etag) {
-              allDone = false
-              if (!n.running) {
-                nextPart = n
-                allRunning = false
-                break
-              }
+        let allDone = true
+        let allRunning = true
+        let nextPart = null
+        for (const n of that.part_info_list) {
+          if (!n.etag) {
+            allDone = false
+            if (!n.running) {
+              nextPart = n
+              allRunning = false
+              break
             }
-          }
-
-          if (allDone) {
-            resolve()
-            return
-          }
-
-          if (allRunning) {
-            return
-          }
-
-          if (con < that.maxConcurrency) {
-            if (that.verbose) console.log('并发: ', con + 1, '/', that.maxConcurrency)
-            const partInfo = nextPart // that.getNextPart()
-
-            if (!partInfo) {
-              return
-            }
-
-            running_parts[partInfo.part_number] = 0
-            up_part(partInfo, last_opt)
-
-            check_upload_next_part()
           }
         }
 
-        async function up_part(partInfo, last_opt) {
-          if (that.stopFlag) {
-            reject(new Error('stopped'))
+        if (allDone) {
+          resolve()
+          return
+        }
+
+        if (allRunning) {
+          return
+        }
+
+        if (con < that.maxConcurrency) {
+          if (that.verbose) console.log('并发: ', con + 1, '/', that.maxConcurrency)
+          const partInfo = nextPart // that.getNextPart()
+
+          if (!partInfo) {
             return
           }
 
-          partInfo.running = true
-          con++
+          running_parts[partInfo.part_number] = 0
+          up_part(partInfo, last_opt)
 
-          partInfo.start_time = Date.now()
-          that.timeLogStart('part-' + partInfo.part_number, Date.now())
+          check_upload_next_part()
+        }
+      }
 
-          if (that.verbose)
+      async function up_part(partInfo, last_opt) {
+        if (that.stopFlag) {
+          reject(new Error('stopped'))
+          return
+        }
+
+        partInfo.running = true
+        con++
+
+        partInfo.start_time = Date.now()
+        that.timeLogStart('part-' + partInfo.part_number, Date.now())
+
+        if (that.verbose)
+          console.log(`[${that.file.name}] upload part_number:`, partInfo.part_number, partInfo.from, '~', partInfo.to)
+
+        let part_progress_keep = {loaded: 0}
+        try {
+          const reqHeaders = {
+            'Content-Type': '',
+          }
+
+          if (that.context.isNode) {
+            reqHeaders['Content-Length'] = partInfo.part_size
+          }
+
+          const result = await that.uploadPartRetry(partInfo, {
+            method: 'put',
+            url: partInfo.upload_url,
+            headers: reqHeaders,
+            maxContentLength: Infinity,
+            maxRedirects: 5,
+            data: that.sliceFile(partInfo),
+            onUploadProgress: e => {
+              part_progress_keep = e
+
+              running_parts[partInfo.part_number] = e.loaded || 0
+
+              let running_part_loaded = 0
+              for (const k in running_parts) running_part_loaded += running_parts[k]
+              that.loaded = that.done_part_loaded + running_part_loaded
+
+              // 更新进度，缓冲
+              // that.updateProgressThrottle()
+              that.updateProgressStep(last_opt)
+ 
+            },
+          })
+
+          if (that.file.size == 0) {
+            // fix size=0 的情况
+            that.progress = 100
+            that.notifyProgress(that.state, that.progress)
+          }
+
+          if ((part_progress_keep.loaded || 0) != partInfo.part_size) {
+            console.warn('--------------------块上传失败(需重试)', part_progress_keep.loaded, partInfo.part_size)
+            throw new Error('retry_upload_part')
+          }
+
+          partInfo.etag = result.headers.etag
+          if (!partInfo.etag) {
+            throw new Error('请确定Bucket是否配置了正确的跨域设置')
+          }
+
+          delete partInfo.running
+          con--
+          delete running_parts[partInfo.part_number]
+
+          partInfo.end_time = Date.now()
+          that.timeLogEnd('part-' + partInfo.part_number, Date.now())
+
+          that.done_part_loaded += partInfo.part_size
+
+          if (that.verbose) {
             console.log(
-              `[${that.file.name}] upload part_number:`,
-              partInfo.part_number,
-              partInfo.from,
-              '~',
-              partInfo.to,
+              `[${that.file.name}] upload part complete: ${partInfo.part_number}/${
+                that.part_info_list.length
+              }, elapse:${partInfo.end_time - partInfo.start_time}ms`,
             )
+          }
 
-          let part_progress_keep = {loaded: 0}
-          try {
-            const reqHeaders = {
-              'Content-Type': '',
+          that.notifyPartCompleted(partInfo)
+
+          // check upload next part
+          check_upload_next_part()
+        } catch (e) {
+          delete partInfo.loaded
+          delete partInfo.running
+          delete partInfo.etag
+
+          running_parts[partInfo.part_number] = 0
+
+          // console.log('------------------------------')
+          if (e.message == 'stopped') {
+            if (!that.stopFlag) {
+              // continue
+              setTimeout(check_upload_next_part, 1)
+            } else {
+              reject(e)
             }
+            return
+          }
 
-            if (that.context.isNode) {
-              reqHeaders['Content-Length'] = partInfo.part_size
-            }
-
-            const result = await that.uploadPartRetry(partInfo, {
-              method: 'put',
-              url: partInfo.upload_url,
-              headers: reqHeaders,
-              maxContentLength: Infinity,
-              maxRedirects: 5,
-              data: that.sliceFile(partInfo),
-              onUploadProgress: e => {
-                part_progress_keep = e
-
-                running_parts[partInfo.part_number] = e.loaded || 0
-
-                let running_part_loaded = 0
-                for (const k in running_parts) running_part_loaded += running_parts[k]
-                that.loaded = that.done_part_loaded + running_part_loaded
-
-                // 更新进度，缓冲
-                // that.updateProgressThrottle()
-                that.updateProgressStep(last_opt)
-
-                // let running_part_loaded = 0
-                // for (var k in running_parts) running_part_loaded += running_parts[k]
-
-                // that.loaded = that.done_part_loaded + running_part_loaded
-                // that.progress = formatPercentsToFixed(that.loaded / that.file.size)
-
-                // let cp = that.getCheckpoint()
-                // if (typeof that.progress_changed == 'function') {
-                //   that.progress_changed(cp)
-                // }
-                // that.emit('progress', cp)
-              },
-            })
-
-            if (that.file.size == 0) {
-              // fix size=0 的情况
-              that.progress = 100
-              that.notifyProgress(that.state, that.progress)
-            }
-
-            if ((part_progress_keep.loaded || 0) != partInfo.part_size) {
-              console.warn('--------------------块上传失败(需重试)', part_progress_keep.loaded, partInfo.part_size)
-              throw new Error('retry_upload_part')
-            }
-
-            partInfo.etag = result.headers.etag
-            if (!partInfo.etag) {
-              throw new Error('请确定Bucket是否配置了正确的跨域设置')
-            }
-
-            delete partInfo.running
-            con--
-            delete running_parts[partInfo.part_number]
-
-            partInfo.end_time = Date.now()
-            that.timeLogEnd('part-' + partInfo.part_number, Date.now())
-
-            that.done_part_loaded += partInfo.part_size
-
-            if (that.verbose) {
-              console.log(
-                `[${that.file.name}] upload part complete: ${partInfo.part_number}/${
-                  that.part_info_list.length
-                }, elapse:${partInfo.end_time - partInfo.start_time}ms`,
-              )
-            }
-
-            that.notifyPartCompleted(partInfo)
-
-            // check upload next part
-            check_upload_next_part()
-          } catch (e) {
-            delete partInfo.loaded
-            delete partInfo.running
-            delete partInfo.etag
-
-            running_parts[partInfo.part_number] = 0
-
-            // console.log('------------------------------')
-            if (e.message == 'stopped') {
-              if (!that.stopFlag) {
-                // continue
-                setTimeout(check_upload_next_part, 1)
-              } else {
-                reject(e)
+          if (e.response) {
+            if (e.response.status == 404) {
+              if (e.response.data && e.response.data.indexOf('The specified upload does not exist') != -1) {
+                delete that.upload_id
+                that.part_info_list.forEach(n => {
+                  delete n.etag
+                  delete n.loaded
+                  delete n.running
+                })
               }
-              return
-            }
-
-            if (e.response) {
-              if (e.response.status == 404) {
-                if (e.response.data && e.response.data.indexOf('The specified upload does not exist') != -1) {
-                  delete that.upload_id
-                  that.part_info_list.forEach(n => {
-                    delete n.etag
-                    delete n.loaded
-                    delete n.running
-                  })
-                }
-              } else if (e.response.status == 504 || isNetworkError(e)) {
-                // 重试, 海外连国内，可能会504
-                con--
-                check_upload_next_part()
-                return
-              }
-            }
-
-            if (that.verbose) {
-              console.log(`[${that.file.name}] upload error part_number=${partInfo.part_number}:${e.message}`)
-            }
-
-            if (e.message == 'retry_upload_part') {
-              // 重试
+            } else if (e.response.status == 504 || isNetworkError(e)) {
+              // 重试, 海外连国内，可能会504
               con--
               check_upload_next_part()
-            } else reject(e)
+              return
+            }
           }
+
+          if (that.verbose) {
+            console.log(`[${that.file.name}] upload error part_number=${partInfo.part_number}:${e.message}`)
+          }
+
+          if (e.message == 'retry_upload_part') {
+            // 重试
+            con--
+            check_upload_next_part()
+          } else reject(e)
         }
-      })
-    } finally {
-      // 最后
-      // this.stopCalcSpeed()
-    }
+      }
+    })
   }
   notifyProgress(state, progress) {
     // const cp = this.getCheckpoint()
