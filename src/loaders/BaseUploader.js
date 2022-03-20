@@ -514,7 +514,7 @@ export class BaseUploader extends BaseLoader {
   }
 
   async start() {
-    console.log('-- Uploader call start(), state=', this.state)
+    if (this.verbose) console.log('start task, current state:', this.state)
     // if (['success', 'rapid_success'].includes(this.status)) return
     if (!['waiting', 'error', 'stopped', 'cancelled'].includes(this.state)) return
     // 防止多次调用 start()

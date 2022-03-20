@@ -371,7 +371,7 @@ export class BaseDownloader extends BaseLoader {
   }
 
   async start() {
-    console.log('-- Downloader call start(), state=', this.state)
+    if (this.verbose) console.log('start task, current state:', this.state)
     if (!['waiting', 'error', 'stopped', 'cancelled'].includes(this.state)) return
     this.changeState('start')
 
