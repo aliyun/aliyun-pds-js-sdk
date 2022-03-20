@@ -125,7 +125,7 @@ export class Downloader extends BaseDownloader {
 
       let cache_block_size = Math.max(512 * 1024, Math.floor(this.file.size / 500))
 
-      await this.pipeWS(streamResult.data, partInfo, cache_block_size, ({loaded}) => {
+      await this.pipeWS(streamResult.data, partInfo, cache_block_size, running_parts, ({loaded}) => {
         running_parts[partInfo.part_number] = loaded || 0
 
         let running_part_loaded = 0
@@ -194,5 +194,68 @@ export class Downloader extends BaseDownloader {
       }
       throw e
     }
+  }
+
+  pipeWS(stream, partInfo, block_size, running_parts, onPartProgress) {
+    const {fs} = this.context
+    let c = 0
+
+    return new Promise((resolve, reject) => {
+      const ws = fs.createWriteStream(this.file.temp_path, {
+        // autoClose: true,
+        flags: 'r+',
+        start: partInfo.from + partInfo.loaded, // 从上次断点开始
+      })
+
+      stream.on('data', chunk => {
+        if (this.stopFlag) {
+          const stopErr = new Error('stopped')
+          // 流要destroy掉
+          stream.destroy(stopErr)
+          ws.destroy(stopErr)
+
+          reject(stopErr)
+          return
+        }
+
+        partInfo.loaded += chunk.byteLength
+        c += chunk.byteLength
+
+        // fix： 一开始 speed == 0, 超过10次会重复暂停启动
+        if (running_parts[partInfo.part_number] === 0) {
+          onPartProgress(partInfo)
+        }
+
+        if (c >= block_size) {
+          c = 0
+          onPartProgress(partInfo)
+        }
+      })
+
+      stream.pipe(ws)
+
+      stream.on('error', e => {
+        reject(e)
+      })
+      ws.on('finish', () => {
+        if (partInfo.loaded != partInfo.part_size) {
+          console.warn(
+            '--------------------块下载失败(需重试)',
+            partInfo.loaded,
+            partInfo.part_size,
+            'retry_download_part',
+          )
+
+          onPartProgress(partInfo)
+          reject(new Error('retry_download_part'))
+        } else {
+          onPartProgress(partInfo)
+          resolve(void 0)
+        }
+      })
+      ws.on('error', e => {
+        reject(e)
+      })
+    })
   }
 }

@@ -5,11 +5,44 @@ import {
   calc_downloaded,
   init_chunks_sha1,
   init_chunks_parallel,
+  init_chunks_download,
   get_available_size,
 } from '../../src/utils/ChunkUtil'
 import assert = require('assert')
 
 describe('ChunkUtil', () => {
+  describe('init_chunks_download', () => {
+    it('file_size 0', () => {
+      let parts = []
+      let [part_list, chunk_size] = init_chunks_download(0, 5242944)
+      //[ { part_number: 1, part_size: 0, from: 0, to: 0 } ] 5242944
+      assert(part_list.length == 1)
+      assert(part_list[0].part_number == 1)
+      assert(part_list[0].part_size == 0)
+      assert(part_list[0].from == 0)
+      assert(part_list[0].to == 0)
+      assert(chunk_size == 5242944)
+    })
+    it('file_size 20GB', () => {
+      const file_20GB = 20 * 1024 * 1024 * 1024 // 20GB
+      let [part_list, chunk_size] = init_chunks_download(file_20GB, 5242944)
+
+      assert(part_list.length == 4096)
+      assert(part_list[0].part_number == 1)
+      assert(part_list[0].part_size == 5243008)
+      assert(part_list[0].from == 0)
+      assert(part_list[0].to == 5243008)
+      assert(chunk_size == 5243008)
+
+      let last_part = part_list[part_list.length - 1]
+
+      assert(last_part.part_number == 4096)
+      assert(last_part.part_size == 4718720)
+      assert(last_part.from == 21470117760)
+      assert(last_part.to == 21474836480)
+      assert(last_part.to == file_20GB)
+    })
+  })
   describe('init_chunks_sha1', () => {
     it('file_size 0', () => {
       let parts = []

@@ -1,11 +1,18 @@
 /** @format */
 
-import {IUpPartInfo, IPartMap} from '../Types'
+import {IUpPartInfo, IDownPartInfo, IPartMap} from '../Types'
 
 const LIMIT_PART_NUM = 9000 // OSS分片数最多不能超过1w片，这里取值 9000, 预留buffer
 const INIT_CHUNK_SIZE = 10 * 1024 * 1024 //推荐的分块大小 10MB
 
-export {calc_uploaded, calc_downloaded, init_chunks_parallel, init_chunks_sha1, get_available_size}
+export {
+  calc_uploaded,
+  calc_downloaded,
+  init_chunks_download,
+  init_chunks_parallel,
+  init_chunks_sha1,
+  get_available_size,
+}
 
 /**
  * 计算已经上传或下载的大小，单位 Bytes
@@ -229,4 +236,51 @@ function init_chunks_parallel(
   }
 
   return [part_info_list, chunk_size]
+}
+
+function init_chunks_download(file_size: number, init_chunk_size: number = INIT_CHUNK_SIZE): [IDownPartInfo[], number] {
+  if (file_size === 0) {
+    return [
+      [
+        {
+          part_number: 1,
+          part_size: 0,
+          from: 0,
+          to: 0,
+        },
+      ],
+      init_chunk_size,
+    ]
+  }
+
+  // 计算 chunk_size, 总片数 num
+  let [num, chunk_size] = get_available_size(file_size, init_chunk_size, LIMIT_PART_NUM)
+
+  num -= 1
+
+  let part_info_list = []
+  let i = 0
+  for (i = 0; i < num; i++) {
+    part_info_list.push({
+      part_number: 1 + i,
+      part_size: chunk_size,
+      from: i * chunk_size,
+      to: (i + 1) * chunk_size,
+      loaded: 0,
+    })
+  }
+
+  const s = file_size - i * chunk_size
+
+  if (s > 0) {
+    part_info_list.push({
+      part_number: i + 1,
+      part_size: s,
+      from: i * chunk_size,
+      to: file_size,
+      loaded: 0,
+    })
+
+    return [part_info_list, chunk_size]
+  }
 }

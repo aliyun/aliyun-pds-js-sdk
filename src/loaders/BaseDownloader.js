@@ -8,6 +8,7 @@ import {formatSize, elapse} from '../utils/Formatter'
 import {getFreeDiskSize} from '../utils/FileUtil'
 
 import {formatCheckpoint, initCheckpoint} from '../utils/CheckpointUtil'
+import {init_chunks_download} from '../utils/ChunkUtil'
 
 const INIT_MAX_CON = 10 // 初始并发
 const MAX_CHUNK_SIZE = 100 * 1024 * 1024 // 100MB
@@ -287,45 +288,8 @@ export class BaseDownloader extends BaseLoader {
     // 分块策略:
     // 可以并发无序下载，chunk可以小一点，以保证断点续传的效率。为了保证尽量占满带宽，要动态调节并发数。
 
-    let chunk_size = this.max_chunk_size || MAX_CHUNK_SIZE
-    let num = Math.ceil(this.file.size / chunk_size)
-    if (num >= LIMIT_PART_NUM) {
-      chunk_size = Math.ceil(this.file.size / LIMIT_PART_NUM)
-      num = Math.ceil(this.file.size / chunk_size)
-    }
-
-    num -= 1
-
-    if (this.verbose) console.log('chunk size:')
-
-    this.part_info_list = []
-    let i = 0
-    for (i = 0; i < num; i++) {
-      this.part_info_list.push({
-        part_number: 1 + i,
-        part_size: chunk_size,
-        from: i * chunk_size,
-        to: (i + 1) * chunk_size,
-        loaded: 0,
-      })
-    }
-    if (this.verbose)
-      console.log(`%c `, `background:${num > 0 ? '#69f' : '#ccc'};padding-left:240px`, chunk_size, `x ${num}`)
-
-    const s = this.file.size - i * chunk_size
-
-    if (s > 0) {
-      this.part_info_list.push({
-        part_number: i + 1,
-        part_size: s,
-        from: i * chunk_size,
-        to: this.file.size,
-        loaded: 0,
-      })
-
-      if (this.verbose)
-        console.log(`%c `, `background:#69f;padding-left:${Math.ceil((s / chunk_size) * 240)}px`, s, 'x 1')
-    }
+    let [part_info_list, chunk_size] = init_chunks_download(this.file.size, MAX_CHUNK_SIZE)
+    this.part_info_list = part_info_list
   }
 
   async wait() {
@@ -723,64 +687,6 @@ export class BaseDownloader extends BaseLoader {
     } finally {
       removeItem(this.cancelSources, source)
     }
-  }
-
-  pipeWS(stream, partInfo, block_size, onPartProgress) {
-    const {fs} = this.context
-    let c = 0
-
-    return new Promise((resolve, reject) => {
-      const ws = fs.createWriteStream(this.file.temp_path, {
-        // autoClose: true,
-        flags: 'r+',
-        start: partInfo.from + partInfo.loaded, // 从上次断点开始
-      })
-
-      stream.on('data', chunk => {
-        if (this.stopFlag) {
-          const stopErr = new Error('stopped')
-          // 流要destroy掉
-          stream.destroy(stopErr)
-          ws.destroy(stopErr)
-
-          reject(stopErr)
-          return
-        }
-
-        partInfo.loaded += chunk.byteLength
-        c += chunk.byteLength
-
-        if (c >= block_size) {
-          c = 0
-          onPartProgress(partInfo)
-        }
-      })
-
-      stream.pipe(ws)
-
-      stream.on('error', e => {
-        reject(e)
-      })
-      ws.on('finish', () => {
-        if (partInfo.loaded != partInfo.part_size) {
-          console.warn(
-            '--------------------块下载失败(需重试)',
-            partInfo.loaded,
-            partInfo.part_size,
-            'retry_download_part',
-          )
-
-          onPartProgress(partInfo)
-          reject(new Error('retry_download_part'))
-        } else {
-          onPartProgress(partInfo)
-          resolve()
-        }
-      })
-      ws.on('error', e => {
-        reject(e)
-      })
-    })
   }
 
   updateProgressStep(opt) {
