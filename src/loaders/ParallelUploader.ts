@@ -16,7 +16,7 @@ export class ParallelUploader extends BaseUploader {
     // let allRunning = true
     let nextPart = null
     for (const n of this.part_info_list) {
-      if (!n.done) {
+      if (!n.etag) {
         allDone = false
         if (!n.running) {
           nextPart = n
@@ -38,7 +38,7 @@ export class ParallelUploader extends BaseUploader {
     this.maxConcurrency = this.init_chunk_con
 
     const running_parts = {}
-    let last_opt = {last_prog: 0}
+    let last_prog = 0
 
     let keep_going = null
 
@@ -67,7 +67,7 @@ export class ParallelUploader extends BaseUploader {
           running_parts[partInfo.part_number] = 0
 
           try {
-            this.up_part(partInfo, running_parts, last_opt)
+            await this.up_part(partInfo, running_parts, {last_prog})
           } catch (e) {
             // 异步的，不要 throw 了
             return this.handleError(e)
@@ -97,7 +97,7 @@ export class ParallelUploader extends BaseUploader {
     // 暂停后，再次从0开始
     partInfo.loaded = 0
     partInfo.running = true
-    partInfo.done = false
+    delete partInfo.etag
 
     if (this.verbose) {
       console.log(
@@ -157,7 +157,6 @@ export class ParallelUploader extends BaseUploader {
 
       // 成功后
       partInfo.loaded = partInfo.part_size
-      partInfo.done = true
       delete partInfo.running
 
       partInfo.end_time = Date.now()
