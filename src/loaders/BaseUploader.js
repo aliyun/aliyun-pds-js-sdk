@@ -9,7 +9,7 @@ import {PDSError} from '../utils/PDSError'
 import {uuid} from '../utils/LoadUtil'
 import {BaseLoader} from './BaseLoader'
 import {doesFileExist} from '../utils/FileUtil'
-import {isNetworkError} from '../utils/HttpUtil'
+import {isNetworkError, isOssUrlExpired} from '../utils/HttpUtil'
 import {formatSize, elapse} from '../utils/Formatter'
 import {formatCheckpoint, initCheckpoint} from '../utils/CheckpointUtil'
 import {formatPercents, calcUploadMaxConcurrency, removeItem} from '../utils/LoadUtil'
@@ -408,9 +408,6 @@ export class BaseUploader extends BaseLoader {
         n.cancel('stopped')
       })
       this.cancelSources = []
-    } else {
-      console.log('没有可用cancel的请求')
-      // this.changeState('stopped')
     }
   }
 
@@ -863,15 +860,10 @@ export class BaseUploader extends BaseLoader {
     } catch (e) {
       const er = await doesFileExist(this.file, this.context)
       if (er) throw er
-      if (
-        e.response &&
-        e.response.status == 403 &&
-        e.response.data &&
-        e.response.data.includes('AccessDenied') &&
-        e.response.data.includes('expired')
-      ) {
+      if (isOssUrlExpired(e)) {
         // upload_url 过期，需要重新获取
-        if (this.verbose) console.warn('upload_url 过期, 需要重新获取')
+        if (this.verbose)
+          console.warn(`part-${partInfo.part_number} upload_url 过期，需要重新获取：${partInfo.upload_url}`)
         await this.getUploadUrl()
         // update url
         opt.url = partInfo.upload_url

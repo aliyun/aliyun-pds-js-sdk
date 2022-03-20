@@ -5,6 +5,7 @@ import {DownloadHttpClient} from '../../src/http/DownloadHttpClient'
 
 import * as Context from '../../src/context/NodeContext'
 import {IHttpClient} from '../../src/http/HttpClient'
+import {isOssUrlExpired} from '../../src/utils/HttpUtil'
 
 describe('DownloadHttpClient', function () {
   it('axiosDownloadPart throw error', async () => {
@@ -30,7 +31,6 @@ describe('DownloadHttpClient', function () {
       assert(e.message == '===')
     }
   })
-
   it('axiosDownloadPart stream body', async () => {
     let httpClient: IHttpClient = {
       context: Context,
@@ -50,6 +50,28 @@ describe('DownloadHttpClient', function () {
     } catch (e) {
       assert(e.response.data.startsWith('<?xml'))
       assert(e.message == 'Request failed with status code 403')
+    }
+  })
+  it('axiosDownloadPart stream body2', async () => {
+    let httpClient: IHttpClient = {
+      context: Context,
+      postAPI(): Promise<any> {
+        return Promise.resolve('https://abc.abc.abc.123')
+      },
+    }
+
+    let url = 'https://daily21453.api.pds.aliyunccp.com/v2/redirect?id=5bf644f2437845cdb4e5f8b54168df36'
+
+    let client = new DownloadHttpClient(httpClient)
+
+    try {
+      await client.axiosDownloadPart({
+        method: 'GET',
+        url,
+      })
+      assert(false, 'should throw')
+    } catch (e) {
+      assert(isOssUrlExpired(e))
     }
   })
 })

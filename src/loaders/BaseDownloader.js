@@ -3,7 +3,7 @@
 import Axios from 'axios'
 import {uuid, formatPercents, randomHex, fixFileName4Windows, calcDownloadMaxConcurrency} from '../utils/LoadUtil'
 import {BaseLoader} from './BaseLoader'
-import {isNetworkError} from '../utils/HttpUtil'
+import {isNetworkError, isOssUrlExpired} from '../utils/HttpUtil'
 import {formatSize, elapse} from '../utils/Formatter'
 import {getFreeDiskSize} from '../utils/FileUtil'
 
@@ -18,8 +18,8 @@ const PROCESS_CALC_CRC64_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用�
 const PROGRESS_EMIT_STEP = 0.2 // 进度通知 step
 const MAX_SPEED_0_COUNT = 10 // 速度为0 连续超过几次，将cancel所有请求重来
 
-// import Debug from 'debug'
-// const debug = Debug('PDSJS:BaseDownloader')
+import Debug from 'debug'
+const debug = Debug('PDSJS:BaseDownloader')
 
 console.timeLog = console.timeLog || console.timeEnd
 
@@ -354,9 +354,6 @@ export class BaseDownloader extends BaseLoader {
         n.cancel('stopped')
       })
       this.cancelSources = []
-    } else {
-      console.log('没有可用cancel的请求')
-      // this.changeState('stopped')
     }
   }
 
@@ -650,15 +647,9 @@ export class BaseDownloader extends BaseLoader {
     try {
       return await this._axiosDownloadPart(partInfo, opt)
     } catch (e) {
-      if (
-        e.response &&
-        e.response.status == 403 &&
-        e.response.data &&
-        e.response.data.includes('AccessDenied') &&
-        e.response.data.includes('expired')
-      ) {
+      if (isOssUrlExpired(e)) {
         // download_url 过期，需要重新获取
-        if (this.verbose) console.warn('download_url 过期, 需要重新获取')
+        if (this.verbose) console.warn('download_url 过期, 需要重新获取:', this.download_url)
         await this.getDownloadUrl()
         opt.url = this.download_url
         return await this._axiosDownloadPart(partInfo, opt)

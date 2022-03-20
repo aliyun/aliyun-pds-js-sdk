@@ -1,6 +1,7 @@
 /** @format */
 
 import {ReadStream} from 'fs'
+import {AxiosError} from 'axios'
 
 interface ICallRetryOptions {
   retryTimes?: number
@@ -71,4 +72,13 @@ function isNetworkError(e: Error): boolean {
     e.message.indexOf('connect ETIMEDOUT') != -1
   )
 }
-export {callRetry, delay, getStreamBody, isNetworkError}
+function isOssUrlExpired(e: AxiosError): boolean {
+  return (
+    e.response &&
+    e.response.status == 403 &&
+    e.response.data &&
+    e.response.data.includes('AccessDenied') &&
+    e.response.data.includes('expired')
+  )
+}
+export {callRetry, delay, getStreamBody, isNetworkError, isOssUrlExpired}
