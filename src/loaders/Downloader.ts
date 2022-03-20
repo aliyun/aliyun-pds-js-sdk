@@ -4,6 +4,7 @@ import {BaseDownloader} from './BaseDownloader'
 import {calc_downloaded} from '../utils/ChunkUtil'
 import {isNetworkError} from '../utils/HttpUtil'
 
+const STREAM_HIGH_WATER_MARK = 512 * 1024 // 512KB
 // import Debug from 'debug'
 // const debug = Debug('PDSJS:BaseUploader')
 
@@ -123,9 +124,7 @@ export class Downloader extends BaseDownloader {
         maxRedirects: 5,
       })
 
-      let cache_block_size = Math.max(512 * 1024, Math.floor(this.file.size / 500))
-
-      await this.pipeWS(streamResult.data, partInfo, cache_block_size, running_parts, ({loaded}) => {
+      await this.pipeWS(streamResult.data, partInfo, STREAM_HIGH_WATER_MARK, ({loaded}) => {
         running_parts[partInfo.part_number] = loaded || 0
 
         let running_part_loaded = 0
@@ -196,7 +195,7 @@ export class Downloader extends BaseDownloader {
     }
   }
 
-  pipeWS(stream, partInfo, block_size, running_parts, onPartProgress) {
+  pipeWS(stream, partInfo, block_size, onPartProgress) {
     const {fs} = this.context
     let c = 0
 
@@ -220,11 +219,6 @@ export class Downloader extends BaseDownloader {
 
         partInfo.loaded += chunk.byteLength
         c += chunk.byteLength
-
-        // fix： 一开始 speed == 0, 超过10次会重复暂停启动
-        if (running_parts[partInfo.part_number] === 0) {
-          onPartProgress(partInfo)
-        }
 
         if (c >= block_size) {
           c = 0

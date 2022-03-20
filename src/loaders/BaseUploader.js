@@ -28,7 +28,7 @@ const PROCESS_CALC_CRC64_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用�
 const PROCESS_CALC_SHA1_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 sha1
 const PROGRESS_EMIT_STEP = 0.2 // 进度通知 step
 const MAX_SPEED_0_COUNT = 10 // 速度为0 连续超过几次，将cancel所有请求重来
-
+const STREAM_HIGH_WATER_MARK = 512 * 1024 // 512KB
 console.timeLog = console.timeLog || console.timeEnd
 
 /**
@@ -1046,7 +1046,7 @@ export class BaseUploader extends BaseLoader {
       return fs.createReadStream(this.file.path, {
         start,
         end,
-        highWaterMark: 512 * 1024,
+        highWaterMark: STREAM_HIGH_WATER_MARK,
       })
     } else {
       // 浏览器
