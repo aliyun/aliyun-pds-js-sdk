@@ -288,7 +288,7 @@ export class BaseDownloader extends BaseLoader {
     // 分块策略:
     // 可以并发无序下载，chunk可以小一点，以保证断点续传的效率。为了保证尽量占满带宽，要动态调节并发数。
 
-    let [part_info_list, chunk_size] = init_chunks_download(this.file.size, MAX_CHUNK_SIZE)
+    let [part_info_list, chunk_size] = init_chunks_download(this.file.size, this.max_chunk_size)
     this.part_info_list = part_info_list
   }
 
