@@ -162,7 +162,7 @@ export class StandardSerialUploader extends BaseUploader {
     return result
   }
   async upload() {
-    return await this.upload_serial()
+    return await this.upload_sequential()
   }
 
   getNextPart() {
@@ -172,8 +172,8 @@ export class StandardSerialUploader extends BaseUploader {
     return null
   }
 
-  // for StandardMode
-  async upload_serial() {
+  // 串行上传
+  async upload_sequential() {
     this.done_part_loaded = calc_uploaded(this.part_info_list)
     this.start_done_part_loaded = this.done_part_loaded // 用于计算平均速度
     this.loaded = this.done_part_loaded
@@ -184,12 +184,11 @@ export class StandardSerialUploader extends BaseUploader {
     while (true) {
       let partInfo = this.getNextPart()
       if (!partInfo) return
-      if (this.verbose) console.log('串行上传 part_number=', partInfo.part_number, ', part_size=', partInfo.part_size)
-      try {
-        if (this.stopFlag) {
-          throw new Error('stopped')
-        }
 
+      if (this.stopFlag) {
+        throw new Error('stopped')
+      }
+      try {
         partInfo.start_time = Date.now()
         this.timeLogStart('part-' + partInfo.part_number, Date.now())
         partInfo.running = true
@@ -245,6 +244,14 @@ export class StandardSerialUploader extends BaseUploader {
         delete partInfo.running
         partInfo.end_time = Date.now()
         this.timeLogEnd('part-' + partInfo.part_number, Date.now())
+
+        if (this.verbose) {
+          console.log(
+            `[${this.file.name}] upload part[${partInfo.part_number}/${this.part_info_list.length}] complete, elapse:${
+              partInfo.end_time - partInfo.start_time
+            }ms`,
+          )
+        }
 
         this.notifyPartCompleted(partInfo)
       } catch (e) {

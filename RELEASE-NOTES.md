@@ -1,22 +1,27 @@
 # Release Notes
 
+## 0.1.19
+
+* fix: 修复并发上传或下载时暂停滞后问题。
+* refactor: 打印日志优化。
+
 ## 0.1.18
 
-fix: 优化上传下载逻辑
+* fix: 优化上传下载逻辑
 
 ## 0.1.17
 
-fix: 修复上传下载 bug
+* fix: 修复上传下载 bug
 
 ## 0.1.16
 
-fix: 暂时去掉浏览器使用worker计算sha1逻辑。
-fix: 优化下载逻辑。
-fix: 自动调节分片数上限15。
+* fix: 暂时去掉浏览器使用worker计算sha1逻辑。
+* fix: 优化下载逻辑。
+* fix: 自动调节分片数上限15。
 
 ## 0.1.15
 
-fix: 修复 isNetworkError 方法
+* fix: 修复 isNetworkError 方法
 
 ## 0.1.14
 

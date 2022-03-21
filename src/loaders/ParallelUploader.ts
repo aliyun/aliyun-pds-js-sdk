@@ -11,7 +11,7 @@ import {isNetworkError} from '../utils/HttpUtil'
 export class ParallelUploader extends BaseUploader {
   private _done_part_loaded = 0
 
-  getNextPart() {
+  private getNextPart() {
     let allDone = true
     // let allRunning = true
     let nextPart = null
@@ -41,11 +41,14 @@ export class ParallelUploader extends BaseUploader {
     let last_prog = 0
 
     let keep_going = null
-
+    let hasError = null
     // eslint-disable-next-line no-constant-condition
     while (true) {
       if (this.stopFlag) {
         throw new Error('stopped')
+      }
+      if (hasError) {
+        throw hasError
       }
       let {allDone, nextPart: partInfo} = this.getNextPart()
       if (allDone) {
@@ -70,7 +73,7 @@ export class ParallelUploader extends BaseUploader {
             await this.up_part(partInfo, running_parts, {last_prog})
           } catch (e) {
             // 异步的，不要 throw 了
-            return this.handleError(e)
+            hasError = e
           }
           con--
           // 通知有下一个了
@@ -91,7 +94,7 @@ export class ParallelUploader extends BaseUploader {
     this.notifyProgress(this.state, 100)
   }
 
-  async up_part(partInfo, running_parts, last_opt) {
+  private async up_part(partInfo, running_parts, last_opt) {
     partInfo.start_time = Date.now()
     this.timeLogStart('part-' + partInfo.part_number, Date.now())
     // 暂停后，再次从0开始
@@ -99,14 +102,6 @@ export class ParallelUploader extends BaseUploader {
     partInfo.running = true
     delete partInfo.etag
 
-    if (this.verbose) {
-      console.log(
-        `[${this.file.name}] uploading part:`,
-        `${partInfo.part_number} : ${this.part_info_list.length}`,
-        `, ${partInfo.from} ~ ${partInfo.to}`,
-        `, totol size:${this.file.size}`,
-      )
-    }
     let keep_part_loaded = 0
     try {
       const reqHeaders = {
@@ -134,7 +129,7 @@ export class ParallelUploader extends BaseUploader {
           this.loaded = this._done_part_loaded + running_part_loaded
 
           // 更新进度，缓冲
-          // that.updateProgressThrottle()
+          // this.updateProgressThrottle()
           this.updateProgressStep(last_opt)
         },
       })
@@ -167,10 +162,9 @@ export class ParallelUploader extends BaseUploader {
 
       if (this.verbose) {
         console.log(
-          `[${this.file.name}] upload part complete:`,
-          `${partInfo.part_number} : ${this.part_info_list.length}`,
-          `, elapse:${partInfo.end_time - partInfo.start_time}ms`,
-          `, totol size:${this.file.size}`,
+          `[${this.file.name}] upload part[${partInfo.part_number}/${this.part_info_list.length}] complete, elapse:${
+            partInfo.end_time - partInfo.start_time
+          }ms`,
         )
       }
 
@@ -182,8 +176,10 @@ export class ParallelUploader extends BaseUploader {
 
       running_parts[partInfo.part_number] = 0
 
-      if (this.verbose) {
-        console.log(`[${this.file.name}] upload error part_number=${partInfo.part_number}:${e.message}`)
+      if (this.verbose && e.message !== 'stopped') {
+        console.log(
+          `[${this.file.name}] upload part[${partInfo.part_number}/${this.part_info_list.length}] errror: ${e.message}`,
+        )
       }
 
       if (e.response) {

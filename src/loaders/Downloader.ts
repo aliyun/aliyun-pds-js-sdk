@@ -11,7 +11,7 @@ const STREAM_HIGH_WATER_MARK = 512 * 1024 // 512KB
 // 分片并发下载逻辑
 export class Downloader extends BaseDownloader {
   private _done_part_loaded = 0
-  getNextPart() {
+  private getNextPart() {
     let allDone = true
     // let allRunning = true
     let nextPart = null
@@ -40,11 +40,14 @@ export class Downloader extends BaseDownloader {
     const last_prog = 0
 
     let keep_going = null
-
+    let hasError = null
     // eslint-disable-next-line no-constant-condition
     while (true) {
       if (this.stopFlag) {
         throw new Error('stopped')
+      }
+      if (hasError) {
+        throw hasError
       }
       let {allDone, nextPart: partInfo} = this.getNextPart()
       if (allDone) {
@@ -68,7 +71,7 @@ export class Downloader extends BaseDownloader {
             await this.down_part(partInfo, running_parts, {last_prog})
           } catch (e) {
             // 异步的，不要 throw 了
-            return this.handleError(e)
+            hasError = e
           }
           con--
 
@@ -89,7 +92,7 @@ export class Downloader extends BaseDownloader {
     this.notifyProgress(this.state, 100)
   }
 
-  async down_part(partInfo, running_parts, last_opt) {
+  private async down_part(partInfo, running_parts, last_opt) {
     partInfo.start_time = Date.now()
     this.timeLogStart('part-' + partInfo.part_number, Date.now())
 
@@ -99,18 +102,18 @@ export class Downloader extends BaseDownloader {
     partInfo.running = true
     partInfo.done = false
 
-    if (this.verbose) {
-      console.log(
-        `[${this.file.name}] downloading part:`,
-        partInfo.part_number,
-        ` : ${this.part_info_list.length}`,
-        partInfo.from,
-        '~',
-        partInfo.to,
-        ', totol size:',
-        this.file.size,
-      )
-    }
+    // if (this.verbose) {
+    //   console.log(
+    //     `[${this.file.name}] downloading part:`,
+    //     partInfo.part_number,
+    //     ` : ${this.part_info_list.length}`,
+    //     partInfo.from,
+    //     '~',
+    //     partInfo.to,
+    //     ', totol size:',
+    //     this.file.size,
+    //   )
+    // }
 
     try {
       let streamResult = await this.downloadPartRetry(partInfo, {
@@ -149,9 +152,9 @@ export class Downloader extends BaseDownloader {
 
       if (this.verbose) {
         console.log(
-          `[${this.file.name}] download part complete: `,
-          partInfo.part_number,
-          ` : ${this.part_info_list.length}, elapse:${partInfo.end_time - partInfo.start_time}ms`,
+          `[${this.file.name}] download part[${partInfo.part_number}/${this.part_info_list.length}] complete, elapse:${
+            partInfo.end_time - partInfo.start_time
+          }ms`,
         )
       }
 
@@ -161,8 +164,10 @@ export class Downloader extends BaseDownloader {
       delete partInfo.running
       partInfo.loaded = 0
 
-      if (this.verbose) {
-        console.warn(`[${this.file.name}] download error part_number=${partInfo.part_number}: ${e.message}`)
+      if (this.verbose && e.message !== 'stopped') {
+        console.warn(
+          `[${this.file.name}] download part[${partInfo.part_number}/${this.part_info_list.length}] error: ${e.message}`,
+        )
       }
 
       /* istanbul ignore next */
@@ -195,7 +200,7 @@ export class Downloader extends BaseDownloader {
     }
   }
 
-  pipeWS(stream, partInfo, block_size, onPartProgress) {
+  private pipeWS(stream, partInfo, block_size, onPartProgress) {
     const {fs} = this.context
     let c = 0
 

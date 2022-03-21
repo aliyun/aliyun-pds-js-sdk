@@ -328,6 +328,7 @@ export class BaseDownloader extends BaseLoader {
   }
 
   async stop(doNotChangeStatus) {
+    if (this.verbose && !doNotChangeStatus) console.log('stop task, current state:', this.state)
     this.calcTotalAvgSpeed()
     this.stopCalcSpeed()
     this.stopFlag = true
@@ -340,6 +341,7 @@ export class BaseDownloader extends BaseLoader {
   }
 
   async cancel() {
+    if (this.verbose) console.log('cancel task, current state:', this.state)
     this.cancelFlag = true
     this.stop(true)
     await this.changeState('cancelled')
@@ -429,14 +431,12 @@ export class BaseDownloader extends BaseLoader {
     // 4. 开始下载
     await this.changeState('running')
 
-    try {
-      this.startCalcSpeed()
+    this.startCalcSpeed()
 
-      // 分片并发下载
-      await this.download()
-    } finally {
-      this.stopCalcSpeed()
-    }
+    // 分片并发下载
+    await this.download()
+
+    this.stopCalcSpeed()
 
     this.timeLogEnd('download', Date.now())
     // 统计
@@ -507,7 +507,7 @@ export class BaseDownloader extends BaseLoader {
     try {
       return await this.vendors.http_client[action](opt, options)
     } catch (e) {
-      if (e.message != 'stopped') console.error(action, 'ERROR:', e.response || e)
+      if (e.message != 'stopped') console.warn(action, 'ERROR:', e.response || e)
       throw e
     } finally {
       this.timeLogEnd(action + '-' + _key, Date.now())

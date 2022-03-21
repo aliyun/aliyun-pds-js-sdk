@@ -379,6 +379,8 @@ export class BaseUploader extends BaseLoader {
   }
 
   async stop(doNotChangeStatus) {
+    if (this.verbose && !doNotChangeStatus) console.log('stop task, current state:', this.state)
+
     this.stopCalcSpeed()
     this.calcTotalAvgSpeed()
 
@@ -395,6 +397,7 @@ export class BaseUploader extends BaseLoader {
     if (!doNotChangeStatus) await this.changeState('stopped')
   }
   async cancel() {
+    if (this.verbose) console.log('cancel task, current state:', this.state)
     this.cancelFlag = true
     this.stop(true)
     await this.changeState('cancelled')
@@ -605,13 +608,11 @@ export class BaseUploader extends BaseLoader {
 
     await this.changeState('running')
 
-    try {
-      this.startCalcSpeed()
-      // 4. 分片上传
-      await this.upload()
-    } finally {
-      this.stopCalcSpeed()
-    }
+    this.startCalcSpeed()
+    // 4. 分片上传
+    await this.upload()
+
+    this.stopCalcSpeed()
 
     // 5. 统计平均网速和总上传时长
     this.calcTotalAvgSpeed()
@@ -714,7 +715,7 @@ export class BaseUploader extends BaseLoader {
     try {
       return await this.vendors.http_client[action](opt, options)
     } catch (e) {
-      if (e.message != 'stopped') console.error(action, 'ERROR:', e.response || e)
+      if (e.message != 'stopped') console.warn(action, 'ERROR:', e.response || e)
       throw e
     } finally {
       this.timeLogEnd(action + '-' + _key, Date.now())
