@@ -22,7 +22,7 @@ const MAX_SIZE_LIMIT = 10 * 1024 * 1024 * 1024 * 1024 // 10 TB
 const MAX_CHUNK_SIZE = 100 * 1024 * 1024 // 100MB
 const LIMIT_PART_NUM = 9000 // OSS分片数最多不能超过1w片，这里取值 9000
 
-const MAX_SIZE_FOR_SHA1 = 10 * 1024 * 1024 * 1024 // 小于 10GB 计算秒传
+// const MAX_SIZE_FOR_SHA1 = 10 * 1024 * 1024 * 1024 // 小于 10GB 计算秒传
 const MIN_SIZE_FOR_PRE_SHA1 = 100 * 1024 * 1024 // 大于 100MB 计算预秒传
 const PROCESS_CALC_CRC64_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 crc64
 const PROCESS_CALC_SHA1_SIZE = 50 * 1024 * 1024 // 文件大小超过将启用子进程计算 sha1
@@ -120,7 +120,7 @@ export class BaseUploader extends BaseLoader {
       init_chunk_con, // 自定义指定并发数， chunk_con_auto==false 时生效
       chunk_con_auto, // 自动调整并发数策略
 
-      max_size_for_sha1, // 文件大小 小于此Bytes才秒传。太大了将直接上传。
+      // max_size_for_sha1, // 文件大小 小于此Bytes才秒传。太大了将直接上传。
       min_size_for_pre_sha1, // 文件大小超过此Bytes才预秒传，否则直接秒传。
 
       custom_crc64_fun, // 自定义计算 crc64 方法
@@ -175,7 +175,7 @@ export class BaseUploader extends BaseLoader {
     this.init_chunk_con = init_chunk_con || INIT_MAX_CON
     this.chunk_con_auto = chunk_con_auto !== false
 
-    this.max_size_for_sha1 = max_size_for_sha1 || MAX_SIZE_FOR_SHA1
+    // this.max_size_for_sha1 = max_size_for_sha1 || MAX_SIZE_FOR_SHA1
     this.min_size_for_pre_sha1 = min_size_for_pre_sha1 || MIN_SIZE_FOR_PRE_SHA1
 
     this.custom_crc64_fun = custom_crc64_fun
@@ -379,7 +379,7 @@ export class BaseUploader extends BaseLoader {
   }
 
   async stop(doNotChangeStatus) {
-    if (this.verbose && !doNotChangeStatus) console.log('stop task, current state:', this.state)
+    if (this.verbose && !doNotChangeStatus) console.log(`stop task: ${this.state} => stopped`)
 
     this.stopCalcSpeed()
     this.calcTotalAvgSpeed()
@@ -397,7 +397,7 @@ export class BaseUploader extends BaseLoader {
     if (!doNotChangeStatus) await this.changeState('stopped')
   }
   async cancel() {
-    if (this.verbose) console.log('cancel task, current state:', this.state)
+    if (this.verbose) console.log(`cancel task: ${this.state} => cancelled`)
     this.cancelFlag = true
     this.stop(true)
     await this.changeState('cancelled')
@@ -517,7 +517,7 @@ export class BaseUploader extends BaseLoader {
   }
 
   async start() {
-    if (this.verbose) console.log('start task, current state:', this.state)
+    if (this.verbose) console.log(`start task: ${this.state} => start`)
     // if (['success', 'rapid_success'].includes(this.status)) return
     if (!['waiting', 'error', 'stopped', 'cancelled'].includes(this.state)) return
     // 防止多次调用 start()

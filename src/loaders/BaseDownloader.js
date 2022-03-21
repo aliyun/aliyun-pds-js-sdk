@@ -328,7 +328,7 @@ export class BaseDownloader extends BaseLoader {
   }
 
   async stop(doNotChangeStatus) {
-    if (this.verbose && !doNotChangeStatus) console.log('stop task, current state:', this.state)
+    if (this.verbose && !doNotChangeStatus) console.log(`stop task: ${this.state} => stopped`)
     this.calcTotalAvgSpeed()
     this.stopCalcSpeed()
     this.stopFlag = true
@@ -341,7 +341,7 @@ export class BaseDownloader extends BaseLoader {
   }
 
   async cancel() {
-    if (this.verbose) console.log('cancel task, current state:', this.state)
+    if (this.verbose) console.log(`cancel task: ${this.state} => cancelled`)
     this.cancelFlag = true
     this.stop(true)
     await this.changeState('cancelled')
@@ -373,7 +373,7 @@ export class BaseDownloader extends BaseLoader {
   }
 
   async start() {
-    if (this.verbose) console.log('start task, current state:', this.state)
+    if (this.verbose) console.log(`start task: ${this.state} => start`)
     if (!['waiting', 'error', 'stopped', 'cancelled'].includes(this.state)) return
     this.changeState('start')
 

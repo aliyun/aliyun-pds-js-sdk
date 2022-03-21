@@ -26,8 +26,9 @@ export class StandardSerialUploader extends BaseUploader {
   }
 
   async prepareAndCreate() {
-    if (!this.ignore_rapid && this.file.size < this.max_size_for_sha1) {
-      // 小于500GB，算sha1，秒传
+    // if (!this.ignore_rapid && this.file.size < this.max_size_for_sha1) {
+    if (!this.ignore_rapid) {
+      // 计算sha1，秒传
       try {
         // var rapidUploadResult =
         const is_rapid_success = await this.checkRapidUpload()
