@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.1.20
+
+* fix: 增加 donot_emit_error 参数，托管模式 renameFile 接口不需要 throw 异常
+
 ## 0.1.19
 
 * fix: 修复并发上传或下载时暂停滞后问题。

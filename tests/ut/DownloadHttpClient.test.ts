@@ -52,5 +52,4 @@ describe('DownloadHttpClient', function () {
       assert(e.message == 'Request failed with status code 403')
     }
   })
-   
 })

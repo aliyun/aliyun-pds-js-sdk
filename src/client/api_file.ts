@@ -467,6 +467,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
           file_path: parent_file_path + new_name + (fileInfo.type == 'folder' ? '/' : ''),
           drive_id: fileInfo.drive_id,
           share_id: fileInfo.share_id,
+          donot_emit_error: true,
         })
         if (info != null) {
           throw new PDSError('The folder with the same name already exists', 'AlreadyExists')
@@ -1054,6 +1055,9 @@ interface IGetFileReq {
   video_thumbnail_process?: string
   image_thumbnail_process?: string
   image_url_process?: string
+
+  // 不throw
+  donot_emit_error?: boolean
 }
 
 interface ICreateFoldersConfig {
