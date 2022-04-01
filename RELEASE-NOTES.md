@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.1.22
+
+* pref: 减少 get_download_url 调用次数。
+
 ## 0.1.21
 
 * fix: 兼容 tokenInfo 没有 expire_time 字段的情况。
