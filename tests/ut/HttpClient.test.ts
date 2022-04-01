@@ -161,6 +161,44 @@ describe('HttpClient', function () {
       })
       assert(true)
     })
+
+    it('token without expire_time', () => {
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://api_endpoint.test',
+          auth_endpoint: 'https://api_endpoint.test',
+        },
+        Context,
+      )
+
+      client.setToken({
+        access_token: 'a',
+        refresh_token: 'x',
+        // expire_time: new Date(Date.now() - 1000).toISOString(),
+      })
+      assert(true)
+    })
+
+    it('token without invalid expire_time', () => {
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://api_endpoint.test',
+          auth_endpoint: 'https://api_endpoint.test',
+        },
+        Context,
+      )
+
+      try {
+        client.setToken({
+          access_token: 'a',
+          refresh_token: 'x',
+          expire_time: 'abc',
+        })
+        assert(true, 'should throw')
+      } catch (e) {
+        assert(e.code == 'InvalidParameter')
+      }
+    })
   })
 
   describe('customRefreshTokenFun', () => {
