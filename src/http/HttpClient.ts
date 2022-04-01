@@ -71,7 +71,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     if (!tokenInfo || !tokenInfo.access_token) {
       throw new PDSError('token_info.access_token is required', 'InvalidParameter')
     }
-    if (!tokenInfo.expire_time || isNaN(Date.parse(tokenInfo.expire_time))) {
+    if (tokenInfo.expire_time && isNaN(Date.parse(tokenInfo.expire_time))) {
       throw new PDSError('Invalid token_info.expire_time', 'InvalidParameter')
     }
   }
@@ -196,7 +196,8 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     if (!this.token_info || !this.token_info.access_token) {
       this.throwError(new PDSError('access_token is required', 'AccessTokenInvalid'), req_opt)
     }
-    if (Date.now() > Date.parse(this.token_info.expire_time)) {
+    const expire_time = Date.parse(this.token_info.expire_time)
+    if (!isNaN(expire_time) && Date.now() > expire_time) {
       if (this.refresh_token_fun) {
         await this.customRefreshTokenFun()
       } else {

@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.1.21
+
+* fix: 兼容 tokenInfo 没有 expire_time 字段的情况。
+
 ## 0.1.20
 
 * fix: 增加 donot_emit_error 参数，托管模式 renameFile 接口不需要 throw 异常
