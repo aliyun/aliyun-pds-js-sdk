@@ -60,6 +60,7 @@ describe('HostingFileAPI', function () {
       parent_file_path: test_folder.file_path,
       name: 'folder1',
     })
+
     assert.ok(folder1.type, 'folder')
 
     const folder2 = await client.createFolder({
@@ -77,6 +78,20 @@ describe('HostingFileAPI', function () {
       },
       'folder3',
     )
+
+    try {
+      await client.renameFile(
+        {
+          drive_id,
+          file_path: folder3.file_path,
+        },
+        'folder3',
+        // 'refuse' // 默认 refuse
+      )
+      assert(false, 'should throw')
+    } catch (e) {
+      assert(e.code == 'AlreadyExists')
+    }
 
     // 将第一个移动到第二个里面
     // console.log('-------将第一个移动到第二个里面')

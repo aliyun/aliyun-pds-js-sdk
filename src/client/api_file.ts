@@ -444,7 +444,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
   }
 
   // 文件 rename 和播单 rename 共用此逻辑,播单 rename 弹窗不展示后缀
-  // 遇到同名文件，默认会抛： AlreadyExists
+  // 遇到同名文件，默认会抛： AlreadyExist.File
   // 标准模式可以通过 check_name_mode 修改
   async renameFile(
     fileInfo: IFileItem,
@@ -461,16 +461,19 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
         check_name_mode,
       })
     } else {
+      // HostingMode
+      let isFolder = fileInfo.type ? fileInfo.type == 'folder' : fileInfo.file_path.endsWith('/')
       let parent_file_path = fileInfo.parent_file_path || dirname(fileInfo.file_path) + '/'
       try {
         const info = await this.getFile({
-          file_path: parent_file_path + new_name + (fileInfo.type == 'folder' ? '/' : ''),
+          file_path: parent_file_path + new_name + (isFolder ? '/' : ''),
           drive_id: fileInfo.drive_id,
           share_id: fileInfo.share_id,
-          donot_emit_error: true,
+          ignore_notfound: true,
         })
-        if (info != null) {
-          throw new PDSError('The folder with the same name already exists', 'AlreadyExists')
+
+        if (check_name_mode == 'refuse' && info?.name) {
+          throw new PDSError('The file with the same name already exists', 'AlreadyExists')
         } else {
           result = info
         }
@@ -485,14 +488,12 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
         file_id: fileInfo.file_id,
         file_path: fileInfo.file_path,
         new_name,
-        // to_parent_file_id: fileInfo.parent_file_id,
         to_parent_file_path: parent_file_path,
       })
-    }
-    if (this.path_type == 'HostingMode') {
       // 托管模式 rename 后 file_path 改变无法作为唯一标识
       result.beforeRenameFilePath = fileInfo.file_path
     }
+
     return {...fileInfo, ...result}
   }
 
@@ -645,7 +646,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
     return results
   }
 
-  deleteFile(row: IFileKey, permanently: boolean, options?: AxiosRequestConfig) {
+  deleteFile(row: IFileKey, permanently: boolean = false, options?: AxiosRequestConfig) {
     // 托管模式下无回收站, 直接删除
     let _permanently = this.path_type === 'HostingMode' ? true : permanently
     const pathname = _permanently ? '/file/delete' : '/recyclebin/trash'
@@ -1057,7 +1058,7 @@ interface IGetFileReq {
   image_url_process?: string
 
   // 不throw
-  donot_emit_error?: boolean
+  ignore_notfound?: boolean
 }
 
 interface ICreateFoldersConfig {

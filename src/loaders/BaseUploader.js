@@ -745,9 +745,12 @@ export class BaseUploader extends BaseLoader {
       parallel_upload,
     }
 
-    // 同名策略
     if (this.path_type == 'StandardMode') {
+      // 同名策略
       opt.check_name_mode = this.check_name_mode == 'overwrite' ? 'refuse' : this.check_name_mode
+
+      // 多版本支持，传入 file_id
+      opt.file_id = this.file_id
     }
 
     let result

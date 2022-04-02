@@ -16,15 +16,14 @@ describe('FileAPI', function () {
   let drive_id: string
   let client: PDSClient
   let test_folder: ICreateFileRes
-
+  let test_folder_name = 'test-file-action'
   this.beforeAll(async () => {
     client = await getClient(PATH_TYPE)
     drive_id = client.token_info.default_drive_id
-
     test_folder = await client.createFolder({
       drive_id,
       parent_file_id: 'root',
-      name: 'test-file-action',
+      name: test_folder_name,
     })
 
     console.log('所有测试在此目录下进行：', test_folder)
@@ -52,7 +51,7 @@ describe('FileAPI', function () {
     await client.batchDeleteFiles(items, true)
   })
 
-  it('fileActions', async () => {
+  xit('fileActions', async () => {
     // 创建两个文件夹
     const folder1 = await client.createFolder({
       drive_id,
@@ -148,7 +147,7 @@ describe('FileAPI', function () {
     assert(listItem2.length === 0)
   })
 
-  it('searchFile', async () => {
+  xit('searchFile', async () => {
     console.log('------删除所有文件')
     let {items: list_items = []} = await client.listFiles({drive_id, parent_file_id: test_folder.file_id})
     // console.log(list_items)
@@ -249,11 +248,28 @@ describe('FileAPI', function () {
   })
 
   it('folder', async () => {
+    // 先删除
+    console.log('===先删除 /folder-01')
+    try {
+      const fileInfo1 = await client.getFileByPath({
+        drive_id,
+        file_path: '/folder-01/',
+      })
+      await client.deleteFile(fileInfo1, true)
+    } catch (e) {
+      console.log('-----')
+    }
+
+    console.log('===开始创建目录')
+
+    // 开始创建目录
     const folderRes = await client.createFolder({
       drive_id,
       parent_file_id: 'root',
       name: 'folder-01',
     })
+
+    console.log('===移动空文件')
 
     // 情况1 移动空文件
     await client.moveFiles([], {
@@ -261,12 +277,16 @@ describe('FileAPI', function () {
       onProgress: () => {},
     })
 
+    console.log('===移动到同一目录下')
+
     // 情况2 移动到同一目录下
     await client.moveFiles([folderRes], {
-      to_parent_file_id: 'root',
+      to_parent_file_id: test_folder.file_id,
       to_drive_id: drive_id,
       onProgress: () => {},
     })
+
+    console.log('===创建目录')
 
     // 创建目录
     const folder_id = await client.createFolders(
@@ -278,10 +298,11 @@ describe('FileAPI', function () {
       {
         onFolderRepeat: () => true,
         onFolderCreated: folderKey => {
-          console.log('onFolderCreated:', folderKey)
+          // console.log('onFolderCreated:', folderKey)
         },
       },
     )
+    console.log('========创建目录', folder_id)
     assert(typeof folder_id === 'string')
 
     // 再次创建同名目录
@@ -295,48 +316,58 @@ describe('FileAPI', function () {
         {
           onFolderRepeat: () => false,
           onFolderCreated: folderKey => {
-            console.log('onFolderCreated:', folderKey)
+            // console.log('onFolderCreated:', folderKey)
           },
         },
       )
       assert(false, 'should throw')
     } catch (e) {
-      // console.error(e)
       assert(e.code == 'AlreadyExists')
     }
-
+    console.log('====== 获取文件夹路径 为空的情况')
     // 获取文件夹路径 为空的情况
-    const filePath = await client.getFileByPath({
+    const fileInfo = await client.getFileByPath({
       drive_id,
-      file_path: '/folder-01',
+      file_path: '/' + test_folder_name + '/folder-01',
     })
-    assert(filePath.type === 'folder')
+    assert(fileInfo.type === 'folder')
+
+    console.log('======向上查父级目录')
 
     // 向上查父级目录
     let arr = await client.getBreadcrumbFolders(drive_id, folder_id)
+    console.log('---', arr)
+    assert(arr.length == 5)
+    assert(arr[0].name == test_folder_name)
+    assert(arr[0].file_id == test_folder.file_id)
 
-    assert(arr.length == 4)
-    assert(arr[0].name == 'folder-01')
-    assert(arr[0].file_id == folderRes.file_id)
+    assert(arr[1].name == 'folder-01')
+    assert(arr[1].file_id == folderRes.file_id)
 
-    assert(arr[1].name == 'a')
-    assert(arr[2].name == 'b')
-    assert(arr[3].name == 'c')
-    assert(arr[3].file_id == folder_id)
+    assert(arr[2].name == 'a')
+    assert(arr[3].name == 'b')
+    assert(arr[4].name == 'c')
+    assert(arr[4].file_id == folder_id)
 
-    // 向上查父级目录
+    // 向上查父级目录2
+    console.log('======向上查父级目录(缓存)')
+
     arr = await client.getBreadcrumbFolderList({drive_id, file_id: folder_id})
+    console.log(JSON.stringify(arr))
+    assert(arr.length == 5)
+    assert(arr[0].name == test_folder_name)
+    assert(arr[0].file_id == test_folder.file_id)
 
-    assert(arr.length == 4)
-    assert(arr[0].name == 'folder-01')
-    assert(arr[0].file_id == folderRes.file_id)
+    assert(arr[1].name == 'folder-01')
+    assert(arr[1].file_id == folderRes.file_id)
 
-    assert(arr[1].name == 'a')
-    assert(arr[2].name == 'b')
-    assert(arr[3].name == 'c')
-    assert(arr[3].file_id == folder_id)
-
+    assert(arr[2].name == 'a')
+    assert(arr[3].name == 'b')
+    assert(arr[4].name == 'c')
+    assert(arr[4].file_id == folder_id)
     // 清理
+    console.log('======清理')
+
     const {items = []} = await client.listFiles({
       drive_id,
       parent_file_id: test_folder.file_id,

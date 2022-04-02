@@ -117,7 +117,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
 
       let pdsErr = new PDSError(err)
 
-      this.emit('error', pdsErr, req_opt)
+      this.emitError(pdsErr, req_opt)
 
       if (retries > 0) {
         // 网络无法连接
@@ -167,7 +167,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       let pdsErr = new PDSError(e)
 
       // 每个 http error 都emit
-      if (req_opt.data?.donot_emit_error !== true) this.emit('error', pdsErr, req_opt)
+      if (!(req_opt.data?.ignore_notfound === true && pdsErr.status === 404)) this.emitError(pdsErr, req_opt)
 
       if (retries > 0) {
         // 网络无法连接
@@ -216,9 +216,11 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       throw new PDSError(e)
     }
   }
-
-  throwError(e: PDSError, opt?: AxiosRequestConfig) {
+  emitError(e: PDSError, opt?: AxiosRequestConfig) {
     this.emit('error', e, opt)
+  }
+  throwError(e: PDSError, opt?: AxiosRequestConfig) {
+    this.emitError(e, opt)
     throw e
   }
 }

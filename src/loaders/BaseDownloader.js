@@ -407,7 +407,7 @@ export class BaseDownloader extends BaseLoader {
     }
 
     // 1. 先获取 download_url （遇到没有权限的情况，会直接报错，就不会调用 create 创建本地临时文件了）
-    if(!this.download_url){
+    if (!this.download_url) {
       await this.getDownloadUrl()
     }
 
