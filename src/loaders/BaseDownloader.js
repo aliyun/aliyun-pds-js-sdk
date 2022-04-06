@@ -112,7 +112,7 @@ export class BaseDownloader extends BaseLoader {
     this.file = file // {name,size,path,type,temp_path?}
 
     if (this.context.platform == 'win32') {
-      this.file.path = fixFileName4Windows(this.file.path)
+      this.file.path = fixFileName4Windows(this.context.path.resolve(this.file.path))
     }
 
     this.content_md5 = content_md5

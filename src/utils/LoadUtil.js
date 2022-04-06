@@ -48,11 +48,10 @@ function formatProgress(process) {
 
 // windows下， 文件名不能包含： \/:*?"<>|
 function fixFileName4Windows(p) {
-  const arr = p.match(/([^\\/]+)$/)
-  let name = arr && arr.length > 1 ? arr[1] : p
-  const pp = p.substring(0, p.length - name.length)
-  name = name.replace(/[\\/:*?"<>|]/g, '_')
-  return pp + name
+  return p
+    .split(/\\|\//)
+    .map(name => (/^[a-z]:$/i.test(name) ? name : name.replace(/[/:*?"<>|]/g, '_')))
+    .join('\\')
 }
 
 function randomHex() {

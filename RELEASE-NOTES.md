@@ -8,6 +8,7 @@
 - refactor: `renameFile`、 `saveFileContent`、 `createFolder` 和 `createFolders` `check_name_mode` 为 `refuse` 时会 `emit` `AlreadyExists` 的 `ClientError`。
 - refactor: 去掉上传文件大小限制。
 - refactor: `PDSError` 增加 `type` 字段，取值: `ClientError`, `ServerError`
+- fix: 修复云盘文件路径包含非法字符在 windows 下无法下载成功。
 
 ## 0.1.22
 
