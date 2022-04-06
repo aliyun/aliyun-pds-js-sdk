@@ -151,7 +151,12 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
    * @param createFoldersConfig { create_folder_cache, onFolderRepeat, onFolderCreated }
    * @return c 对应的 folderId, 或者 folderPath
    */
-  async createFolders(folderNames: string[], data: IParentFileKey, createFoldersConfig: ICreateFoldersConfig = {}) {
+  async createFolders(
+    folderNames: string[],
+    data: IParentFileKey,
+    createFoldersConfig: ICreateFoldersConfig = {},
+    options?: AxiosRequestConfig,
+  ) {
     let {parent_file_id, parent_file_path, drive_id, share_id} = data
 
     const {check_name_mode = 'refuse', create_folder_cache, onFolderRepeat, onFolderCreated} = createFoldersConfig
@@ -159,16 +164,16 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
 
     const that = this
 
-    async function _createFolderAndCache(opt: ICreateFileReq): Promise<string> {
+    async function _createFolderAndCache(opt: ICreateFileReq, options?: AxiosRequestConfig): Promise<string> {
       const key = `${opt.drive_id || opt.share_id}/${opt.parent_file_id || opt.parent_file_path}/${opt.name}`
       if (!folderPathMap[key]) {
         // cache
-        folderPathMap[key] = await _createFolder(opt, 3)
+        folderPathMap[key] = await _createFolder(opt, 3, options)
       }
       return folderPathMap[key]
     }
 
-    async function _createFolder(opt: ICreateFileReq, retry = 3): Promise<string> {
+    async function _createFolder(opt: ICreateFileReq, retry = 3, options?: AxiosRequestConfig): Promise<string> {
       try {
         // console.log('[createFolder]',opt)
 
@@ -177,7 +182,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
 
         // HostingMode 每次都创建目录覆盖。
         // StandardMode 设置为 refuse, 如果已经存在则返回 exist
-        const fileInfo = await that.postAPI('/file/create', opt)
+        const fileInfo = await that.postAPI('/file/create', opt, options)
 
         // StandardMode only
         if (fileInfo.exist && opt.parent_file_id && !folderPathMap['yes']) {
@@ -186,7 +191,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
             const b = await onFolderRepeat(fileInfo)
             if (!b) {
               retry = -1
-              throw new PDSError('The folder with the same name already exists', 'AlreadyExists')
+              that.throwError(new PDSError('The folder with the same name already exists', 'AlreadyExists'))
             }
           }
           // 只问一次
@@ -231,7 +236,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
     let _path
     for (const n of folderNames) {
       opt.name = n
-      _path = await _createFolderAndCache(opt)
+      _path = await _createFolderAndCache(opt, options)
       if (parent_file_id) opt.parent_file_id = _path
       else opt.parent_file_path = _path
     }
@@ -340,7 +345,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
     data.check_name_mode = data.check_name_mode || 'refuse'
     let info = await this.postAPI<ICreateFolderRes>('/file/create', {type: 'folder', ...data}, options)
     if (info.exist) {
-      throw new PDSError('The folder with the same name already exists', 'AlreadyExists')
+      this.throwError(new PDSError('The folder with the same name already exists', 'AlreadyExists'))
     }
     return info
   }
@@ -353,6 +358,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
     fileInfo: IFileItem,
     content = '',
     config: {check_name_mode?: TCheckNameMode; ignore_rapid?: boolean} = {},
+    options?: AxiosRequestConfig,
   ) {
     let opt = {
       drive_id: fileInfo.drive_id,
@@ -377,10 +383,10 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
         content_hash: sha1,
       })
     }
-    const info = await this.createFile(opt)
+    const info = await this.createFile(opt, options)
 
     if (info.exist) {
-      throw new PDSError('The file with the same name already exists', 'AlreadyExists')
+      this.throwError(new PDSError('The file with the same name already exists', 'AlreadyExists'))
     }
 
     // 秒传成功
@@ -401,19 +407,23 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
       1,
     )
 
-    return await this.postAPI('/file/complete', {
-      drive_id: fileInfo.drive_id,
-      share_id: fileInfo.share_id,
-      file_id: info.file_id,
-      file_path: info.file_id ? undefined : info.file_path,
-      upload_id: info.upload_id,
-      part_info_list: [
-        {
-          part_number: 1,
-          etag: result.headers.etag,
-        },
-      ],
-    })
+    return await this.postAPI(
+      '/file/complete',
+      {
+        drive_id: fileInfo.drive_id,
+        share_id: fileInfo.share_id,
+        file_id: info.file_id,
+        file_path: info.file_id ? undefined : info.file_path,
+        upload_id: info.upload_id,
+        part_info_list: [
+          {
+            part_number: 1,
+            etag: result.headers.etag,
+          },
+        ],
+      },
+      options,
+    )
   }
 
   async getFileContent(fileInfo: IGetFileReq, options?: AxiosRequestConfig) {
@@ -450,30 +460,38 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
     fileInfo: IFileItem,
     new_name: string,
     check_name_mode: TCheckNameMode = 'refuse',
+    options?: AxiosRequestConfig,
   ): Promise<IFileItem> {
     let result
     if (this.path_type == 'StandardMode') {
-      result = await this.postAPI('/file/update', {
-        drive_id: fileInfo.drive_id,
-        share_id: fileInfo.share_id,
-        name: new_name,
-        file_id: fileInfo.file_id,
-        check_name_mode,
-      })
+      result = await this.postAPI(
+        '/file/update',
+        {
+          drive_id: fileInfo.drive_id,
+          share_id: fileInfo.share_id,
+          name: new_name,
+          file_id: fileInfo.file_id,
+          check_name_mode,
+        },
+        options,
+      )
     } else {
       // HostingMode
       let isFolder = fileInfo.type ? fileInfo.type == 'folder' : fileInfo.file_path.endsWith('/')
       let parent_file_path = fileInfo.parent_file_path || dirname(fileInfo.file_path) + '/'
       try {
-        const info = await this.getFile({
-          file_path: parent_file_path + new_name + (isFolder ? '/' : ''),
-          drive_id: fileInfo.drive_id,
-          share_id: fileInfo.share_id,
-          ignore_notfound: true,
-        })
+        const info = await this.getFile(
+          {
+            file_path: parent_file_path + new_name + (isFolder ? '/' : ''),
+            drive_id: fileInfo.drive_id,
+            share_id: fileInfo.share_id,
+            ignore_notfound: true,
+          },
+          options,
+        )
 
         if (check_name_mode == 'refuse' && info?.name) {
-          throw new PDSError('The file with the same name already exists', 'AlreadyExists')
+          this.throwError(new PDSError('The file with the same name already exists', 'AlreadyExists'))
         } else {
           result = info
         }
@@ -482,14 +500,18 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
         if (e.status != 404) throw e
       }
 
-      result = await this.postAPI('/file/move', {
-        drive_id: fileInfo.drive_id,
-        share_id: fileInfo.share_id,
-        file_id: fileInfo.file_id,
-        file_path: fileInfo.file_path,
-        new_name,
-        to_parent_file_path: parent_file_path,
-      })
+      result = await this.postAPI(
+        '/file/move',
+        {
+          drive_id: fileInfo.drive_id,
+          share_id: fileInfo.share_id,
+          file_id: fileInfo.file_id,
+          file_path: fileInfo.file_path,
+          new_name,
+          to_parent_file_path: parent_file_path,
+        },
+        options,
+      )
       // 托管模式 rename 后 file_path 改变无法作为唯一标识
       result.beforeRenameFilePath = fileInfo.file_path
     }
@@ -1065,7 +1087,6 @@ interface ICreateFoldersConfig {
   check_name_mode?: TCheckNameMode
   // 用来缓存的方法
   create_folder_cache?: {[key: string]: string}
-  createdFolderCache?: {[key: string]: string}
   // 发现同名目录已经存在，会回调这个方法。
   onFolderRepeat?: (folderInfo: IFileItem) => boolean // return  true, 继续执行，false throw new PDSError
   onFolderCreated?: (folderKey: ICreateFolderRes) => void

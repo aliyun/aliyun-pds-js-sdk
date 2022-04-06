@@ -51,26 +51,6 @@ export class PDSBaseAPIClient extends PDSAuthClient {
     return info
   }
 
-  // async getAsyncTaskLoop(async_task_id: string) {
-  //   let res: IAsyncTaskRes
-  //   const f = async (tid: string) => {
-  //     try {
-  //       await delay(200)
-  //       res = await this.getAsyncTask(tid)
-  //       if (res.state === 'Running') {
-  //         await f(tid)
-  //       }
-  //       if (res.state === 'Failed') {
-  //         throw new PDSError(res.message)
-  //       }
-  //     } catch (e) {
-  //       throw new PDSError(e)
-  //     }
-  //   }
-  //   await f(async_task_id)
-  //   return res
-  // }
-
   // 批量操作
   async batchApi(params: IBatchParamsReq, options: AxiosRequestConfig = {}) {
     const {batchArr, num} = params

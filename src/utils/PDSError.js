@@ -6,6 +6,7 @@ class PDSError extends Error {
   status
   reqId
   stack
+  type = 'ClientError'
   constructor(err, customCode, status, reqId) {
     let obj = initFields(err, customCode, status, reqId)
     let msg = err instanceof PDSError ? err.message : getMessage(obj)
@@ -20,7 +21,7 @@ class PDSError extends Error {
 // PDSError.prototype = Object.create(Error.prototype);
 
 function getMessage(obj) {
-  return `${obj.status ? '[' + obj.status + '] ' : ''}${obj.code}:${obj.message}${
+  return `[${obj.type}]${obj.status ? '[' + obj.status + '] ' : ''}${obj.code}:${obj.message}${
     obj.reqId ? ' [requestId]:' + obj.reqId : ''
   }`
 }
@@ -30,7 +31,9 @@ function initFields(err, code, status, reqId) {
 
   if (err && err.isAxiosError) {
     obj = initAxiosError(err)
+    obj.type = 'ServerError'
   } else {
+    obj.type = 'ClientError'
     obj.message = err.message || err || ''
     obj.code = code || (err ? err.code : 'ClientError') || 'ClientError'
     obj.status = status || err.status

@@ -18,7 +18,7 @@ import Debug from 'debug'
 const debug = Debug('PDSJS:BaseUploader')
 
 const INIT_MAX_CON = 5 // 初始并发
-const MAX_SIZE_LIMIT = 10 * 1024 * 1024 * 1024 * 1024 // 10 TB
+// const MAX_SIZE_LIMIT = 10 * 1024 * 1024 * 1024 * 1024 // 10 TB
 const MAX_CHUNK_SIZE = 100 * 1024 * 1024 // 100MB
 const LIMIT_PART_NUM = 9000 // OSS分片数最多不能超过1w片，这里取值 9000
 
@@ -542,9 +542,9 @@ export class BaseUploader extends BaseLoader {
   }
 
   async run() {
-    if (this.file.size > MAX_SIZE_LIMIT) {
-      throw new PDSError(`File size exceeds limit: ${MAX_SIZE_LIMIT / 1024 / 1024 / 1024}GB`)
-    }
+    // if (this.file.size > MAX_SIZE_LIMIT) {
+    //   throw new PDSError(`File size exceeds limit: ${MAX_SIZE_LIMIT / 1024 / 1024 / 1024}GB`)
+    // }
 
     if (!this.start_time) {
       this.start_time = Date.now()

@@ -45,7 +45,7 @@ class FileLoaderClient extends PDSUserApiClient {
     super(opt, customContext)
   }
 
-  uploadFile(file: string | IFile, uploadTo: IUpCheckpoint, options: IUploadOptions = {}): Promise<IUpCheckpoint> {
+  uploadFile(file: string | IFile, upload_to: IUpCheckpoint, options: IUploadOptions = {}): Promise<IUpCheckpoint> {
     let {
       onReady = (): void => {},
       onProgress = (): void => {},
@@ -69,7 +69,7 @@ class FileLoaderClient extends PDSUserApiClient {
           type: '',
         }
       } else {
-        throw new PDSError('Invalid fromFile')
+        throw new PDSError('Invalid file, it should be a HTML File Object', 'InvalidParameter')
       }
     } else {
       _file = file
@@ -84,7 +84,7 @@ class FileLoaderClient extends PDSUserApiClient {
           parent_file_id: this.path_type == 'StandardMode' ? 'root' : undefined,
           parent_file_path: this.path_type == 'HostingMode' ? '/' : undefined,
 
-          ...uploadTo,
+          ...upload_to,
         },
         {
           ...configs,
@@ -115,8 +115,8 @@ class FileLoaderClient extends PDSUserApiClient {
   }
 
   async downloadFile(
-    pdsFile: IDownCheckpoint,
-    downloadTo: string,
+    pds_file: IDownCheckpoint,
+    download_to: string,
     options: IDownloadOptions = {},
   ): Promise<IDownCheckpoint> {
     let {
@@ -128,15 +128,15 @@ class FileLoaderClient extends PDSUserApiClient {
     } = options
 
     let file: IFile
-    if (typeof downloadTo == 'string') {
-      let {size} = pdsFile
+    if (typeof download_to == 'string') {
+      let {size} = pds_file
       file = {
         size,
-        name: this.context.path.basename(downloadTo),
-        path: this.context.path.resolve(downloadTo),
+        name: this.context.path.basename(download_to),
+        path: this.context.path.resolve(download_to),
       }
     } else {
-      throw new PDSError('Invalid downloadTo', 'InvalidParameter')
+      throw new PDSError('Invalid download_to, it must be a string', 'InvalidParameter')
     }
 
     return await new Promise<IDownCheckpoint>((resolve, reject) => {
@@ -147,7 +147,7 @@ class FileLoaderClient extends PDSUserApiClient {
           //from
           path_type: this.path_type,
 
-          ...pdsFile,
+          ...pds_file,
         },
         {
           ...configs,

@@ -2,12 +2,19 @@
 
 # Release Notes
 
+## 0.2.0
+
+- refactor: `renameFile`、 `saveFileContent`、 `createFolder` 和 `createFolders` 增加参数 `options?: AxiosRequestConfig`
+- refactor: `renameFile`、 `saveFileContent`、 `createFolder` 和 `createFolders` `check_name_mode` 为 `refuse` 时会 `emit` `AlreadyExists` 的 `ClientError`。
+- refactor: 去掉上传文件大小限制。
+- refactor: `PDSError` 增加 `type` 字段，取值: `ClientError`, `ServerError`
+
 ## 0.1.22
 
-- feat: 上传文件可以传入 file_id, 以支持多版本场景。
-- pref: 减少 get_download_url 调用次数。
-- fix: 修复托管模式下 renameFile 的 check_name_mode 为 refuse 不生效的 bug。
-- refactor: getFile 的非必填请求参数，由 donot_emit_error 改为更细化的 ignore_notfound。
+- feat: 上传文件可以传入 `file_id`, 以支持多版本场景。
+- pref: 减少 `get_download_url` 调用次数。
+- fix: 修复托管模式下 `renameFile` 的 `check_name_mode` 为 `refuse` 不生效的 bug。
+- refactor: `getFile` 的非必填请求参数，由 `donot_emit_error` 改为更细化的 `ignore_notfound`。
 
 ## 0.1.21
 
