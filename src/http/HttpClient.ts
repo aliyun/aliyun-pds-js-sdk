@@ -167,7 +167,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       let pdsErr = new PDSError(e)
 
       // 每个 http error 都emit
-      if (!(req_opt.data?.ignore_notfound === true && pdsErr.status === 404)) this.emitError(pdsErr, req_opt)
+      if (!(req_opt.data?.donot_emit_notfound === true && pdsErr.status === 404)) this.emitError(pdsErr, req_opt)
 
       if (retries > 0) {
         // 网络无法连接

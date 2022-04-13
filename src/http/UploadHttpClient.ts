@@ -15,7 +15,10 @@ export class UploadHttpClient implements IUploadHttpClient {
   constructor(httpClient: IHttpClient) {
     this.http_client = httpClient
   }
-
+  /* istanbul ignore next */
+  getFile(opt, options: AxiosRequestConfig = {}) {
+    return this.http_client.postAPI('/file/get', opt, options)
+  }
   /* istanbul ignore next */
   deleteFile(opt, options: AxiosRequestConfig = {}) {
     return this.http_client.postAPI('/file/delete', opt, options)

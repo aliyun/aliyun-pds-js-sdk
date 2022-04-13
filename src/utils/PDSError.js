@@ -31,7 +31,6 @@ function initFields(err, code, status, reqId) {
 
   if (err && err.isAxiosError) {
     obj = initAxiosError(err)
-    obj.type = 'ServerError'
   } else {
     obj.type = 'ClientError'
     obj.message = err.message || err || ''
@@ -48,9 +47,9 @@ function initAxiosError(err) {
   if (err.response != null) {
     obj.response = err.response
     obj.status = err.response.status
-
+    obj.type = 'ServerError'
     obj.reqId = err.response.headers['X-Ca-Request-Id'] || err.response.headers['x-ca-request-id']
-
+   
     if (err.response.data) {
       let contentType = err.response.headers['content-type']
       if (contentType.startsWith('application/json')) {
@@ -68,6 +67,7 @@ function initAxiosError(err) {
         JSON.stringify(err.response.data)
     }
   } else {
+    obj.type = 'ClientError'
     obj.code = 'ClientError'
     obj.message = err.message
   }

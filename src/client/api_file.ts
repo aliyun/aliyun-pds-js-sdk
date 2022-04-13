@@ -485,7 +485,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
             file_path: parent_file_path + new_name + (isFolder ? '/' : ''),
             drive_id: fileInfo.drive_id,
             share_id: fileInfo.share_id,
-            ignore_notfound: true,
+            donot_emit_notfound: true,
           },
           options,
         )
@@ -1080,7 +1080,7 @@ interface IGetFileReq {
   image_url_process?: string
 
   // 不throw
-  ignore_notfound?: boolean
+  donot_emit_notfound?: boolean
 }
 
 interface ICreateFoldersConfig {

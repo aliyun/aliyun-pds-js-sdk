@@ -93,6 +93,8 @@ export class BaseUploader extends BaseLoader {
 
       part_info_list,
 
+      crc64_hash, // complete的时候，服务端返回
+
       state,
       message,
       //
@@ -169,6 +171,8 @@ export class BaseUploader extends BaseLoader {
     this.file_path = file_path
     this.parent_file_id = parent_file_id
     this.parent_file_path = parent_file_path
+
+    this.crc64_hash = crc64_hash
 
     // 调优
     this.max_chunk_size = parseInt(max_chunk_size) || MAX_CHUNK_SIZE
@@ -324,6 +328,7 @@ export class BaseUploader extends BaseLoader {
 
       // uploading info
       upload_id: this.upload_id || undefined,
+      crc64_hash: this.crc64_hash || undefined,
       part_info_list: (this.part_info_list || []).map(n => {
         return {
           part_number: n.part_number,
@@ -554,73 +559,116 @@ export class BaseUploader extends BaseLoader {
     // 1. 启动异步 worker, 计算 crc64
     this.startCrc64Worker()
 
-    // 2.初始化分片信息
-    if (!this.part_info_list || this.part_info_list.length === 0) {
-      // 初始化分片信息
-      if (this.upload_id) {
-        // 之前上传过，有进度，从服务端获取进度
-        const parts = await this.listAllUploadedParts()
-        this.initChunks(parts)
-      } else {
-        this.initChunks()
-      }
-    }
-
-    // 3. 获取 upload urls， 如果还没创建，先创建（创建过程包含 获取 upload urls）
-    if (!this.upload_id) {
-      let isRapidSuccess = await this.prepareAndCreate()
-      if (isRapidSuccess) {
-        this.end_time = Date.now()
-        this.timeLogEnd('task', Date.now())
-
-        this.loaded = this.file.size
-
-        await this.changeState('rapid_success')
-
-        if (this.verbose) {
-          console.log(
-            `%c${this.file.name} (size:${this.file.size}) 秒传成功,耗时:${this.end_time - this.start_time}ms`,
-            'background:green;color:white;padding:2px 4px;',
-          )
-          this.printTimeLogs()
+    // 如果有此项，说明已经 调用成功 complete 接口
+    if (!this.crc64_hash) {
+      try {
+        // 2.初始化分片信息
+        if (!this.part_info_list || this.part_info_list.length === 0) {
+          // 初始化分片信息
+          if (this.upload_id) {
+            // 之前上传过，有进度，从服务端获取进度
+            const parts = await this.listAllUploadedParts()
+            this.initChunks(parts)
+          } else {
+            this.initChunks()
+          }
         }
 
-        // 秒传成功，终止
-        return
+        // 3. 获取 upload urls， 如果还没创建，先创建（创建过程包含 获取 upload urls）
+        if (!this.upload_id) {
+          let isRapidSuccess = await this.prepareAndCreate()
+          if (isRapidSuccess) {
+            this.end_time = Date.now()
+            this.timeLogEnd('task', Date.now())
+
+            this.loaded = this.file.size
+
+            await this.changeState('rapid_success')
+
+            if (this.verbose) {
+              console.log(
+                `%c${this.file.name} (size:${this.file.size}) 秒传成功,耗时:${this.end_time - this.start_time}ms`,
+                'background:green;color:white;padding:2px 4px;',
+              )
+              this.printTimeLogs()
+            }
+
+            // 秒传成功，终止
+            return
+          }
+        } else {
+          // 获取 upload_url
+          try {
+            await this.getUploadUrl()
+          } catch (e) {
+            if (e.code === 'AlreadyExist.File') {
+              // 调用 create，秒传成功，还没来得及返回，但是点了暂停。 下次再 getUploadUrl 会报这个错
+              this.end_time = Date.now()
+              this.timeLogEnd('task', Date.now())
+
+              this.loaded = this.file.size
+
+              await this.changeState('rapid_success')
+
+              if (this.verbose) {
+                console.log(
+                  `%c${this.file.name} (size:${this.file.size}) 秒传成功,耗时:${this.end_time - this.start_time}ms`,
+                  'background:green;color:white;padding:2px 4px;',
+                )
+                this.printTimeLogs()
+              }
+
+              // 秒传成功，终止
+              return
+            } else throw e
+          }
+        }
+
+        if (this.cancelFlag) {
+          if (this.state != 'cancelled') await this.changeState('cancelled')
+          return
+        }
+        // fix created 状态无法 stopped
+        if (this.stopFlag) {
+          if (this.state != 'stopped') await this.changeState('stopped')
+          return
+        }
+
+        this.upload_start_time = Date.now()
+        this.timeLogStart('upload', Date.now())
+
+        await this.changeState('running')
+
+        this.startCalcSpeed()
+        // 4. 分片上传
+        await this.upload()
+
+        this.stopCalcSpeed()
+
+        // 5. 统计平均网速和总上传时长
+        this.calcTotalAvgSpeed()
+
+        // 6. 分片上传完成，调接口 complete
+        await this.complete()
+
+        this.timeLogEnd('upload', Date.now())
+      } catch (e) {
+        console.warn(e)
+
+        // 调用了 complete 成功，但是还没来得及存 checkpoint. 下次再掉 listAllUploadedParts， 或者 getUploadUrl 等，会报错
+        if (e.code === 'NotFound.UploadId') {
+          // 为了排除未完成的 upload ID 被回收，在 getFile 查询一下，如果在的话，就说明上次上传成功了
+          try {
+            await this.getFile()
+          } catch (e2) {
+            console.error(e2)
+            throw e // NotFound.UploadId
+          }
+        } else {
+          throw e
+        }
       }
-    } else {
-      // 获取 upload_url
-      await this.getUploadUrl()
     }
-
-    if (this.cancelFlag) {
-      if (this.state != 'cancelled') await this.changeState('cancelled')
-      return
-    }
-    // fix created 状态无法 stopped
-    if (this.stopFlag) {
-      if (this.state != 'stopped') await this.changeState('stopped')
-      return
-    }
-
-    this.upload_start_time = Date.now()
-    this.timeLogStart('upload', Date.now())
-
-    await this.changeState('running')
-
-    this.startCalcSpeed()
-    // 4. 分片上传
-    await this.upload()
-
-    this.stopCalcSpeed()
-
-    // 5. 统计平均网速和总上传时长
-    this.calcTotalAvgSpeed()
-
-    // 6. 分片上传完成，调接口 complete
-    await this.complete()
-
-    this.timeLogEnd('upload', Date.now())
 
     // 7. 校验 crc64
     if (this.checking_crc) {
@@ -630,13 +678,7 @@ export class BaseUploader extends BaseLoader {
         if (e.message.includes('crc64_hash not match')) {
           // 出错了，要删掉
 
-          await this.http_client_call('deleteFile', {
-            drive_id: this.loc_type == 'drive' ? this.loc_id : undefined,
-            share_id: this.loc_type == 'share' ? this.loc_id : undefined,
-            file_id: this.path_type == 'StandardMode' ? this.file_key : undefined,
-            file_path: this.path_type == 'HostingMode' ? this.file_key : undefined,
-            permanently: true,
-          })
+          await this.deleteFile()
         }
         throw e
       }
@@ -707,6 +749,24 @@ export class BaseUploader extends BaseLoader {
       },
     })
   }
+  /* istanbul ignore next */
+  async getFile() {
+    return await this.vendors.http_util.callRetry(this.doGetFile, this, [], {
+      verbose: this.verbose,
+      getStopFlagFun: () => {
+        return this.stopFlag
+      },
+    })
+  }
+
+  async deleteFile() {
+    return await this.vendors.http_util.callRetry(this.doDeleteFile, this, [], {
+      verbose: this.verbose,
+      getStopFlagFun: () => {
+        return this.stopFlag
+      },
+    })
+  }
 
   async http_client_call(action, opt, options = {}) {
     const _key = options.key || Math.random().toString(36).substring(2)
@@ -720,6 +780,31 @@ export class BaseUploader extends BaseLoader {
     } finally {
       this.timeLogEnd(action + '-' + _key, Date.now())
     }
+  }
+
+  async doDeleteFile() {
+    await this.http_client_call('deleteFile', {
+      drive_id: this.loc_type == 'drive' ? this.loc_id : undefined,
+      share_id: this.loc_type == 'share' ? this.loc_id : undefined,
+      file_id: this.path_type == 'StandardMode' ? this.file_key : undefined,
+      file_path: this.path_type == 'HostingMode' ? this.file_key : undefined,
+      permanently: true,
+    })
+  }
+  async doGetFile() {
+    let info = await this.http_client_call('getFile', {
+      drive_id: this.loc_type == 'drive' ? this.loc_id : undefined,
+      share_id: this.loc_type == 'share' ? this.loc_id : undefined,
+      file_id: this.path_type == 'StandardMode' ? this.file_key : undefined,
+      file_path: this.path_type == 'HostingMode' ? this.file_key : undefined,
+      donot_emit_notfound: true,
+    })
+
+    // 上传成功
+    this.content_hash = info.content_hash
+    this.content_hash_name = info.content_hash_name
+    this.crc64_hash = info.crc64_hash
+    return info
   }
 
   async doCreate() {

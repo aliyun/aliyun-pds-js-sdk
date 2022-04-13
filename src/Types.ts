@@ -179,6 +179,7 @@ interface IUpCheckpoint {
   upload_id?: string
 
   part_info_list?: IUpPartInfo[]
+  crc64_hash?: string // complete 后，服务端返回的
 
   // 进度和状态
   state?: UploadState

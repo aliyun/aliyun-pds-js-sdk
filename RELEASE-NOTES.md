@@ -8,7 +8,10 @@
 - refactor: `renameFile`、 `saveFileContent`、 `createFolder` 和 `createFolders` `check_name_mode` 为 `refuse` 时会 `emit` `AlreadyExists` 的 `ClientError`。
 - refactor: 去掉上传文件大小限制。
 - refactor: `PDSError` 增加 `type` 字段，取值: `ClientError`, `ServerError`
+- refactor: `getFile` 的非必填请求参数，由 `ignore_notfound` 改为 `donot_emit_notfound` 更合适。
+- refactor: 上传 `checkpoint` 增加 `crc64_hash` 字段。
 - fix: 修复云盘文件路径包含非法字符在 windows 下无法下载成功。
+- fix: 修复 `checkpoint` 不是最新版本，再次启动上传后失败的问题。（秒传或者 complete 的时候断网或者直接关闭浏览器未能及时保存 checkpoint）
 
 ## 0.1.22
 
