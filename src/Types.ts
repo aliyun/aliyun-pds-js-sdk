@@ -66,7 +66,7 @@ interface IContext {
 }
 
 interface IFile {
-  path: string
+  path?: string
   name: string
   size: number
   type?: string // content-type
