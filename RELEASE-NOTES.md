@@ -12,6 +12,7 @@
 - refactor: 上传 `checkpoint` 增加 `crc64_hash` 字段。
 - fix: 修复云盘文件路径包含非法字符在 windows 下无法下载成功。
 - fix: 修复 `checkpoint` 不是最新版本，再次启动上传后失败的问题。（秒传或者 complete 的时候断网或者直接关闭浏览器未能及时保存 checkpoint）
+- fix: 修复 `IFile` 兼容前端 `typescript` 环境 `HTMLInputElement.file` 类型。
 
 ## 0.1.22
 
