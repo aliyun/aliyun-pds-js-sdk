@@ -6,6 +6,7 @@ export {
   getByteLength,
   // for test
   parseSize,
+  getFreeDiskSize_win,
   _parse_free_size_windows,
   _parse_free_size_unix,
 }
@@ -68,20 +69,26 @@ async function getFreeDiskSize_unix(p, context) {
     return num
   } catch (e) {
     console.warn(e)
-    throw new Error('Failed to get free disk size, path=' + p)
+    // throw new Error('Failed to get free disk size, path=' + p)
+    return Infinity
   }
 }
 /* istanbul ignore next  */
 async function getFreeDiskSize_win(p, context) {
   var {path, cp} = context
   try {
+    // 挂载盘格式： \\Client\$e\abc\
+    // 正常驱动格式:  C:\\Users\\zb\\
+    if (!/^[a-z]:/i.test(p)) return Infinity
+
     var driver = path.parse(p).root.substring(0, 2)
     let {stdout} = await cp_exec(cp, driver + ' && cd / && dir')
     let num = _parse_free_size_windows(stdout.trim())
     return num
   } catch (e) {
     console.warn(e)
-    throw new Error('Failed to get free disk size, path=' + p)
+    // throw new Error('Failed to get free disk size, path=' + p)
+    return Infinity
   }
 }
 

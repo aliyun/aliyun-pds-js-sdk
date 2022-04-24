@@ -2,6 +2,11 @@
 
 # Release Notes
 
+
+## 0.2.1
+
+- fix: Windows下获取网络挂载盘剩余空间方法默认返回Infinity。
+
 ## 0.2.0
 
 - refactor: `renameFile`、 `saveFileContent`、 `createFolder` 和 `createFolders` 增加参数 `options?: AxiosRequestConfig`

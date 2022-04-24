@@ -15,6 +15,15 @@ describe('FileUtil', function () {
     })
   })
 
+  describe('getFreeDiskSize_win', () => {
+    it('网络挂载', async () => {
+      let p = '\\\\Client\\$H\\Desktop'
+
+      let x = await FileUtil.getFreeDiskSize_win(p, {})
+      assert(x == Infinity)
+    })
+  })
+
   describe('_parse_free_size_windows', () => {
     it('parse success', async () => {
       // cd / && dir
