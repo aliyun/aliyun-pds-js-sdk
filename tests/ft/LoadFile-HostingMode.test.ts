@@ -11,7 +11,7 @@ const {getClient} = require('./token-util')
 
 const PATH_TYPE = 'HostingMode'
 
-describe('LoadFile', function () {
+describe('ft/LoadFile-HostingMode', function () {
   this.timeout(600000)
 
   describe('HostingMode', () => {

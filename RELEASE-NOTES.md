@@ -5,6 +5,7 @@
 ## 0.2.2
 
 - feat: http client支持 `x-share-token`， 上传下载任务参数也支持 `x-share-token`。
+- feat: 获取 `share_token` 接口增加 `check_share_pwd`。
 
 ## 0.2.1
 

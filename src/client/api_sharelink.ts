@@ -66,7 +66,7 @@ export class PDSShareLinkApiClient extends PDSShareApiClient {
    * @param {{share_id: string}} data
    * @param {AxiosRequestConfig} options
    */
-  getShareToken(data: {share_id: string; share_pwd?: string}, options?: AxiosRequestConfig) {
+  getShareToken(data: IGetShareTokenReq, options?: AxiosRequestConfig) {
     return this.postAPIAnonymous<IShareToken>('/share_link/get_share_token', data, options)
   }
 }
@@ -80,7 +80,11 @@ interface ISearchShareLinkReq extends IListReq {
   order_direction?: 'ASC' | 'DESC'
   include_cancelled?: boolean
 }
-
+interface IGetShareTokenReq {
+  share_id: string
+  share_pwd?: string
+  check_share_pwd?: boolean
+}
 interface IUpdateShareLinkReq {
   share_id?: string
   share_pwd?: string
@@ -200,4 +204,12 @@ interface IShareLinkItem {
   [key: string]: any
 }
 
-export {ICreateShareLinkReq, IShareLinkItem}
+export {
+  ISearchShareLinkReq,
+  IGetShareTokenReq,
+  IUpdateShareLinkReq,
+  ICreateShareLinkReq,
+  IShareToken,
+  IAnonymousShareLinkItem,
+  IShareLinkItem,
+}

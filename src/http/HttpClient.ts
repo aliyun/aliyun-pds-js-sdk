@@ -165,7 +165,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       await this.checkRefreshToken(req_opt)
       req_opt.headers['Authorization'] = 'Bearer ' + this.token_info.access_token
     }
-
+ 
     try {
       // 发送请求
       let response = await this.context.Axios(req_opt)
