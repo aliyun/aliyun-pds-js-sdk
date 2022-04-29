@@ -33,7 +33,7 @@ export class BaseDownloader extends BaseLoader {
     throw new Error('Method not implemented.')
   }
 
-  constructor(checkpoint, configs = {}, vendors = {}, context = {}) {
+  constructor(checkpoint, configs = {}, vendors = {}, context = {}, axios_options = {}) {
     super()
 
     // 避免警告： possible EventEmitter memory leak detected
@@ -41,6 +41,7 @@ export class BaseDownloader extends BaseLoader {
 
     this.vendors = vendors
     this.context = context
+    this.axios_options = axios_options
 
     const {
       id,
@@ -102,6 +103,10 @@ export class BaseDownloader extends BaseLoader {
       state_changed,
       part_completed,
       set_calc_max_con,
+
+      // x-share-token
+      share_token,
+      refresh_share_token,
     } = configs
 
     // 初始化
@@ -182,6 +187,10 @@ export class BaseDownloader extends BaseLoader {
     this.cancelSources = []
     this.checking_progress = 0
     this.start_done_part_loaded = 0
+
+    // x-share-token 支持
+    this.share_token = share_token
+    this.refresh_share_token = refresh_share_token
   }
 
   async handleError(e) {
@@ -502,14 +511,35 @@ export class BaseDownloader extends BaseLoader {
     }
   }
 
-  async http_client_call(action, opt, options = {}) {
+  async http_client_call(action, opt, options = {}, retry = 3) {
     const _key = options.key || Math.random().toString(36).substring(2)
     delete options.key
     this.timeLogStart(action + '-' + _key, Date.now())
+
+    const useShareToken = !['axiosDownloadPart'].includes(action)
+    const hasRefreshShareTokenFun = typeof this.refresh_share_token == 'function'
+
+    // 支持 x-share-token 上传
+    if (useShareToken && this.share_token) {
+      options.headers = options.headers || {}
+      options.headers['x-share-token'] = this.share_token
+    }
+
     try {
       return await this.vendors.http_client[action](opt, options)
     } catch (e) {
       if (e.message != 'stopped') console.warn(action, 'ERROR:', e.response || e)
+
+      // 分享页面上传文件, x-share-token 失效的情况
+      // code: "ShareLinkTokenInvalid"
+      // message: "ShareLinkToken is invalid. expired"
+      if (useShareToken && hasRefreshShareTokenFun && e.status == 401 && retry > 0) {
+        // 重新 refresh x-share-token
+        let shareToken = await this.refresh_share_token()
+        this.share_token = shareToken
+        options.headers['x-share-token'] = shareToken
+        return await this.http_client_call(action, opt, options, --retry)
+      }
       throw e
     } finally {
       this.timeLogEnd(action + '-' + _key, Date.now())
@@ -525,13 +555,17 @@ export class BaseDownloader extends BaseLoader {
     })
   }
   async doGetDownloadUrl() {
-    const result = await this.http_client_call('getDownloadUrl', {
-      drive_id: this.loc_type == 'drive' ? this.loc_id : undefined,
-      share_id: this.loc_type == 'share' ? this.loc_id : undefined,
-      file_name: this.file.name,
-      file_id: this.path_type == 'StandardMode' ? this.file_key : undefined,
-      file_path: this.path_type == 'HostingMode' ? this.file_key : undefined,
-    })
+    const result = await this.http_client_call(
+      'getDownloadUrl',
+      {
+        drive_id: this.loc_type == 'drive' ? this.loc_id : undefined,
+        share_id: this.loc_type == 'share' ? this.loc_id : undefined,
+        file_name: this.file.name,
+        file_id: this.path_type == 'StandardMode' ? this.file_key : undefined,
+        file_path: this.path_type == 'HostingMode' ? this.file_key : undefined,
+      },
+      this.axios_options,
+    )
     if (result.streams_url && this.file.name.indexOf('.livp') > -1) {
       // fix: .livp;  .livp中包含 heic/jpeg 和 mov
       if (this.file.name.endsWith('.livp')) {

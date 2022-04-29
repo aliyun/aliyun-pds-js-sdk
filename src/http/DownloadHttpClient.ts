@@ -20,7 +20,7 @@ export class DownloadHttpClient implements IDownloadHttpClient {
   getDownloadUrl(opt, options: AxiosRequestConfig = {}) {
     return this.http_client.postAPI('/file/get_download_url', opt, options)
   }
-  async axiosDownloadPart(options: AxiosRequestConfig) {
+  async axiosDownloadPart(options: AxiosRequestConfig = {}) {
     let {isNode, Axios, https, AxiosNodeAdapter} = this.http_client.context
     try {
       let result = await Axios({

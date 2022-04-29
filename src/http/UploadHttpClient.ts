@@ -39,7 +39,7 @@ export class UploadHttpClient implements IUploadHttpClient {
   listFileUploadedParts(opt, options: AxiosRequestConfig = {}) {
     return this.http_client.postAPI('/file/list_uploaded_parts', opt, options)
   }
-  async axiosUploadPart(options: AxiosRequestConfig) {
+  async axiosUploadPart(options: AxiosRequestConfig = {}) {
     let {isNode, Axios, https, AxiosNodeAdapter} = this.http_client.context
     try {
       if (isNode) {

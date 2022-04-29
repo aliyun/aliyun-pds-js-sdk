@@ -17,9 +17,11 @@ export interface IHttpClient {
 // emit('error')
 export class HttpClient extends EventEmitter implements IHttpClient {
   token_info?: ITokenInfo
+  share_token?: string
   api_endpoint?: string
   auth_endpoint?: string
   refresh_token_fun?: () => Promise<ITokenInfo>
+  refresh_share_token_fun?: () => Promise<string>
   path_type: PathType
   version: string
   context: IContext
@@ -30,18 +32,22 @@ export class HttpClient extends EventEmitter implements IHttpClient {
 
     let {
       token_info,
+      share_token,
       api_endpoint,
       auth_endpoint,
       refresh_token_fun,
+      refresh_share_token_fun,
       path_type = 'StandardMode',
       version = 'v2',
     } = params
 
     Object.assign(this, {
       token_info,
+      share_token,
       api_endpoint,
       auth_endpoint,
       refresh_token_fun,
+      refresh_share_token_fun,
       path_type,
       version,
       context,
@@ -79,6 +85,9 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   setToken(tokenInfo: ITokenInfo) {
     this.validateTokenInfo(tokenInfo)
     this.token_info = tokenInfo
+  }
+  setShareToken(share_token: string) {
+    this.share_token = share_token
   }
 
   async postAPI<T = any>(pathname: string, data = {}, options: AxiosRequestConfig = {}): Promise<T> {
@@ -148,6 +157,8 @@ export class HttpClient extends EventEmitter implements IHttpClient {
 
     req_opt.headers = req_opt.headers || {}
 
+    if (this.share_token) req_opt.headers['x-share-token'] = this.share_token
+
     let hasShareToken = !!req_opt.headers['x-share-token']
 
     if (!hasShareToken) {
@@ -177,13 +188,23 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         }
       }
 
-      // token 失效
-      if (!hasShareToken && pdsErr.status == 401) {
-        if (this.refresh_token_fun) {
-          await this.customRefreshTokenFun()
-          return await this.request(endpoint, method, pathname, data, options, --retries)
+      if (pdsErr.status == 401) {
+        // token 失效
+        if (!hasShareToken) {
+          if (this.refresh_token_fun) {
+            await this.customRefreshTokenFun()
+            return await this.request(endpoint, method, pathname, data, options, --retries)
+          } else {
+            throw new PDSError(pdsErr.message, 'TokenExpired')
+          }
         } else {
-          throw new PDSError(pdsErr.message, 'TokenExpired')
+          // share_token 失效
+          // code: "ShareLinkTokenInvalid"
+          // message: "ShareLinkToken is invalid. expired"
+          if (this.refresh_share_token_fun) {
+            this.share_token = await this.refresh_share_token_fun()
+            return await this.request(endpoint, method, pathname, data, options, --retries)
+          }
         }
       }
 

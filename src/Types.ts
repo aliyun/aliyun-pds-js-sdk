@@ -238,6 +238,10 @@ interface IUpConfig {
   part_completed?: (cp: IUpCheckpoint, part: IUpPartInfo) => void
 
   set_calc_max_con?: (speed: number, chunk_size: number, max_concurrency: number) => number
+
+  // x-share-token
+  share_token?: string
+  refresh_share_token?: () => Promise<string>
 }
 
 interface IDownCheckpoint {
@@ -299,6 +303,10 @@ interface IDownConfig {
   state_changed?: (cp: IDownCheckpoint, state: DownloadState, error?: PDSError) => void
   part_completed?: (cp: IDownCheckpoint, part: IDownPartInfo) => void
   set_calc_max_con?: (speed: number, chunk_size: number, last_concurrency: number) => number
+
+  // x-share-token
+  share_token?: string
+  refresh_share_token?: () => Promise<string>
 }
 
 interface ITokenInfo {
@@ -325,11 +333,13 @@ interface ITokenInfo {
 
 interface IClientParams {
   token_info?: ITokenInfo
+  share_token?: string
   api_endpoint?: string
   auth_endpoint?: string
   path_type?: PathType
   version?: string
   refresh_token_fun?: () => Promise<ITokenInfo>
+  refresh_share_token_fun?: () => Promise<string>
 }
 
 // 通用列表请求参数

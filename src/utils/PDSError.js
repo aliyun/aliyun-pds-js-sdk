@@ -49,7 +49,7 @@ function initAxiosError(err) {
     obj.status = err.response.status
     obj.type = 'ServerError'
     obj.reqId = err.response.headers['X-Ca-Request-Id'] || err.response.headers['x-ca-request-id']
-   
+
     if (err.response.data) {
       let contentType = err.response.headers['content-type']
       if (contentType.startsWith('application/json')) {

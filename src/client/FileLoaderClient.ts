@@ -14,6 +14,7 @@ import {
   IDownConfig,
   UploadState,
   DownloadState,
+  AxiosRequestConfig,
 } from '../Types'
 import {PDSError} from '../utils/PDSError'
 import {StandardParallelUploadTask} from '../tasks/StandardParallelUploadTask.js'
@@ -45,7 +46,12 @@ class FileLoaderClient extends PDSUserApiClient {
     super(opt, customContext)
   }
 
-  uploadFile(file: string | IFile, upload_to: IUpCheckpoint, options: IUploadOptions = {}): Promise<IUpCheckpoint> {
+  uploadFile(
+    file: string | IFile,
+    upload_to: IUpCheckpoint,
+    upload_options: IUploadOptions = {},
+    axios_options?: AxiosRequestConfig,
+  ): Promise<IUpCheckpoint> {
     let {
       onReady = (): void => {},
       onProgress = (): void => {},
@@ -53,7 +59,7 @@ class FileLoaderClient extends PDSUserApiClient {
       onPartComplete = (): void => {},
 
       ...configs
-    } = options
+    } = upload_options
 
     let _file: IFile
     if (typeof file == 'string') {
@@ -89,6 +95,7 @@ class FileLoaderClient extends PDSUserApiClient {
         {
           ...configs,
         },
+        axios_options,
       )
       task.on('statechange', (cp: IUpCheckpoint, state: UploadState, error?: PDSError) => {
         onStateChange(cp, state, error)
@@ -117,7 +124,8 @@ class FileLoaderClient extends PDSUserApiClient {
   async downloadFile(
     pds_file: IDownCheckpoint,
     download_to: string,
-    options: IDownloadOptions = {},
+    download_options: IDownloadOptions = {},
+    axios_options?: AxiosRequestConfig,
   ): Promise<IDownCheckpoint> {
     let {
       onReady = (): void => {},
@@ -125,7 +133,7 @@ class FileLoaderClient extends PDSUserApiClient {
       onStateChange = (): void => {},
       onPartComplete = (): void => {},
       ...configs
-    } = options
+    } = download_options
 
     let file: IFile
     if (typeof download_to == 'string') {
@@ -152,6 +160,7 @@ class FileLoaderClient extends PDSUserApiClient {
         {
           ...configs,
         },
+        axios_options,
       )
       task.on('statechange', (cp: IDownCheckpoint, state: DownloadState, error?: PDSError) => {
         onStateChange(cp, state, error)
@@ -176,7 +185,11 @@ class FileLoaderClient extends PDSUserApiClient {
       task.start()
     })
   }
-  createUploadTask(checkpoint: IUpCheckpoint, configs: IUpConfig = {parallel_upload: false}): UploadTask {
+  createUploadTask(
+    checkpoint: IUpCheckpoint,
+    configs: IUpConfig = {parallel_upload: false},
+    axios_options?: AxiosRequestConfig,
+  ): UploadTask {
     let UploadTask =
       this.path_type == 'StandardMode'
         ? configs.parallel_upload
@@ -203,10 +216,15 @@ class FileLoaderClient extends PDSUserApiClient {
       },
       new UploadHttpClient(this),
       this.context,
+      axios_options,
     )
   }
 
-  createDownloadTask(checkpoint: IDownCheckpoint, configs: IDownConfig): DownloadTask {
+  createDownloadTask(
+    checkpoint: IDownCheckpoint,
+    configs: IDownConfig,
+    axios_options?: AxiosRequestConfig,
+  ): DownloadTask {
     return new DownloadTask(
       checkpoint,
       {
@@ -223,6 +241,7 @@ class FileLoaderClient extends PDSUserApiClient {
       },
       new DownloadHttpClient(this),
       this.context,
+      axios_options,
     )
   }
 }

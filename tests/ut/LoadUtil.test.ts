@@ -24,15 +24,14 @@ describe('LoadUtil', function () {
     assert(LoadUtil.calcDownloadMaxConcurrency(4 * M, 3 * M, 3) == 5)
   })
 
-  describe('fixFileName4Windows', ()=>{
+  describe('fixFileName4Windows', () => {
     it('fixFileName4Windows', () => {
       assert(LoadUtil.fixFileName4Windows('b\\:*?"<>|a.txt') == 'b\\_______a.txt')
     })
-  
+
     it('fixFileName4Windows path', () => {
       assert(LoadUtil.fixFileName4Windows('D:\\s|an\\b/:*?"<>|a.txt') == 'D:\\s_an\\b\\_______a.txt')
     })
- 
   })
 
   it('throttleInTimes', async () => {

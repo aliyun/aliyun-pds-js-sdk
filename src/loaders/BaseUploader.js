@@ -56,7 +56,7 @@ export class BaseUploader extends BaseLoader {
     throw new Error('Method not implemented.')
   }
 
-  constructor(checkpoint, configs = {}, vendors = {}, context = {}) {
+  constructor(checkpoint, configs = {}, vendors = {}, context = {}, axios_options = {}) {
     super()
 
     // 避免警告： possible EventEmitter memory leak detected
@@ -64,6 +64,7 @@ export class BaseUploader extends BaseLoader {
 
     this.vendors = vendors
     this.context = context
+    this.axios_options = axios_options
 
     // {http_client, js_sha1, js_crc64_file, util}  = vendors
 
@@ -146,6 +147,9 @@ export class BaseUploader extends BaseLoader {
       progress_changed,
       part_completed,
       set_calc_max_con,
+      // x-share-token
+      share_token,
+      refresh_share_token,
     } = configs
 
     this.parallel_upload = parallel_upload
@@ -243,6 +247,10 @@ export class BaseUploader extends BaseLoader {
 
     this.ignore_rapid = ignore_rapid || false
     this.start_done_part_loaded = 0
+
+    // x-share-token 支持
+    this.share_token = share_token
+    this.refresh_share_token = refresh_share_token
   }
 
   async handleError(e) {
@@ -768,14 +776,35 @@ export class BaseUploader extends BaseLoader {
     })
   }
 
-  async http_client_call(action, opt, options = {}) {
+  async http_client_call(action, opt, options = {}, retry = 3) {
     const _key = options.key || Math.random().toString(36).substring(2)
     delete options.key
     this.timeLogStart(action + '-' + _key, Date.now())
+
+    const useShareToken = !['axiosUploadPart'].includes(action)
+    const hasRefreshShareTokenFun = typeof this.refresh_share_token == 'function'
+
+    // 支持 x-share-token 上传
+    if (useShareToken && this.share_token) {
+      options.headers = options.headers || {}
+      options.headers['x-share-token'] = this.share_token
+    }
+
     try {
       return await this.vendors.http_client[action](opt, options)
     } catch (e) {
       if (e.message != 'stopped') console.warn(action, 'ERROR:', e.response || e)
+
+      // 分享页面上传文件, x-share-token 失效的情况
+      // code: "ShareLinkTokenInvalid"
+      // message: "ShareLinkToken is invalid. expired"
+      if (useShareToken && hasRefreshShareTokenFun && e.status == 401 && retry > 0) {
+        // 重新 refresh x-share-token
+        let shareToken = await this.refresh_share_token()
+        this.share_token = shareToken
+        options.headers['x-share-token'] = shareToken
+        return await this.http_client_call(action, opt, options, --retry)
+      }
       throw e
     } finally {
       this.timeLogEnd(action + '-' + _key, Date.now())
@@ -783,22 +812,30 @@ export class BaseUploader extends BaseLoader {
   }
 
   async doDeleteFile() {
-    await this.http_client_call('deleteFile', {
-      drive_id: this.loc_type == 'drive' ? this.loc_id : undefined,
-      share_id: this.loc_type == 'share' ? this.loc_id : undefined,
-      file_id: this.path_type == 'StandardMode' ? this.file_key : undefined,
-      file_path: this.path_type == 'HostingMode' ? this.file_key : undefined,
-      permanently: true,
-    })
+    await this.http_client_call(
+      'deleteFile',
+      {
+        drive_id: this.loc_type == 'drive' ? this.loc_id : undefined,
+        share_id: this.loc_type == 'share' ? this.loc_id : undefined,
+        file_id: this.path_type == 'StandardMode' ? this.file_key : undefined,
+        file_path: this.path_type == 'HostingMode' ? this.file_key : undefined,
+        permanently: true,
+      },
+      this.axios_options,
+    )
   }
   async doGetFile() {
-    let info = await this.http_client_call('getFile', {
-      drive_id: this.loc_type == 'drive' ? this.loc_id : undefined,
-      share_id: this.loc_type == 'share' ? this.loc_id : undefined,
-      file_id: this.path_type == 'StandardMode' ? this.file_key : undefined,
-      file_path: this.path_type == 'HostingMode' ? this.file_key : undefined,
-      donot_emit_notfound: true,
-    })
+    let info = await this.http_client_call(
+      'getFile',
+      {
+        drive_id: this.loc_type == 'drive' ? this.loc_id : undefined,
+        share_id: this.loc_type == 'share' ? this.loc_id : undefined,
+        file_id: this.path_type == 'StandardMode' ? this.file_key : undefined,
+        file_path: this.path_type == 'HostingMode' ? this.file_key : undefined,
+        donot_emit_notfound: true,
+      },
+      this.axios_options,
+    )
 
     // 上传成功
     this.content_hash = info.content_hash
@@ -841,7 +878,7 @@ export class BaseUploader extends BaseLoader {
     let result
 
     try {
-      result = await this.http_client_call('createFile', opt, {ignoreError: !!parallel_upload})
+      result = await this.http_client_call('createFile', opt, {ignoreError: !!parallel_upload, ...this.axios_options})
     } catch (e) {
       if (e.code === 'InvalidParameterNotSupported.ParallelUpload' && this.parallel_upload) {
         // if (Global) {
@@ -860,7 +897,7 @@ export class BaseUploader extends BaseLoader {
       // 覆盖 create
       if (this.check_name_mode == 'overwrite') {
         opt.file_id = result.file_id
-        result = await this.http_client_call('createFile', opt)
+        result = await this.http_client_call('createFile', opt, this.axios_options)
       }
     }
 
@@ -883,20 +920,24 @@ export class BaseUploader extends BaseLoader {
   }
   /* istanbul ignore next */
   async doGetUploadUrl() {
-    const result = await this.http_client_call('getFileUploadUrl', {
-      upload_id: this.upload_id,
-      drive_id: this.loc_type == 'drive' ? this.loc_id : undefined,
-      share_id: this.loc_type == 'share' ? this.loc_id : undefined,
-      part_info_list: this.part_info_list.map(n => {
-        const checkpoint = {part_number: n.part_number}
-        if (n.parallel_sha1_ctx) {
-          checkpoint.parallel_sha1_ctx = n.parallel_sha1_ctx
-        }
-        return checkpoint
-      }),
-      file_id: this.path_type == 'StandardMode' ? this.file_key : undefined,
-      file_path: this.path_type == 'HostingMode' ? this.file_key : undefined,
-    })
+    const result = await this.http_client_call(
+      'getFileUploadUrl',
+      {
+        upload_id: this.upload_id,
+        drive_id: this.loc_type == 'drive' ? this.loc_id : undefined,
+        share_id: this.loc_type == 'share' ? this.loc_id : undefined,
+        part_info_list: this.part_info_list.map(n => {
+          const checkpoint = {part_number: n.part_number}
+          if (n.parallel_sha1_ctx) {
+            checkpoint.parallel_sha1_ctx = n.parallel_sha1_ctx
+          }
+          return checkpoint
+        }),
+        file_id: this.path_type == 'StandardMode' ? this.file_key : undefined,
+        file_path: this.path_type == 'HostingMode' ? this.file_key : undefined,
+      },
+      this.axios_options,
+    )
 
     result.part_info_list.forEach((n, i) => {
       this.part_info_list[i].upload_url = n.upload_url
@@ -1029,7 +1070,7 @@ export class BaseUploader extends BaseLoader {
       // part_number_marker==1, 则返回 part_number=2 的
       opt.part_number_marker = part_number - 1
     }
-    const result = await this.http_client_call('listFileUploadedParts', opt)
+    const result = await this.http_client_call('listFileUploadedParts', opt, this.axios_options)
 
     return result
   }
@@ -1054,7 +1095,7 @@ export class BaseUploader extends BaseLoader {
       }),
     }
 
-    const result = await this.http_client_call('completeFile', params)
+    const result = await this.http_client_call('completeFile', params, this.axios_options)
 
     this.content_hash_name = result.content_hash_name
     this.content_hash = result.content_hash
