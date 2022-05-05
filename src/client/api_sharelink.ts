@@ -107,6 +107,8 @@ interface IUpdateShareLinkReq {
   save_download_limit?: number // 分享转存加下载次数限制，0表示不限制
 
   require_login?: boolean // 此分享要求domain用户才能查看
+
+  creatable?: boolean  // 是否允许上传
   creatable_file_id_list?: string[] // 允许上传的目录列表
 }
 interface ICreateShareLinkReq {
@@ -128,6 +130,8 @@ interface ICreateShareLinkReq {
   save_download_limit?: number // 分享转存加下载次数限制，0表示不限制
 
   require_login?: boolean // 此分享要求domain用户才能查看
+
+  creatable?: boolean  // 是否允许上传
   creatable_file_id_list?: string[] // 允许上传的目录列表
 }
 

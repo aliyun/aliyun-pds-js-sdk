@@ -205,6 +205,7 @@ describe('ShareLink', function () {
       file_id_list: [folder_id],
       share_pwd: '',
 
+      creatable: true,
       creatable_file_id_list: [folder_id],
     })
     let share_id = result.share_id
