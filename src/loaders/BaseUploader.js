@@ -656,10 +656,11 @@ export class BaseUploader extends BaseLoader {
         // 5. 统计平均网速和总上传时长
         this.calcTotalAvgSpeed()
 
+        this.timeLogEnd('upload', Date.now())
+
         // 6. 分片上传完成，调接口 complete
         await this.complete()
 
-        this.timeLogEnd('upload', Date.now())
       } catch (e) {
         console.warn(e)
 
@@ -678,24 +679,11 @@ export class BaseUploader extends BaseLoader {
       }
     }
 
-    // 7. 校验 crc64
-    if (this.checking_crc) {
-      try {
-        await this.checkFileHash()
-      } catch (e) {
-        if (e.message.includes('crc64_hash not match')) {
-          // 出错了，要删掉
-
-          await this.deleteFile()
-        }
-        throw e
-      }
-    }
 
     this.end_time = Date.now()
     this.timeLogEnd('task', Date.now())
 
-    // 8. 修改状态成功
+    // 7. 修改状态成功
     await this.changeState('success')
 
     if (this.verbose) {
@@ -1077,6 +1065,7 @@ export class BaseUploader extends BaseLoader {
 
   async doComplete() {
     if (this.state == 'complete') return
+
     const params = {
       ignoreError: true,
       drive_id: this.loc_type == 'drive' ? this.loc_id : undefined,
@@ -1095,25 +1084,26 @@ export class BaseUploader extends BaseLoader {
       }),
     }
 
+    if (this.checking_crc) {
+      await this.changeState('checking')
+
+      await this.waitForCrc64()
+      // 新版支持 file/complete 时传入 crc64 到服务端校验。
+      params.crc64_hash = this.calc_crc64
+    }
+
     const result = await this.http_client_call('completeFile', params, this.axios_options)
 
     this.content_hash_name = result.content_hash_name
     this.content_hash = result.content_hash
     this.crc64_hash = result.crc64_hash
-    await this.changeState('complete')
+    // await this.changeState('complete')
 
     return result
   }
 
-  async checkFileHash() {
-    // if (!IS_ELECTRON) {
-    //   return;
-    // };
-
-    await this.changeState('checking')
-
+  async waitForCrc64() {
     if (!this.calc_crc64) {
-      // if (!this.calc_crc64 || this.calc_crc64 === '0') {
       this.calc_crc64 = await new Promise((a, b) => {
         this.on_calc_crc_success = result => {
           a(result)
@@ -1122,14 +1112,10 @@ export class BaseUploader extends BaseLoader {
           b(e)
         }
       })
-      // wait for worker
-      // var result = await this.calcFileCRC64();
     }
-
-    if (this.calc_crc64 != this.crc64_hash) {
-      throw new Error(`crc64_hash not match: ${this.calc_crc64} != ${this.crc64_hash}`)
-    }
+    return this.calc_crc64
   }
+
   /* istanbul ignore next */
   async calcFileCRC64() {
     this.timeLogStart('crc64', Date.now())
