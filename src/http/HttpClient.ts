@@ -165,7 +165,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       await this.checkRefreshToken(req_opt)
       req_opt.headers['Authorization'] = 'Bearer ' + this.token_info.access_token
     }
- 
+
     try {
       // 发送请求
       let response = await this.context.Axios(req_opt)
@@ -177,8 +177,13 @@ export class HttpClient extends EventEmitter implements IHttpClient {
 
       let pdsErr = new PDSError(e)
 
-      // 每个 http error 都emit
-      if (!(req_opt.data?.donot_emit_notfound === true && pdsErr.status === 404)) this.emitError(pdsErr, req_opt)
+      // 不是每个 http error 都emit
+      if (
+        req_opt.data?.donot_emit_error !== true &&
+        !(req_opt.data?.donot_emit_notfound === true && pdsErr.status === 404)
+      ) {
+        this.emitError(pdsErr, req_opt)
+      }
 
       if (retries > 0) {
         // 网络无法连接

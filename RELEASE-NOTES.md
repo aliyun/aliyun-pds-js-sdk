@@ -7,6 +7,7 @@
 - feat: http client支持 `x-share-token`， 上传下载任务参数也支持 `x-share-token`。
 - feat: 获取 `share_token` 接口增加 `check_share_pwd` 字段支持。
 - refactor: 支持 `file/complete` 时传入 `crc64_hash` 到服务端校验文件完整性。
+- refactor: http client 支持 `donot_emit_error` 参数，表示不 emit 错误。 task 内部调用接口增加 `donot_emit_error` 参数。
 
 ## 0.2.1
 

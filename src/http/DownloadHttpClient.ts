@@ -18,6 +18,7 @@ export class DownloadHttpClient implements IDownloadHttpClient {
   }
   /* istanbul ignore next */
   getDownloadUrl(opt, options: AxiosRequestConfig = {}) {
+    opt.donot_emit_error = true
     return this.http_client.postAPI('/file/get_download_url', opt, options)
   }
   async axiosDownloadPart(options: AxiosRequestConfig = {}) {

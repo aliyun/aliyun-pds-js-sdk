@@ -108,7 +108,7 @@ interface IUpdateShareLinkReq {
 
   require_login?: boolean // 此分享要求domain用户才能查看
 
-  creatable?: boolean  // 是否允许上传
+  creatable?: boolean // 是否允许上传
   creatable_file_id_list?: string[] // 允许上传的目录列表
 }
 interface ICreateShareLinkReq {
@@ -131,7 +131,7 @@ interface ICreateShareLinkReq {
 
   require_login?: boolean // 此分享要求domain用户才能查看
 
-  creatable?: boolean  // 是否允许上传
+  creatable?: boolean // 是否允许上传
   creatable_file_id_list?: string[] // 允许上传的目录列表
 }
 

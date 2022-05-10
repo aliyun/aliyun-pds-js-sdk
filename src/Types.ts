@@ -358,7 +358,6 @@ interface IListRes<T = any> {
 
 interface IUploadHttpClient {
   createFile(data: any, opt: any): Promise<any>
-  deleteFile(data: any, opt: any): Promise<any>
   completeFile(data: any, opt: any): Promise<any>
   getFileUploadUrl(data: any, opt: any): Promise<any>
   listFileUploadedParts(data: any, opt: any): Promise<any>

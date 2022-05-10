@@ -51,7 +51,7 @@ describe('FileAPI', function () {
     await client.batchDeleteFiles(items, true)
   })
 
-  xit('fileActions', async () => {
+  it('fileActions', async () => {
     // 创建两个文件夹
     const folder1 = await client.createFolder({
       drive_id,
@@ -147,7 +147,7 @@ describe('FileAPI', function () {
     assert(listItem2.length === 0)
   })
 
-  xit('searchFile', async () => {
+  it('searchFile', async () => {
     console.log('------删除所有文件')
     let {items: list_items = []} = await client.listFiles({drive_id, parent_file_id: test_folder.file_id})
     // console.log(list_items)

@@ -17,26 +17,27 @@ export class UploadHttpClient implements IUploadHttpClient {
   }
   /* istanbul ignore next */
   getFile(opt, options: AxiosRequestConfig = {}) {
+    opt.donot_emit_error = true
     return this.http_client.postAPI('/file/get', opt, options)
   }
   /* istanbul ignore next */
-  deleteFile(opt, options: AxiosRequestConfig = {}) {
-    return this.http_client.postAPI('/file/delete', opt, options)
-  }
-  /* istanbul ignore next */
   createFile(opt, options: AxiosRequestConfig = {}) {
+    opt.donot_emit_error = true
     return this.http_client.postAPI('/file/create', opt, options)
   }
   /* istanbul ignore next */
   completeFile(opt, options: AxiosRequestConfig = {}) {
+    opt.donot_emit_error = true
     return this.http_client.postAPI('/file/complete', opt, options)
   }
   /* istanbul ignore next */
   getFileUploadUrl(opt, options: AxiosRequestConfig = {}) {
+    opt.donot_emit_error = true
     return this.http_client.postAPI('/file/get_upload_url', opt, options)
   }
   /* istanbul ignore next */
   listFileUploadedParts(opt, options: AxiosRequestConfig = {}) {
+    opt.donot_emit_error = true
     return this.http_client.postAPI('/file/list_uploaded_parts', opt, options)
   }
   async axiosUploadPart(options: AxiosRequestConfig = {}) {

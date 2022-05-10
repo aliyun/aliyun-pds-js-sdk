@@ -660,7 +660,6 @@ export class BaseUploader extends BaseLoader {
 
         // 6. 分片上传完成，调接口 complete
         await this.complete()
-
       } catch (e) {
         console.warn(e)
 
@@ -678,7 +677,6 @@ export class BaseUploader extends BaseLoader {
         }
       }
     }
-
 
     this.end_time = Date.now()
     this.timeLogEnd('task', Date.now())
@@ -755,15 +753,6 @@ export class BaseUploader extends BaseLoader {
     })
   }
 
-  async deleteFile() {
-    return await this.vendors.http_util.callRetry(this.doDeleteFile, this, [], {
-      verbose: this.verbose,
-      getStopFlagFun: () => {
-        return this.stopFlag
-      },
-    })
-  }
-
   async http_client_call(action, opt, options = {}, retry = 3) {
     const _key = options.key || Math.random().toString(36).substring(2)
     delete options.key
@@ -799,19 +788,6 @@ export class BaseUploader extends BaseLoader {
     }
   }
 
-  async doDeleteFile() {
-    await this.http_client_call(
-      'deleteFile',
-      {
-        drive_id: this.loc_type == 'drive' ? this.loc_id : undefined,
-        share_id: this.loc_type == 'share' ? this.loc_id : undefined,
-        file_id: this.path_type == 'StandardMode' ? this.file_key : undefined,
-        file_path: this.path_type == 'HostingMode' ? this.file_key : undefined,
-        permanently: true,
-      },
-      this.axios_options,
-    )
-  }
   async doGetFile() {
     let info = await this.http_client_call(
       'getFile',
@@ -820,7 +796,6 @@ export class BaseUploader extends BaseLoader {
         share_id: this.loc_type == 'share' ? this.loc_id : undefined,
         file_id: this.path_type == 'StandardMode' ? this.file_key : undefined,
         file_path: this.path_type == 'HostingMode' ? this.file_key : undefined,
-        donot_emit_notfound: true,
       },
       this.axios_options,
     )
@@ -851,7 +826,6 @@ export class BaseUploader extends BaseLoader {
       content_hash_name: this.sha1 ? 'sha1' : undefined,
       content_hash: this.sha1 || undefined,
       pre_hash: this.presha1 || undefined,
-      ignoreError: !!this.presha1,
       parallel_upload,
     }
 
@@ -866,7 +840,7 @@ export class BaseUploader extends BaseLoader {
     let result
 
     try {
-      result = await this.http_client_call('createFile', opt, {ignoreError: !!parallel_upload, ...this.axios_options})
+      result = await this.http_client_call('createFile', opt, this.axios_options)
     } catch (e) {
       if (e.code === 'InvalidParameterNotSupported.ParallelUpload' && this.parallel_upload) {
         // if (Global) {
@@ -1045,7 +1019,6 @@ export class BaseUploader extends BaseLoader {
   /* istanbul ignore next */
   async doListUploadParts(part_number, limit = 1000) {
     const opt = {
-      ignoreError: true,
       drive_id: this.loc_type === 'drive' ? this.loc_id : undefined,
       share_id: this.loc_type === 'share' ? this.loc_id : undefined,
 
@@ -1067,7 +1040,6 @@ export class BaseUploader extends BaseLoader {
     if (this.state == 'complete') return
 
     const params = {
-      ignoreError: true,
       drive_id: this.loc_type == 'drive' ? this.loc_id : undefined,
       share_id: this.loc_type == 'share' ? this.loc_id : undefined,
 
