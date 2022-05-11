@@ -663,14 +663,15 @@ export class BaseUploader extends BaseLoader {
       } catch (e) {
         console.warn(e)
 
-        // 调用了 complete 成功，但是还没来得及存 checkpoint. 下次再掉 listAllUploadedParts， 或者 getUploadUrl 等，会报错
+        // 调用了 complete 成功，但是还没来得及存 checkpoint. 下次再调 listAllUploadedParts， 或者 getUploadUrl 等，会报错
         if (e.code === 'NotFound.UploadId') {
-          // 为了排除未完成的 upload ID 被回收，在 getFile 查询一下，如果在的话，就说明上次上传成功了
+          // 为了排除未完成的 upload ID 被回收，再 getFile 查询一下，如果在的话，就说明上次上传成功了
           try {
             await this.getFile()
           } catch (e2) {
-            console.error(e2)
-            throw e // NotFound.UploadId
+            console.warn(e2)
+            // 如果只有上传权限，没有 getFile 权限，403 认为成功了。TODO：在被回收的情况会有问题，几率较小
+            if (e2.status !== 403) throw e
           }
         } else {
           throw e
