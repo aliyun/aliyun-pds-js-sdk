@@ -428,7 +428,6 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
 
   async getFileContent(fileInfo: IGetFileReq, options?: AxiosRequestConfig) {
     const info = await this.getFile(fileInfo, options)
-
     let req_opt: AxiosRequestConfig = {
       headers: {'content-type': ''},
       maxContentLength: Infinity,
@@ -439,8 +438,6 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
       req_opt.adapter = this.context.AxiosNodeAdapter
       req_opt.httpsAgent = new this.context.https.Agent({rejectUnauthorized: false})
     }
-
-    req_opt = {...req_opt, ...options}
     const result = await this.send('GET', info.url, {}, req_opt, 1)
 
     return {
