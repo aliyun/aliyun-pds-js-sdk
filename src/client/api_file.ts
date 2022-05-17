@@ -427,11 +427,12 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
   }
 
   async getFileContent(fileInfo: IGetFileReq, options?: AxiosRequestConfig) {
-    const info = await this.getFile(fileInfo, options)
+    const {responseType = 'arraybuffer', ...opt} = options
+    const info = await this.getFile(fileInfo, opt)
     let req_opt: AxiosRequestConfig = {
       headers: {'content-type': ''},
       maxContentLength: Infinity,
-      responseType: 'arraybuffer',
+      responseType,
     }
 
     if (this.context.isNode) {
