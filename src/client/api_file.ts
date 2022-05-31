@@ -665,6 +665,57 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
 
     return results
   }
+  // 标准模式only： 批量移动文件或文件夹
+  async batchMoveFiles(fileInfos: IFileItemKey[], config: ICopyFilesConfig, options?: AxiosRequestConfig) {
+    const {to_parent_file_id, to_drive_id = undefined, new_name = undefined} = config
+
+    const arr: IBatchBaseReq[] = []
+    for (const fileInfo of fileInfos) {
+      arr.push({
+        body: {
+          drive_id: fileInfo.drive_id,
+          file_id: fileInfo.file_id,
+          to_parent_file_id,
+          to_drive_id,
+          new_name: fileInfos.length == 1 ? new_name : undefined,
+          auto_rename: true,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        id: fileInfo.file_id,
+        method: 'POST',
+        url: '/file/move',
+      })
+    }
+    return await this.batchApi({batchArr: arr, num: 10}, options)
+  }
+
+  // 标准模式only： 批量复制文件或文件夹
+  async batchCopyFiles(fileInfos: IFileItemKey[], config: ICopyFilesConfig, options?: AxiosRequestConfig) {
+    const {to_parent_file_id, to_drive_id = undefined, new_name = undefined} = config
+
+    const arr: IBatchBaseReq[] = []
+    for (const fileInfo of fileInfos) {
+      arr.push({
+        body: {
+          drive_id: fileInfo.drive_id,
+          file_id: fileInfo.file_id,
+          to_parent_file_id,
+          to_drive_id,
+          new_name: fileInfos.length == 1 ? new_name : undefined,
+          auto_rename: true,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        id: fileInfo.file_id,
+        method: 'POST',
+        url: '/file/copy',
+      })
+    }
+    return await this.batchApi({batchArr: arr, num: 10}, options)
+  }
 
   deleteFile(row: IFileKey, permanently: boolean = false, options?: AxiosRequestConfig) {
     // 托管模式下无回收站, 直接删除
