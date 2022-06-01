@@ -3,6 +3,7 @@
 import {getStreamBody} from '../utils/HttpUtil'
 import {IDownloadHttpClient, AxiosRequestConfig} from '../Types'
 import {IHttpClient} from './HttpClient'
+import {PDSError} from '../utils/PDSError'
 
 /**
  * DownloadTask 专用的 HttpClient
@@ -32,10 +33,11 @@ export class DownloadHttpClient implements IDownloadHttpClient {
       return result
     } catch (e) {
       if (isNode && e.response && e.response.data) {
-        e.response.data = await getStreamBody(e.response.data)
+        let data = await getStreamBody(e.response.data)
+        e.response.data = data
       }
       //todo 日志
-      throw e
+      throw new PDSError(e)
     }
   }
 }

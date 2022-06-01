@@ -2,6 +2,10 @@
 
 # Release Notes
 
+## 0.2.3
+
+- fix: 修复上传下载调用 OSS Error 解析。
+
 ## 0.2.2
 
 - feat: http client支持 `x-share-token`， 上传下载任务参数也支持 `x-share-token`。

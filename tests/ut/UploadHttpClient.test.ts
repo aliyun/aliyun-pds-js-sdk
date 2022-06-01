@@ -48,8 +48,11 @@ describe('UploadHttpClient', function () {
       })
       assert(false, 'should throw')
     } catch (e) {
+      assert(e.status == 403)
+      assert(e.code == 'AccessDenied')
+      assert(e.reqId)
       assert(e.response.data.startsWith('<?xml'))
-      assert(e.message == 'Request failed with status code 403')
+      assert(e.message == 'You have no right to access this object because of bucket acl.')
     }
   })
 })

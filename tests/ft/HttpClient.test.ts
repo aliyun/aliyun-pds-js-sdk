@@ -30,7 +30,7 @@ describe('HttpClient', function () {
         await client.send('GET', api_endpoint + '/v2/drive/get', {}, {}, 2)
       } catch (e) {
         assert(e.status == 404)
-        assert(e.code == 'ServerError')
+        assert(e.code == 'I404NF')
       }
     })
   })

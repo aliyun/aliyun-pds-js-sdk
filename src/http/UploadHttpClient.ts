@@ -3,6 +3,8 @@
 import {getStreamBody} from '../utils/HttpUtil'
 import {IUploadHttpClient, AxiosRequestConfig} from '../Types'
 import {IHttpClient} from './HttpClient'
+import {PDSError} from '../utils/PDSError'
+
 /**
  * UploadTask 专用的 HttpClient
  * 需要具备5个请求方法，如果要自定义实现，务必实现这5个方法。
@@ -55,10 +57,11 @@ export class UploadHttpClient implements IUploadHttpClient {
       }
     } catch (e) {
       if (isNode && e.response && e.response.data) {
-        e.response.data = await getStreamBody(e.response.data)
+        let data = await getStreamBody(e.response.data)
+        e.response.data = data
       }
       //todo 日志
-      throw e
+      throw new PDSError(e)
     }
   }
 }

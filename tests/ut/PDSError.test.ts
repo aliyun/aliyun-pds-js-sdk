@@ -1,6 +1,6 @@
 /** @format */
 
-import {PDSError, initFields} from '../../src/utils/PDSError'
+import {PDSError, initFields, parseErrorXML} from '../../src/utils/PDSError'
 import assert = require('assert')
 import Axios from 'axios'
 import * as Config from '../ft/conf'
@@ -28,7 +28,7 @@ describe('PDSError', function () {
         let obj = initFields(e)
         assert(obj.status == 404)
         assert(obj.reqId)
-        assert(obj.code == 'ServerError')
+        assert(obj.code == 'I404NF')
         assert(obj.message == 'API not found with `GET /v2/user/abc`')
         assert(obj.stack.includes(' at '))
       }
@@ -43,6 +43,23 @@ describe('PDSError', function () {
         assert(obj.reqId)
         assert(obj.code == 'AccessTokenInvalid')
         assert(obj.message == 'AccessToken is invalid. ErrValidateTokenFailed')
+        assert(obj.stack.includes(' at '))
+      }
+    })
+    it('initAxiosError oss server error', async () => {
+      try {
+        await Axios({
+          method: 'GET',
+          url: 'https://pds-daily21453-valueadd.oss-cn-hangzhou.aliyuncs.com/lt/43A8F0A8AA83EEAA4F7A926FD975AB3E492A7046_5253880__sha1_daily21453/264_480p/media.m3u8',
+        })
+        assert(false)
+      } catch (e) {
+        let obj = initFields(e)
+        assert(obj.status == 403)
+        assert(e.response.data.startsWith('<?xml'))
+        assert(obj.reqId)
+        assert(obj.code == 'AccessDenied')
+        assert(obj.message == 'You have no right to access this object because of bucket acl.')
         assert(obj.stack.includes(' at '))
       }
     })
@@ -115,5 +132,23 @@ describe('PDSError', function () {
         assert(e.stack.includes(' at '))
       }
     })
+  })
+
+  describe('parseErrorXML', () => {
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>
+    <Error>
+      <Code>AccessDenied</Code>
+      <Message>Access denied by bucket policy.</Message>
+      <RequestId>62966EE063EA8B3735D6B6C7</RequestId>
+      <HostId>test.oss-cn-hangzhou.aliyuncs.com</HostId>
+      <Bucket>test-data-bucket</Bucket>
+      <User>334*****11</User>
+    </Error>`
+
+    let obj = parseErrorXML(xml)
+
+    assert(obj.code == 'AccessDenied')
+    assert(obj.message == 'Access denied by bucket policy.')
+    assert(obj.reqId == '62966EE063EA8B3735D6B6C7')
   })
 })

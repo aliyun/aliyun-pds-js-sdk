@@ -55,12 +55,21 @@ function initAxiosError(err) {
       if (contentType.startsWith('application/json')) {
         obj.code = err.response.data.code
         obj.message = err.response.data.message
+      } else if (
+        contentType.startsWith('application/xml') &&
+        typeof err.response.data == 'string' &&
+        err.response.data.startsWith('<?xml')
+      ) {
+        let xml = parseErrorXML(err.response.data)
+        obj.code = xml.code
+        obj.message = xml.message
+        if (xml.reqId) obj.reqId = xml.reqId
       } else {
         obj.code = 'ServerError'
         obj.message = err.response.data
       }
     } else {
-      obj.code = 'ServerError'
+      obj.code = err.response.headers['X-Ca-Error-Code'] || err.response.headers['x-ca-error-code'] || 'ServerError'
       obj.message =
         err.response.headers['X-Ca-Error-Message'] ||
         err.response.headers['x-ca-error-message'] ||
@@ -75,4 +84,11 @@ function initAxiosError(err) {
   return obj
 }
 
-export {PDSError, initAxiosError, initFields, getMessage}
+function parseErrorXML(str) {
+  let code, message, reqId
+  code = str.match(/<code>([^<]+)/i)[1]
+  message = str.match(/<message>([^<]+)/i)[1]
+  reqId = str.match(/<requestId>([^<]+)/i)[1]
+  return {code, message, reqId}
+}
+export {PDSError, initAxiosError, initFields, getMessage, parseErrorXML}
