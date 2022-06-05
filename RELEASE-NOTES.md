@@ -4,6 +4,7 @@
 
 ## 0.2.3
 
+- feat: 增加批量接口 `batchCopyFile` 和 `batchMoveFile`。
 - fix: 修复上传下载调用 OSS Error 解析。
 
 ## 0.2.2

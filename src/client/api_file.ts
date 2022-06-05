@@ -666,7 +666,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
     return results
   }
   // 标准模式only： 批量移动文件或文件夹
-  async batchMoveFiles(fileInfos: IFileItemKey[], config: ICopyFilesConfig, options?: AxiosRequestConfig) {
+  async batchMoveFiles(fileInfos: IFileItemKey[], config: IBatchCopyFilesConfig, options?: AxiosRequestConfig) {
     const {to_parent_file_id, to_drive_id = undefined, new_name = undefined} = config
 
     const arr: IBatchBaseReq[] = []
@@ -692,7 +692,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
   }
 
   // 标准模式only： 批量复制文件或文件夹
-  async batchCopyFiles(fileInfos: IFileItemKey[], config: ICopyFilesConfig, options?: AxiosRequestConfig) {
+  async batchCopyFiles(fileInfos: IFileItemKey[], config: IBatchCopyFilesConfig, options?: AxiosRequestConfig) {
     const {to_parent_file_id, to_drive_id = undefined, new_name = undefined} = config
 
     const arr: IBatchBaseReq[] = []
@@ -1104,6 +1104,11 @@ interface ICopyFilesConfig extends IToParentFileKey {
   new_name?: string // 一个文件的时候有效
   onProgress?: (count: number, total: number) => void
   getStopFlag?: () => boolean
+}
+interface IBatchCopyFilesConfig {
+  to_drive_id?: string
+  to_parent_file_id?: string
+  new_name?: string // 一个文件的时候有效
 }
 interface ICopyFileRes {
   async_task_id?: string // 文件夹才有

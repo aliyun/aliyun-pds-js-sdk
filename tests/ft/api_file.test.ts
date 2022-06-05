@@ -76,17 +76,22 @@ describe('FileAPI', function () {
     )
 
     // 将第一个移动到第二个里面
-    await client.moveFiles([folder1], {
+    let {successItems: successItems1 = [], errorItems: errorItems1 = []} = await client.batchMoveFiles([folder1], {
       to_parent_file_id: folder3.file_id,
-      onProgress: () => {},
+      // onProgress: () => {},
     })
+    assert(successItems1.length == 1)
+    await delay(1000)
 
     // 对 folder2 进行复制 复制到同层级
-    await client.copyFiles([folder3], {
+    let {successItems: successItems2 = [], errorItems: errorItems2 = []} = await client.batchCopyFiles([folder3], {
       to_parent_file_id: test_folder.file_id,
       new_name: 'folder4',
-      onProgress: () => {},
+      // onProgress: () => {},
     })
+    assert(successItems2.length == 1)
+    // 复制目录是异步的，骚等即可
+    await delay(1000)
 
     // 获取所有文件
     const {items = []} = await client.listFiles({
