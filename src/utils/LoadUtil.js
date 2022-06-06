@@ -2,7 +2,7 @@
 import {v4 as uuid_v4} from 'uuid'
 export {
   throttleInTimes,
-  formatProgress,
+  // formatProgress,
   randomHex,
   uuid,
   fixFileName4Windows,
@@ -39,12 +39,12 @@ function throttleInTimes(fn, ms = 10, times = 200) {
   return target
 }
 
-function formatProgress(process) {
-  if (typeof process === 'number') {
-    return Math.round(process * 10000) / 100
-  }
-  return 0
-}
+// function formatProgress(process) {
+//   if (typeof process === 'number') {
+//     return Math.round(process * 10000) / 100
+//   }
+//   return 0
+// }
 
 // windows下， 文件名不能包含： \/:*?"<>|
 function fixFileName4Windows(p) {

@@ -1,18 +1,15 @@
 /** @format */
 
-import {readdirSync, unlinkSync, mkdirSync} from 'fs'
+import {rmSync, mkdirSync} from 'fs'
 import {join} from 'path'
-mkdirSync(join(__dirname, 'tmp'), {recursive: true})
+
+const p = join(__dirname, 'tmp')
 
 function rmTmpData(p: string) {
   console.log('----清空测试数据-----', p)
-  let arr = readdirSync(p)
-  for (let n of arr) {
-    if (n.startsWith('tmp-')) {
-      unlinkSync(join(p, n))
-    }
-  }
+  rmSync(p, {force: true, recursive: true})
   console.log('----清空测试数据 done-----')
 }
 
-rmTmpData(join(__dirname, 'tmp'))
+rmTmpData(p)
+mkdirSync(p, {recursive: true})

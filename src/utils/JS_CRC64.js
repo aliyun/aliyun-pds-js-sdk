@@ -128,17 +128,12 @@ async function crc64FileNodeProcess(file_path, onProgress, getStopFlag, context 
     file_path,
     progress_emit_step: PROGRESS_EMIT_STEP,
   }
-  try {
-    return await nodeProcessCalc(
-      path.join(__dirname, 'crc64/node-process-crc64.js'),
-      obj,
-      onProgress,
-      getStopFlag,
-      context,
-    )
-  } catch (e) {
-    if (e.message.includes('ENAMETOOLONG')) {
-      return await crc64FileNode(file_path, onProgress, getStopFlag, context)
-    } else throw e
-  }
+
+  return await nodeProcessCalc(
+    path.join(__dirname, 'crc64/node-process-crc64.js'),
+    obj,
+    onProgress,
+    getStopFlag,
+    context,
+  )
 }

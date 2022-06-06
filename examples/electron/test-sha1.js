@@ -93,7 +93,7 @@ async function sha1Node(useProcess) {
 }
 
 async function sha1Browser_mul() {
-  let file = await selectFileInBrowser()
+  let file = await window.selectFileInBrowser()
   if (!file) return
   console.log(`-----browser 并行 sha1---------`)
 
@@ -115,7 +115,7 @@ async function sha1Browser_mul() {
 }
 
 async function sha1Browser() {
-  let file = await selectFileInBrowser()
+  let file = await window.selectFileInBrowser()
   if (!file) return
   console.log(`-----browser 串行 sha1---------`)
 
@@ -133,7 +133,7 @@ async function sha1Browser() {
 }
 
 async function sha1BrowserWorker_mul() {
-  let file = await selectFileInBrowser()
+  let file = await window.selectFileInBrowser()
   if (!file) return
   console.log(`-----browser Worker 并行 sha1---------`)
 
@@ -155,7 +155,7 @@ async function sha1BrowserWorker_mul() {
 }
 
 async function sha1BrowserWorker() {
-  let file = await selectFileInBrowser()
+  let file = await window.selectFileInBrowser()
   if (!file) return
   console.log(`-----browser Worker 串行 sha1---------`)
 

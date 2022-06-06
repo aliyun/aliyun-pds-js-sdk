@@ -22,6 +22,8 @@ worker:
 	npm run build:worker:sha1
 publish:build
 	npm publish
+pub:build
+	npm publish --tag=beta
 cov:
 	npm run cov
 	open coverage/lcov-report/index.html

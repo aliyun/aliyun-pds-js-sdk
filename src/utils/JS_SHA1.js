@@ -189,19 +189,8 @@ async function calcFileSha1NodeProcess(file_path, size, onProgress, getStopFlag,
     size,
     progress_emit_step: PROGRESS_EMIT_STEP,
   }
-  try {
-    return await nodeProcessCalc(
-      path.join(__dirname, 'sha1/node-process-sha1.js'),
-      obj,
-      onProgress,
-      getStopFlag,
-      context,
-    )
-  } catch (e) {
-    if (e.message.includes('ENAMETOOLONG')) {
-      return await calcFileSha1Node(file_path, size, onProgress, getStopFlag, context)
-    } else throw e
-  }
+
+  return await nodeProcessCalc(path.join(__dirname, 'sha1/node-process-sha1.js'), obj, onProgress, getStopFlag, context)
 }
 
 async function calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, context) {
@@ -300,23 +289,17 @@ async function calcFilePartsSha1NodeProcess(file_path, parts, onProgress, getSto
     progress_emit_step: PROGRESS_EMIT_STEP,
   }
 
-  try {
-    let result = await nodeProcessCalc(
-      path.join(__dirname, 'sha1/node-parts-process-sha1.js'),
-      obj,
-      onProgress,
-      getStopFlag,
-      context,
-    )
+  let result = await nodeProcessCalc(
+    path.join(__dirname, 'sha1/node-parts-process-sha1.js'),
+    obj,
+    onProgress,
+    getStopFlag,
+    context,
+  )
 
-    return {
-      part_info_list: result.part_info_list,
-      content_hash: result.content_hash,
-      content_hash_name: result.content_hash_name,
-    }
-  } catch (e) {
-    if (e.message.includes('ENAMETOOLONG')) {
-      return await calcFilePartsSha1Node(file_path, parts, onProgress, getStopFlag, context)
-    } else throw e
+  return {
+    part_info_list: result.part_info_list,
+    content_hash: result.content_hash,
+    content_hash_name: result.content_hash_name,
   }
 }

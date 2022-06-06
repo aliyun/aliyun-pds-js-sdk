@@ -6,6 +6,7 @@
 
 - feat: 增加批量接口 `batchCopyFile` 和 `batchMoveFile`。
 - fix: 修复上传下载调用 OSS Error 解析。
+- fix: 修复使用子进程计算crc64和sha1的逻辑，解决计算到99%卡住问题，解决 ENAMETOOLONG问题。
 
 ## 0.2.2
 
