@@ -2,6 +2,10 @@
 
 # Release Notes
 
+## 0.2.4
+
+- fix: 修复 getContent, 增加 get_download_url 流程。
+
 ## 0.2.3
 
 - feat: 增加批量接口 `batchCopyFile` 和 `batchMoveFile`。

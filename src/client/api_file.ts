@@ -439,7 +439,24 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
       req_opt.adapter = this.context.AxiosNodeAdapter
       req_opt.httpsAgent = new this.context.https.Agent({rejectUnauthorized: false})
     }
-    const result = await this.send('GET', info.url, {}, req_opt, 1)
+
+    let _url = info.url
+    if (!_url) {
+      let {drive_id, share_id, file_id, file_path, name: file_name} = info
+
+      let {url} = await this.getFileDownloadUrl({
+        drive_id,
+        share_id,
+        file_id,
+        file_path,
+        file_name,
+        expire_sec: fileInfo.url_expire_sec || 300,
+      })
+      _url = url
+    }
+    if (!_url) throw new PDSError('No permission to get url', 'NoPermission')
+
+    const result = await this.send('GET', _url, {}, req_opt, 1)
 
     return {
       headers: result.headers || {},
