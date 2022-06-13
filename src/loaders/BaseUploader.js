@@ -9,7 +9,7 @@ import {PDSError} from '../utils/PDSError'
 import {uuid} from '../utils/LoadUtil'
 import {BaseLoader} from './BaseLoader'
 import {doesFileExist} from '../utils/FileUtil'
-import {isNetworkError, isOssUrlExpired} from '../utils/HttpUtil'
+import {delay, isNetworkError, isOssUrlExpired} from '../utils/HttpUtil'
 import {formatSize, elapse} from '../utils/Formatter'
 import {formatCheckpoint, initCheckpoint} from '../utils/CheckpointUtil'
 import {formatPercents, calcUploadMaxConcurrency, removeItem} from '../utils/LoadUtil'
@@ -960,9 +960,17 @@ export class BaseUploader extends BaseLoader {
         await this.getUploadUrl()
         // update url
         opt.url = partInfo.upload_url
+        if (this.verbose) console.warn(`part-${partInfo.part_number} 重新获取的 upload_url: ${partInfo.upload_url}`)
         return await this.doUploadPart(partInfo, opt)
+      } else if (e.message.includes('connect EADDRNOTAVAIL')) {
+        // OSS 报错 EADDRNOTAVAIL，需要重新获取
+        await delay(1000)
+        if (this.verbose) console.warn(e.message, '等1秒，需要重新获取 upload_url')
+        await this.getDownloadUrl()
+        opt.url = this.download_url
+        if (this.verbose) console.warn(`重新获取的 upload_url: ${this.download_url}`)
+        return await this._axiosDownloadPart(partInfo, opt)
       } else {
-        // console.error(e)
         throw e
       }
     }

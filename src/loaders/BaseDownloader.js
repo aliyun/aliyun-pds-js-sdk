@@ -3,7 +3,7 @@
 import Axios from 'axios'
 import {uuid, formatPercents, randomHex, fixFileName4Windows, calcDownloadMaxConcurrency} from '../utils/LoadUtil'
 import {BaseLoader} from './BaseLoader'
-import {isNetworkError, isOssUrlExpired} from '../utils/HttpUtil'
+import {delay, isNetworkError, isOssUrlExpired} from '../utils/HttpUtil'
 import {formatSize, elapse} from '../utils/Formatter'
 import {getFreeDiskSize} from '../utils/FileUtil'
 
@@ -688,6 +688,15 @@ export class BaseDownloader extends BaseLoader {
         if (this.verbose) console.warn('download_url 过期, 需要重新获取:', this.download_url)
         await this.getDownloadUrl()
         opt.url = this.download_url
+        if (this.verbose) console.warn(`重新获取的 download_url: ${this.download_url}`)
+        return await this._axiosDownloadPart(partInfo, opt)
+      } else if (e.message.includes('connect EADDRNOTAVAIL')) {
+        // OSS 报错 EADDRNOTAVAIL，需要重新获取
+        await delay(1000)
+        if (this.verbose) console.warn(e.message, '等1秒，需要重新获取 download_url')
+        await this.getDownloadUrl()
+        opt.url = this.download_url
+        if (this.verbose) console.warn(`重新获取的 download_url: ${this.download_url}`)
         return await this._axiosDownloadPart(partInfo, opt)
       } else {
         throw e
