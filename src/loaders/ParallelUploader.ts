@@ -15,6 +15,12 @@ export class ParallelUploader extends BaseUploader {
     let allDone = true
     // let allRunning = true
     let nextPart = null
+
+    if (!this.part_info_list || this.part_info_list.length == 0) {
+      // 异步，已完成，有可能会清空 this.part_info_list 以做垃圾回收
+      return {allDone, nextPart}
+    }
+
     for (const n of this.part_info_list) {
       if (!n.etag) {
         allDone = false
