@@ -262,11 +262,9 @@ export class StandardSerialUploader extends BaseUploader {
             // 处理该 part 未完成部分，放到下一片
             await this.fix409(partInfo)
             continue
-          } else if (e.response.status == 400 && e.response.code == 'PartNotSequential') {
+          } else if (e.response.status == 400 && e.code == 'PartNotSequential') {
             // 浏览器端上传会遇到此问题，重试
-            console.warn(
-              `upload part ${partInfo.part_number} error: ${e.response.code}: ${e.response.message}, retry..`,
-            )
+            console.warn(`upload part ${partInfo.part_number} error: ${e.code}: ${e.message}, retry..`)
             continue
           } else if (e.response.status == 504 || isNetworkError(e)) {
             // 海外连国内，可能会504

@@ -7,6 +7,7 @@ import fs = require('fs')
 import {join} from 'path'
 
 describe('FileUtil', function () {
+  this.timeout(60000)
   describe('getFreeDiskSize', () => {
     it('ok', async () => {
       let s = await FileUtil.getFreeDiskSize('/', Context)
