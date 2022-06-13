@@ -5,6 +5,7 @@
 ## 0.2.4
 
 - fix: 修复 getContent, 增加 get_download_url 流程。
+- fix: 上传下载文件时遇到 socket hang up 错误增加 abort()。
 
 ## 0.2.3
 

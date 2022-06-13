@@ -981,6 +981,17 @@ export class BaseUploader extends BaseLoader {
     } catch (e) {
       if (Axios.isCancel(e)) {
         throw new Error('stopped')
+      } else if (e.message.includes('socket hang up')) {
+        // socket hang up 的情况，必须 abort 请求，再重试。
+        const newSource = CancelToken.source()
+        let ind = this.cancelSources.indexOf(newSource)
+        if (ind != -1) this.cancelSources.splice(ind, 1, newSource)
+        try {
+          source.cancel()
+        } catch (e) {
+          console.warn(e)
+        }
+        throw e
       } else throw e
     } finally {
       removeItem(this.cancelSources, source)
