@@ -23,6 +23,9 @@ import * as ChunkUtil from './utils/ChunkUtil'
 import * as JS_CRC64 from './utils/JS_CRC64'
 import * as JS_SHA1 from './utils/JS_SHA1'
 export * from './utils/Formatter'
+import pkg from './pkg'
+const version = pkg.version
+console.log('aliyun-pds-js-sdk@' + version)
 
 class PDSClient extends _PDSClient {
   constructor(opt: IClientParams, ctx: IContext = Context) {
@@ -35,4 +38,4 @@ class HttpClient extends _HttpClient {
   }
 }
 // for node.js
-export {PDSClient, HttpClient, PDSError, JS_CRC64, JS_SHA1, ChunkUtil, Context}
+export {version, PDSClient, HttpClient, PDSError, JS_CRC64, JS_SHA1, ChunkUtil, Context}

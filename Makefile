@@ -1,5 +1,5 @@
 
-build:lib dist
+build:pkg lib dist
 
 i:
 	npm i
@@ -7,7 +7,8 @@ i:
 dist:
 	rm -rf dist
 	npm run build:dist
-
+pkg:
+	npm run build:pkg
 lib:
 	rm -rf lib
 	npm run build:lib

@@ -1,6 +1,6 @@
 {
   "name": "aliyun-pds-js-sdk",
-  "version": "0.2.4-beta.5",
+  "version": "0.2.4-beta.6",
   "description": "PDS SDK for javascript",
   "main": "lib/cjs/index.js",
   "module": "lib/esm/index.browser.js",
@@ -8,8 +8,9 @@
   "browser": "lib/cjs/index.browser.js",
   "scripts": {
     "prepare": "husky install",
-    "prepublish": "npm run build:lib && npm run build:dist",
+    "prepublish": "npm run build:pkg && npm run build:lib && npm run build:dist",
     "start": "tsnd --respawn --transpile-only src/index.ts",
+    "build:pkg": "node build.js",
     "build:lib": "tsc --build tsconfig-cjs.json && tsc --build tsconfig-esm.json",
     "build:dist": "browserify src/index.browser.ts -p [ tsify  --declaration ] -s PDS_SDK -o  ./dist/aliyun-pds-js-sdk.js && uglifyjs  ./dist/aliyun-pds-js-sdk.js -o  ./dist/aliyun-pds-js-sdk.min.js",
     "test:ft": "mocha -r espower-typescript/guess --reporter spec tests/ft/index.js tests/ft/*.test.{js,mjs,ts}",
