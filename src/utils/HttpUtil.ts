@@ -65,11 +65,12 @@ function getStreamBody(stream: ReadStream | string) {
 function isNetworkError(e: Error): boolean {
   return (
     e.message == 'Network Error' ||
-    e.message.indexOf('socket hang up') != -1 ||
-    e.message.indexOf('getaddrinfo ENOTFOUND') != -1 ||
-    e.message.indexOf('timeout of') != -1 ||
-    e.message.indexOf('connect ECONNRESET') != -1 ||
-    e.message.indexOf('connect ETIMEDOUT') != -1
+    e.message.includes('socket hang up') ||
+    e.message.includes('getaddrinfo ENOTFOUND') ||
+    e.message.includes('timeout of') ||
+    e.message.includes('connect ECONNRESET') ||
+    e.message.includes('connect ETIMEDOUT') ||
+    e.message.includes('EPIPE')
   )
 }
 function isOssUrlExpired(e: AxiosError): boolean {

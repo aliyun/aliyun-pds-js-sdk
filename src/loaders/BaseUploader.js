@@ -966,7 +966,7 @@ export class BaseUploader extends BaseLoader {
         // OSS 报错 EADDRNOTAVAIL，需要重新获取
         await delay(1000)
         if (this.verbose) console.warn(e.message, '等1秒，需要重新获取 upload_url')
-        await this.getDownloadUrl()
+        await this.getUploadUrl()
         opt.url = this.download_url
         if (this.verbose) console.warn(`重新获取的 upload_url: ${this.download_url}`)
         return await this._axiosDownloadPart(partInfo, opt)

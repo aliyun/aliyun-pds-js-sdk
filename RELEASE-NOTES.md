@@ -8,6 +8,7 @@
 - fix: 上传下载文件时遇到 socket hang up 错误增加 abort()。
 - fix: 增加上传下载时 oss 报错connect EADDRNOTAVAIL 的重试机制。
 - fix: 修复串行上传 PartNotSequential 错误重试逻辑。
+- fix: 上传下载时增加 EPIPE 错误重试逻辑。
 
 ## 0.2.3
 
