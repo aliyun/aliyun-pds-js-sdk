@@ -2,6 +2,7 @@
 
 export {nodeProcessCalc, inProcess}
 
+/* istanbul ignore next */
 async function inProcess(run) {
   process.on('message', async data => {
     if (!data) return

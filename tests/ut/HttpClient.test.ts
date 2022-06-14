@@ -3,6 +3,7 @@
 import * as Context from '../../src/context/NodeContext'
 const {HttpClient} = require('../../src/http/HttpClient')
 import {PDSError} from '../../src/utils/PDSError'
+import {IClientParams, IContext, ITokenInfo} from '../../src/Types'
 import assert = require('assert')
 
 describe('HttpClient', function () {
@@ -274,4 +275,202 @@ describe('HttpClient', function () {
       }
     })
   })
+
+  describe('postAPI Error', function () {
+    it('refresh_token_fun throw Network Error', async () => {
+      // console.log(Config)
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://api_endpoint.test',
+          auth_endpoint: 'https://api_endpoint.test',
+          refresh_token_fun: () => {
+            throw new PDSError('Network Error')
+          },
+        },
+        Context,
+      )
+      // console.log('--------client', client)
+      client.setToken({
+        access_token: 'test-token',
+        refresh_token: '0b0a4ef*****b67d',
+        expire_time: new Date(Date.now() - 3600 * 1000).toISOString(),
+      })
+
+      try {
+        await client.postAPI('/test')
+        assert(false, 'should throw')
+      } catch (e) {
+        // console.log('error:', e)
+        assert(e.message.includes('Network Error'))
+      }
+    })
+  })
+
+  describe('request', function () {
+    it('request 401 && refresh_token_fun throw Network Error', async () => {
+      // console.log(Config)
+
+      class HttpClientTest extends HttpClient {
+        constructor(params: IClientParams, context: IContext) {
+          super(params, context)
+        }
+        test_request(...arg) {
+          return this.request(...arg)
+        }
+      }
+
+      let c = 0
+      let client = new HttpClientTest(
+        {
+          api_endpoint: 'https://api_endpoint.test',
+          auth_endpoint: 'https://api_endpoint.test',
+          refresh_token_fun: async () => {
+            c++
+            var e = {
+              message: 'Network Error',
+            }
+            throw e
+          },
+        },
+        {
+          ...Context,
+          Axios: () => {
+            var e = {
+              message: 'Test Error',
+              status: 401,
+              code: 'test',
+            }
+
+            throw e
+            // throw new PDSError('Test Error', 'ServerError', 401)
+          },
+        },
+      )
+      // console.log('--------client', client)
+      client.setToken({
+        access_token: 'test-token',
+        refresh_token: '0b0a4ef*****b67d',
+        expire_time: new Date(Date.now() + 3600 * 1000).toISOString(),
+      })
+
+      try {
+        await client.test_request('https://api_endpoint.test', 'POST', '/test')
+        assert(false, 'should throw')
+      } catch (e) {
+        assert(c == 1)
+        // console.log('error:', e)
+        assert(e.message.includes('Network Error'))
+      }
+    })
+
+    it('request 401 && no refresh_token_fun ', async () => {
+      // console.log(Config)
+
+      class HttpClientTest extends HttpClient {
+        constructor(params: IClientParams, context: IContext) {
+          super(params, context)
+        }
+        test_request(...arg) {
+          return this.request(...arg)
+        }
+      }
+
+      let client = new HttpClientTest(
+        {
+          api_endpoint: 'https://api_endpoint.test',
+          auth_endpoint: 'https://api_endpoint.test',
+        },
+        {
+          ...Context,
+          Axios: () => {
+            throw mockAxiosError()
+            // throw new PDSError('Test Error', 'ServerError', 401)
+          },
+        },
+      )
+      // console.log('--------client', client)
+      client.setToken({
+        access_token: 'test-token',
+        refresh_token: '0b0a4ef*****b67d',
+        expire_time: new Date(Date.now() + 3600 * 1000).toISOString(),
+      })
+
+      try {
+        await client.test_request('https://api_endpoint.test', 'POST', '/test')
+        assert(false, 'should throw')
+      } catch (e) {
+        assert(e.message.includes('Test Error'))
+        assert(e.code == 'TokenExpired')
+      }
+    })
+
+    it('request 401 && refresh_share_token_fun throw Network Error', async () => {
+      // console.log(Config)
+
+      class HttpClientTest extends HttpClient {
+        constructor(params: IClientParams, context: IContext) {
+          super(params, context)
+        }
+        test_request(...arg) {
+          return this.request(...arg)
+        }
+      }
+
+      let c = 0
+      let client = new HttpClientTest(
+        {
+          api_endpoint: 'https://api_endpoint.test',
+          auth_endpoint: 'https://api_endpoint.test',
+          refresh_share_token_fun: async () => {
+            c++
+            throw mockAxiosError()
+          },
+        },
+        {
+          ...Context,
+          Axios: () => {
+            var e = {
+              message: 'Test Error',
+              status: 401,
+              code: 'test',
+            }
+
+            throw e
+            // throw new PDSError('Test Error', 'ServerError', 401)
+          },
+        },
+      )
+      // console.log('--------client', client)
+      client.setShareToken('abc')
+
+      try {
+        await client.test_request('https://api_endpoint.test', 'POST', '/test')
+        assert(false, 'should throw')
+      } catch (e) {
+        assert(c == 1)
+        assert(e.message.includes('Test Error'))
+      }
+    })
+  })
 })
+
+function mockAxiosError() {
+  var e = new Error('Test Error')
+  Object.assign(e, {
+    isAxiosError: true,
+    status: 401,
+    response: {
+      headers: {
+        'X-Ca-Request-Id': 'x',
+        'content-type': 'application/json',
+      },
+      status: 401,
+      data: {
+        message: 'Test Error',
+        code: 'test',
+      },
+    },
+  })
+  return e
+}
