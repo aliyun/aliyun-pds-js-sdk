@@ -69,14 +69,8 @@ function isStopableError(e: Error): boolean {
 
 // 这些错误，重试多次后，暂停，下次可以断点续传
 function isNetworkError(e: Error): boolean {
-  return (
-    e.message == 'Network Error' ||
-    e.message.includes('socket hang up') ||
-    e.message.includes('getaddrinfo ENOTFOUND') ||
-    e.message.includes('timeout of') ||
-    e.message.includes('connect ECONNRESET') ||
-    e.message.includes('connect ETIMEDOUT') ||
-    e.message.includes('EPIPE')
+  return /Network Error|socket hang up|getaddrinfo ENOTFOUND|timeout |connect ECONNRESET|connect ETIMEDOUT|EPIPE/.test(
+    e.message,
   )
 }
 function isOssUrlExpired(e: AxiosError): boolean {
