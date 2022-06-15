@@ -5,8 +5,7 @@
 ## 0.2.4
 
 - fix: 修复 getContent, 增加 get_download_url 流程。
-- fix: 上传下载文件时遇到 socket hang up 错误增加 abort()。
-- fix: 增加上传下载时 oss 报错connect EADDRNOTAVAIL 的重试机制。
+- fix: 增加上传下载时 oss 报错connect EADDRNOTAVAIL 或者 socket hang up 的重试机制。
 - fix: 修复串行上传 PartNotSequential 错误重试逻辑。
 - fix: 上传下载时增加 EPIPE 错误重试逻辑。
 - refactor: 增加打印版本信息。

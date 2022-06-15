@@ -962,14 +962,12 @@ export class BaseUploader extends BaseLoader {
         opt.url = partInfo.upload_url
         if (this.verbose) console.warn(`part-${partInfo.part_number} 重新获取的 upload_url: ${partInfo.upload_url}`)
         return await this.doUploadPart(partInfo, opt)
-      } else if (e.message.includes('connect EADDRNOTAVAIL')) {
-        // OSS 报错 EADDRNOTAVAIL，需要重新获取
-        await delay(1000)
-        if (this.verbose) console.warn(e.message, '等1秒，需要重新获取 upload_url')
-        await this.getUploadUrl()
-        opt.url = this.download_url
-        if (this.verbose) console.warn(`重新获取的 upload_url: ${this.download_url}`)
-        return await this._axiosDownloadPart(partInfo, opt)
+      } else if (e.message.includes('connect EADDRNOTAVAIL') || e.message.includes('socket hang up')) {
+        // OSS 报错 EADDRNOTAVAIL 或 socket hang up
+        setTimeout(() => {
+          this.retryAllUploadRequest()
+        })
+        throw new Error('stopped')
       } else {
         throw e
       }
@@ -989,17 +987,6 @@ export class BaseUploader extends BaseLoader {
     } catch (e) {
       if (Axios.isCancel(e)) {
         throw new Error('stopped')
-      } else if (e.message.includes('socket hang up')) {
-        // socket hang up 的情况，必须 abort 请求，再重试。
-        const newSource = CancelToken.source()
-        let ind = this.cancelSources.indexOf(newSource)
-        if (ind != -1) this.cancelSources.splice(ind, 1, newSource)
-        try {
-          source.cancel()
-        } catch (e) {
-          console.warn(e)
-        }
-        throw e
       } else throw e
     } finally {
       removeItem(this.cancelSources, source)

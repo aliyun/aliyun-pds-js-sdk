@@ -638,12 +638,12 @@ export class BaseDownloader extends BaseLoader {
     if (this.speed_0_count >= MAX_SPEED_0_COUNT) {
       // this.stop()
       this.speed_0_count = 0
-      this.retryAllUploadRequest()
+      this.retryAllDownloadRequest()
     }
   }
 
   /* istanbul ignore next */
-  async retryAllUploadRequest() {
+  async retryAllDownloadRequest() {
     this.stop(true)
     // wait for 1 second
     // stop是异步的，需要等待 getStopFlagFun 都执行到。
@@ -690,14 +690,12 @@ export class BaseDownloader extends BaseLoader {
         opt.url = this.download_url
         if (this.verbose) console.warn(`重新获取的 download_url: ${this.download_url}`)
         return await this._axiosDownloadPart(partInfo, opt)
-      } else if (e.message.includes('connect EADDRNOTAVAIL')) {
-        // OSS 报错 EADDRNOTAVAIL，需要重新获取
-        await delay(1000)
-        if (this.verbose) console.warn(e.message, '等1秒，需要重新获取 download_url')
-        await this.getDownloadUrl()
-        opt.url = this.download_url
-        if (this.verbose) console.warn(`重新获取的 download_url: ${this.download_url}`)
-        return await this._axiosDownloadPart(partInfo, opt)
+      } else if (e.message.includes('connect EADDRNOTAVAIL') || e.message.includes('socket hang up')) {
+        // OSS 报错 EADDRNOTAVAIL 或 socket hang up
+        setTimeout(() => {
+          this.retryAllDownloadRequest()
+        })
+        throw new Error('stopped')
       } else {
         throw e
       }
@@ -719,17 +717,6 @@ export class BaseDownloader extends BaseLoader {
     } catch (e) {
       if (Axios.isCancel(e)) {
         throw new Error('stopped')
-      } else if (e.message.includes('socket hang up')) {
-        // socket hang up 的情况，必须 abort 请求，再重试。
-        const newSource = CancelToken.source()
-        let ind = this.cancelSources.indexOf(newSource)
-        if (ind != -1) this.cancelSources.splice(ind, 1, newSource)
-        try {
-          source.cancel()
-        } catch (e) {
-          console.warn(e)
-        }
-        throw e
       } else throw e
     } finally {
       removeItem(this.cancelSources, source)
