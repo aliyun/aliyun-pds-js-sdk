@@ -9,7 +9,7 @@ import {PDSError} from '../utils/PDSError'
 import {uuid} from '../utils/LoadUtil'
 import {BaseLoader} from './BaseLoader'
 import {doesFileExist} from '../utils/FileUtil'
-import {delay, isNetworkError, isOssUrlExpired} from '../utils/HttpUtil'
+import {isNetworkError, isStopableError, isOssUrlExpired} from '../utils/HttpUtil'
 import {formatSize, elapse} from '../utils/Formatter'
 import {formatCheckpoint, initCheckpoint} from '../utils/CheckpointUtil'
 import {formatPercents, calcUploadMaxConcurrency, removeItem} from '../utils/LoadUtil'
@@ -279,7 +279,7 @@ export class BaseUploader extends BaseLoader {
       } else console.error(e.stack)
     }
 
-    if (isNetworkError(e)) {
+    if (isNetworkError(e) || isStopableError(e)) {
       this.stop()
     } else {
       // 只要error，cancel 所有请求
@@ -967,6 +967,7 @@ export class BaseUploader extends BaseLoader {
         setTimeout(() => {
           this.retryAllUploadRequest()
         })
+        this.message = e.message
         throw new Error('stopped')
       } else {
         throw e

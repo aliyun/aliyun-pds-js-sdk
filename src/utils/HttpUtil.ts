@@ -34,7 +34,7 @@ async function callRetry(func: Function, binding: any, arr: Array<any>, opt?: IC
           continue
         }
       } else {
-        if (e.response && e.response.data && e.response.data.message) {
+        if (e.response?.data?.message) {
           e.message = e.response.data.message
         }
         throw e
@@ -62,6 +62,12 @@ function getStreamBody(stream: ReadStream | string) {
   })
 }
 
+// 这些错误，不需要重试，暂停，下次可以断点续传
+function isStopableError(e: Error): boolean {
+  return /Access denied by IP Control Policy|Access denied by bucket policy/i.test(e.message)
+}
+
+// 这些错误，重试多次后，暂停，下次可以断点续传
 function isNetworkError(e: Error): boolean {
   return (
     e.message == 'Network Error' ||
@@ -82,4 +88,4 @@ function isOssUrlExpired(e: AxiosError): boolean {
     e.response.data.includes('expired')
   )
 }
-export {callRetry, delay, getStreamBody, isNetworkError, isOssUrlExpired}
+export {callRetry, delay, getStreamBody, isStopableError, isNetworkError, isOssUrlExpired}

@@ -108,4 +108,17 @@ describe('HttpUtil', function () {
       })
     })
   })
+
+  describe('isStopableError', () => {
+    it('isStopableError', () => {
+      let b1 = HttpUtil.isStopableError(new Error('Access denied by IP Control Policy'))
+      assert(b1)
+
+      let b2 = HttpUtil.isStopableError(new Error('Access denied by bucket policy'))
+      assert(b2)
+
+      let b3 = HttpUtil.isStopableError(new Error('x'))
+      assert(!b3)
+    })
+  })
 })

@@ -9,6 +9,7 @@
 - fix: 修复串行上传 PartNotSequential 错误重试逻辑。
 - fix: 上传下载时增加 EPIPE 错误重试逻辑。
 - refactor: 增加打印版本信息。
+- fix: 上传下载增加 IP 策略限制错误判断逻辑，state变为stopped。
 
 ## 0.2.3
 
