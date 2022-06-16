@@ -10,7 +10,7 @@
     "prepare": "husky install",
     "prepublish": "npm run build:pkg && npm run build:lib && npm run build:dist",
     "start": "tsnd --respawn --transpile-only src/index.ts",
-    "build:pkg": "node build.js",
+    "build:pkg": "node build.js && prettier --write 'src/pkg.ts'",
     "build:lib": "tsc --build tsconfig-cjs.json && tsc --build tsconfig-esm.json",
     "build:dist": "browserify src/index.browser.ts -p [ tsify  --declaration ] -s PDS_SDK -o  ./dist/aliyun-pds-js-sdk.js && uglifyjs  ./dist/aliyun-pds-js-sdk.js -o  ./dist/aliyun-pds-js-sdk.min.js",
     "test:ft": "mocha -r espower-typescript/guess --reporter spec tests/ft/index.js tests/ft/*.test.{js,mjs,ts}",
