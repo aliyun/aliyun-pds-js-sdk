@@ -2,6 +2,10 @@
 
 # Release Notes
 
+## 0.2.5
+
+- fix: isNetworkError 修复。
+
 ## 0.2.4
 
 - fix: 修复 getContent, 增加 get_download_url 流程。
