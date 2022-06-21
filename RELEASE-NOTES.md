@@ -2,6 +2,11 @@
 
 # Release Notes
 
+
+## 0.2.6
+
+- fix: 放宽 network error 限制。
+
 ## 0.2.5
 
 - fix: isNetworkError 修复。

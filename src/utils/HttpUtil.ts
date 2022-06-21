@@ -69,8 +69,9 @@ function isStopableError(e: Error): boolean {
 
 // 这些错误，重试多次后，暂停，下次可以断点续传
 function isNetworkError(e: Error): boolean {
-  return /Network Error|socket hang up|getaddrinfo ENOTFOUND|timeout | ECONNRESET| ETIMEDOUT|EPIPE/.test(e.message)
+  return /Network|socket|getaddrinfo ENOTFOUND|timeout | ECONNRESET| ETIMEDOUT|EPIPE/.test(e.message)
 }
+
 function isOssUrlExpired(e: AxiosError): boolean {
   return (
     e.response &&
@@ -80,4 +81,5 @@ function isOssUrlExpired(e: AxiosError): boolean {
     e.response.data.includes('expired')
   )
 }
+
 export {callRetry, delay, getStreamBody, isStopableError, isNetworkError, isOssUrlExpired}
