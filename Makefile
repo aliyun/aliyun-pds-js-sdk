@@ -1,5 +1,5 @@
 
-build:pkg lib dist
+build:pkg lib dist format
 
 i:
 	npm i
