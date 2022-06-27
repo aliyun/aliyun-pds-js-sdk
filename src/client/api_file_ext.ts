@@ -83,6 +83,7 @@ interface IFileKey {
 interface IOfficePreviewReq extends IFileKey {
   allow_copy: boolean
   referer?: string
+  revision_id?: string
 }
 interface IOfficeEditReq extends IFileKey {
   referer?: string
@@ -90,6 +91,7 @@ interface IOfficeEditReq extends IFileKey {
     readonly?: boolean
     copy?: boolean
   }
+  revision_id?: string
 }
 interface IOfficeRefreshReq {
   referer?: string
@@ -155,6 +157,7 @@ interface IVideoPreviewUrlReq extends IFileKey {
   audio_template_id: TAudioTemplateId
   expire_sec?: number
   referer?: string
+  revision_id?: string
 }
 interface IVideoPreviewPlayInfoReq extends IFileKey {
   // video
@@ -166,6 +169,7 @@ interface IVideoPreviewPlayInfoReq extends IFileKey {
   referer?: string
   get_subtitle_info?: boolean
   subtitle_lang_list?: string[] //get_subtitle_info=true有效, chi: 中文  eng: 英文
+  revision_id?: string
 }
 
 interface IArchiveFileReq {

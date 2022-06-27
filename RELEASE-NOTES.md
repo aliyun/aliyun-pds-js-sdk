@@ -2,6 +2,9 @@
 
 # Release Notes
 
+## 0.2.7
+
+- refactor: getDownloadURL 等方法增加 revision_id 参数。
 
 ## 0.2.6
 

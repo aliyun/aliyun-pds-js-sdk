@@ -1169,7 +1169,8 @@ interface IGetFileDownloadUrlReq {
   file_id?: string
   file_path?: string
   file_name?: string //长度 1-1024
-  expire_sec?: number
+  expire_sec?: number,
+  revision_id?: string //指定版本ID
 }
 interface IGetFileDownloadUrlRes {
   expiration: Date
