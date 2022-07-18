@@ -211,6 +211,7 @@ interface IUpConfig {
 
   // 限制
   max_file_size_limit?: number // 文件大小限制
+  file_ext_list_limit?: string[] // 允许上传的文件后缀
 
   // 调优
   max_chunk_size?: number // 分片大小
@@ -295,6 +296,7 @@ interface IDownConfig {
 
   // 限制
   max_file_size_limit?: number // 文件大小限制
+  file_ext_list_limit?: string[] // 允许下载的文件后缀
 
   process_calc_crc64_size?: number // 文件大小超过多少，将启用子进程计算 crc64
 

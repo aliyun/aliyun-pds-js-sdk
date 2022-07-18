@@ -117,6 +117,7 @@ export class BaseUploader extends BaseLoader {
       check_name_mode = 'auto_rename',
 
       max_file_size_limit, // 文件大小限制
+      file_ext_list_limit, // 文件后缀限制
 
       // 是否校验
       checking_crc,
@@ -181,6 +182,7 @@ export class BaseUploader extends BaseLoader {
     this.crc64_hash = crc64_hash
 
     this.max_file_size_limit = max_file_size_limit
+    this.file_ext_list_limit = file_ext_list_limit
 
     // 调优
     this.max_chunk_size = parseInt(max_chunk_size) || MAX_CHUNK_SIZE
@@ -559,11 +561,20 @@ export class BaseUploader extends BaseLoader {
   }
 
   async run() {
-    if (this.max_file_size_limit && this.file.size > this.max_file_size_limit) {
-      throw new PDSError(
-        `File size exceeds limit: ${formatSize(this.max_file_size_limit)}`,
-        'FileSizeExceedUploadLimit',
-      )
+    // 限制文件大小
+    let max_size_limit = parseInt(this.max_file_size_limit)
+    if (max_size_limit && this.file.size > max_size_limit) {
+      throw new PDSError(`File size exceeds limit: ${formatSize(max_size_limit)}`, 'FileSizeExceedUploadLimit')
+    }
+    // 允许文件类型
+    if (Array.isArray(this.file_ext_list_limit) && this.file_ext_list_limit.length > 0) {
+      // .txt or ''
+      let extName = this.context.path.resolve(this.file.name)
+      if (extName) {
+        if (!this.file_ext_list_limit.includes(extName)) {
+          throw new PDSError(`File extention is invalid`, 'FileExtentionIsInvalid')
+        }
+      }
     }
 
     if (!this.start_time) {

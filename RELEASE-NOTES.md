@@ -5,7 +5,7 @@
 ## 0.2.7
 
 - refactor: getDownloadURL 等方法增加 revision_id 参数。
-- feat: 上传下载任务增加参数 max_file_size_limit 配置。
+- feat: 上传下载任务增加参数 max_file_size_limit 和 file_ext_list_limit 配置。 
 
 ## 0.2.6
 

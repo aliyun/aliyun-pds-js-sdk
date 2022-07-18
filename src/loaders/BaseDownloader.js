@@ -87,6 +87,7 @@ export class BaseDownloader extends BaseLoader {
 
       checking_crc,
       max_file_size_limit,
+      file_ext_list_limit,
 
       // 最大分片数：10000片
       limit_part_num,
@@ -143,6 +144,8 @@ export class BaseDownloader extends BaseLoader {
     this.checking_crc = checking_crc !== false
 
     this.max_file_size_limit = max_file_size_limit // 文件大小限制
+    this.file_ext_list_limit = file_ext_list_limit // 文件类型限制
+
     // 可选
     this.download_url = download_url
 
@@ -408,11 +411,20 @@ export class BaseDownloader extends BaseLoader {
     }
   }
   async run() {
-    if (this.max_file_size_limit && this.file.size > this.max_file_size_limit) {
-      throw new PDSError(
-        `File size exceeds limit: ${formatSize(this.max_file_size_limit)}`,
-        'FileSizeExceedUploadLimit',
-      )
+    // 限制文件大小
+    let max_size_limit = parseInt(this.max_file_size_limit)
+    if (max_size_limit && this.file.size > max_size_limit) {
+      throw new PDSError(`File size exceeds limit: ${formatSize(max_size_limit)}`, 'FileSizeExceedDownloadLimit')
+    }
+    // 允许文件类型
+    if (Array.isArray(this.file_ext_list_limit) && this.file_ext_list_limit.length > 0) {
+      // .txt or ''
+      let extName = this.context.path.resolve(this.file.name)
+      if (extName) {
+        if (!this.file_ext_list_limit.includes(extName)) {
+          throw new PDSError(`File extention is invalid`, 'FileExtentionIsInvalid')
+        }
+      }
     }
 
     if (!this.start_time) {
