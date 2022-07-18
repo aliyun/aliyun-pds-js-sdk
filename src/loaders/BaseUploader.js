@@ -116,6 +116,8 @@ export class BaseUploader extends BaseLoader {
       // check_name_mode: overwrite (直接覆盖，以后多版本有用), auto_rename (自动换一个随机名称), refuse (不会创建，告诉你已经存在), ignore (会创建重名的)
       check_name_mode = 'auto_rename',
 
+      max_file_size_limit, // 文件大小限制
+
       // 是否校验
       checking_crc,
       // 调优
@@ -177,6 +179,8 @@ export class BaseUploader extends BaseLoader {
     this.parent_file_path = parent_file_path
 
     this.crc64_hash = crc64_hash
+
+    this.max_file_size_limit = max_file_size_limit
 
     // 调优
     this.max_chunk_size = parseInt(max_chunk_size) || MAX_CHUNK_SIZE
@@ -555,9 +559,12 @@ export class BaseUploader extends BaseLoader {
   }
 
   async run() {
-    // if (this.file.size > MAX_SIZE_LIMIT) {
-    //   throw new PDSError(`File size exceeds limit: ${MAX_SIZE_LIMIT / 1024 / 1024 / 1024}GB`)
-    // }
+    if (this.max_file_size_limit && this.file.size > this.max_file_size_limit) {
+      throw new PDSError(
+        `File size exceeds limit: ${formatSize(this.max_file_size_limit)}`,
+        'FileSizeExceedUploadLimit',
+      )
+    }
 
     if (!this.start_time) {
       this.start_time = Date.now()

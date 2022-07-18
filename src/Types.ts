@@ -209,6 +209,9 @@ interface IUpConfig {
   min_size_for_pre_sha1?: number
   max_size_for_sha1?: number
 
+  // 限制
+  max_file_size_limit?: number // 文件大小限制
+
   // 调优
   max_chunk_size?: number // 分片大小
   init_chunk_con?: number // 自定义指定并发数， chunk_con_auto==false 时生效
@@ -289,6 +292,9 @@ interface IDownConfig {
 
   // 最大分片数：10000片
   limit_part_num?: number
+
+  // 限制
+  max_file_size_limit?: number // 文件大小限制
 
   process_calc_crc64_size?: number // 文件大小超过多少，将启用子进程计算 crc64
 

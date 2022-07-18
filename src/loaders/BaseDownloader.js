@@ -6,7 +6,7 @@ import {BaseLoader} from './BaseLoader'
 import {isNetworkError, isStopableError, isOssUrlExpired} from '../utils/HttpUtil'
 import {formatSize, elapse} from '../utils/Formatter'
 import {getFreeDiskSize} from '../utils/FileUtil'
-
+import {PDSError} from '../utils/PDSError'
 import {formatCheckpoint, initCheckpoint} from '../utils/CheckpointUtil'
 import {init_chunks_download} from '../utils/ChunkUtil'
 
@@ -86,6 +86,7 @@ export class BaseDownloader extends BaseLoader {
       verbose,
 
       checking_crc,
+      max_file_size_limit,
 
       // 最大分片数：10000片
       limit_part_num,
@@ -141,6 +142,7 @@ export class BaseDownloader extends BaseLoader {
     this.chunk_con_auto = chunk_con_auto !== false
     this.checking_crc = checking_crc !== false
 
+    this.max_file_size_limit = max_file_size_limit // 文件大小限制
     // 可选
     this.download_url = download_url
 
@@ -406,6 +408,13 @@ export class BaseDownloader extends BaseLoader {
     }
   }
   async run() {
+    if (this.max_file_size_limit && this.file.size > this.max_file_size_limit) {
+      throw new PDSError(
+        `File size exceeds limit: ${formatSize(this.max_file_size_limit)}`,
+        'FileSizeExceedUploadLimit',
+      )
+    }
+
     if (!this.start_time) {
       this.start_time = Date.now()
       this.timeLogStart('task', Date.now())
