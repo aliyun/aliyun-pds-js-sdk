@@ -5,7 +5,7 @@ import {uuid, formatPercents, randomHex, fixFileName4Windows, calcDownloadMaxCon
 import {BaseLoader} from './BaseLoader'
 import {isNetworkError, isStopableError, isOssUrlExpired} from '../utils/HttpUtil'
 import {formatSize, elapse} from '../utils/Formatter'
-import {getFreeDiskSize} from '../utils/FileUtil'
+import {getFreeDiskSize, getExtName} from '../utils/FileUtil'
 import {PDSError} from '../utils/PDSError'
 import {formatCheckpoint, initCheckpoint} from '../utils/CheckpointUtil'
 import {init_chunks_download} from '../utils/ChunkUtil'
@@ -419,7 +419,7 @@ export class BaseDownloader extends BaseLoader {
     // 允许文件类型
     if (Array.isArray(this.file_ext_list_limit) && this.file_ext_list_limit.length > 0) {
       // .txt or ''
-      let extName = this.context.path.resolve(this.file.name)
+      let extName = getExtName(this.file.name, this.context)
       if (extName) {
         if (!this.file_ext_list_limit.includes(extName)) {
           throw new PDSError(`File extention is invalid`, 'FileExtentionIsInvalid')

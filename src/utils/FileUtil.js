@@ -1,6 +1,7 @@
 /** @format */
 
 export {
+  getExtName,
   doesFileExist,
   getFreeDiskSize,
   getByteLength,
@@ -9,6 +10,15 @@ export {
   getFreeDiskSize_win,
   _parse_free_size_windows,
   _parse_free_size_unix,
+}
+
+function getExtName(name, context) {
+  if (context?.isNode) return context.path.extname(name)
+
+  let arr = name.split(/\/|\\/)
+  let n = arr[arr.length - 1]
+  let ind = n.lastIndexOf('.')
+  return ind == -1 ? '' : n.substring(ind)
 }
 
 function getByteLength(str) {

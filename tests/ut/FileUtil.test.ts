@@ -16,6 +16,18 @@ describe('FileUtil', function () {
     })
   })
 
+  describe('getExtName', () => {
+    it('test', () => {
+      let fn = FileUtil.getExtName
+
+      assert(fn('name') == '')
+      assert(fn('name.txt') == '.txt')
+      assert(fn('a/name') == '')
+      assert(fn('a/name.txt') == '.txt')
+      assert(fn('/b/c/name.tar.gz') == '.gz')
+    })
+  })
+
   describe('getFreeDiskSize_win', () => {
     it('网络挂载', async () => {
       let p = '\\\\Client\\$H\\Desktop'

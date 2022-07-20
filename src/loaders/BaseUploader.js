@@ -8,7 +8,7 @@ import Axios from 'axios'
 import {PDSError} from '../utils/PDSError'
 import {uuid} from '../utils/LoadUtil'
 import {BaseLoader} from './BaseLoader'
-import {doesFileExist} from '../utils/FileUtil'
+import {doesFileExist, getExtName} from '../utils/FileUtil'
 import {isNetworkError, isStopableError, isOssUrlExpired} from '../utils/HttpUtil'
 import {formatSize, elapse} from '../utils/Formatter'
 import {formatCheckpoint, initCheckpoint} from '../utils/CheckpointUtil'
@@ -569,7 +569,7 @@ export class BaseUploader extends BaseLoader {
     // 允许文件类型
     if (Array.isArray(this.file_ext_list_limit) && this.file_ext_list_limit.length > 0) {
       // .txt or ''
-      let extName = this.context.path.resolve(this.file.name)
+      let extName = getExtName(this.file.name, this.context)
       if (extName) {
         if (!this.file_ext_list_limit.includes(extName)) {
           throw new PDSError(`File extention is invalid`, 'FileExtentionIsInvalid')
