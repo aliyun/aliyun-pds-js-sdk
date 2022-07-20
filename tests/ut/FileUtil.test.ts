@@ -16,6 +16,33 @@ describe('FileUtil', function () {
     })
   })
 
+  describe('checkAllowExtName', () => {
+    it('test', () => {
+      let fn = FileUtil.checkAllowExtName
+      let arr = ['.jpeg', '.png', '.GIF']
+      assert(!fn(arr, 'name'))
+      assert(!fn(arr, 'name.txt'))
+      assert(fn(arr, 'name.png'))
+      assert(fn(arr, 'name.PNG'))
+      assert(fn(arr, 'a/b/name.gif'))
+    })
+    it('arr is empty', () => {
+      let fn = FileUtil.checkAllowExtName
+      var arr = []
+      assert(fn(arr, 'name'))
+      assert(fn(arr, 'name.txt'))
+      assert(fn(arr, 'name.png'))
+      assert(fn(arr, 'name.PNG'))
+      assert(fn(arr, 'a/b/name.gif'))
+
+      var arr2 = undefined
+      assert(fn(arr2, 'name'))
+      assert(fn(arr2, 'name.txt'))
+      assert(fn(arr2, 'name.png'))
+      assert(fn(arr2, 'name.PNG'))
+      assert(fn(arr2, 'a/b/name.gif'))
+    })
+  })
   describe('getExtName', () => {
     it('test', () => {
       let fn = FileUtil.getExtName

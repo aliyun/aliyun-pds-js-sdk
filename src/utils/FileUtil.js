@@ -1,6 +1,7 @@
 /** @format */
 
 export {
+  checkAllowExtName,
   getExtName,
   doesFileExist,
   getFreeDiskSize,
@@ -10,6 +11,19 @@ export {
   getFreeDiskSize_win,
   _parse_free_size_windows,
   _parse_free_size_unix,
+}
+
+function checkAllowExtName(allow_ext_list, file_name, context) {
+  if (Array.isArray(allow_ext_list) && allow_ext_list.length > 0) {
+    // .txt or ''
+    let extName = getExtName(file_name, context)
+
+    if (extName) {
+      let arr = allow_ext_list.map(n => n.toLowerCase())
+      return arr.includes(extName.toLowerCase())
+    } else return false
+  }
+  return true
 }
 
 function getExtName(name, context) {
