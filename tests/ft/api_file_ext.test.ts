@@ -20,6 +20,13 @@ describe('file_ext', function () {
   })
 
   it('office', async () => {
+    // 清理
+    const {items: fileItems = []} = await client.listFiles({
+      drive_id,
+      parent_file_id: 'root',
+    })
+    await client.batchDeleteFiles(fileItems, true)
+
     const fileRes = await client.saveFileContent({
       drive_id,
       parent_file_id: 'root',
@@ -58,7 +65,7 @@ describe('file_ext', function () {
       drive_id,
       parent_file_id: 'root',
     })
-    await client.batchDeleteFiles(items, true)
+    await client.batchDeleteFiles(fileItems, true)
   })
 
   it('video preview', async () => {
