@@ -539,6 +539,11 @@ export class BaseUploader extends BaseLoader {
     if (this.verbose) console.log(`start task: ${this.state} => start`)
     // if (['success', 'rapid_success'].includes(this.status)) return
     if (!['waiting', 'error', 'stopped', 'cancelled'].includes(this.state)) return
+    if(['rapid_success']) {
+      this.start_time = this.start_time || Date.now();
+      this.end_time = new Date();
+      return await this.changeState('rapid_success');
+    }
     // 防止多次调用 start()
     this.changeState('start')
     this.doStart()
