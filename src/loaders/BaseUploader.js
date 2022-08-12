@@ -791,6 +791,13 @@ export class BaseUploader extends BaseLoader {
     } catch (e) {
       if (e.message != 'stopped') console.warn(action, 'ERROR:', e.response || e)
 
+      // 504 服务端timeout的情况, 等待后重试
+      if (e.status == 504) {
+        // 等 1-4 秒
+        await new Promise(a => setTimeout(a, parseInt(1000 + Math.random() * 3000)))
+        return await this.http_client_call(action, opt, options, retry)
+      }
+
       // 分享页面上传文件, x-share-token 失效的情况
       // code: "ShareLinkTokenInvalid"
       // message: "ShareLinkToken is invalid. expired"
