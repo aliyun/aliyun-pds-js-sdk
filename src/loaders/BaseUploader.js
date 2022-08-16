@@ -91,6 +91,7 @@ export class BaseUploader extends BaseLoader {
       id,
       file_key,
       upload_id,
+      rapid_upload,
 
       part_info_list,
 
@@ -243,6 +244,7 @@ export class BaseUploader extends BaseLoader {
 
     // uploading info
     this.upload_id = upload_id
+    this.rapid_upload = rapid_upload || false
 
     part_info_list ? (this.part_info_list = part_info_list) : null
 
@@ -343,6 +345,7 @@ export class BaseUploader extends BaseLoader {
       // uploading info
       upload_id: this.upload_id || undefined,
       crc64_hash: this.crc64_hash || undefined,
+      rapid_upload: this.rapid_upload || false, // create时是否秒传成功
       part_info_list: (this.part_info_list || []).map(n => {
         return {
           part_number: n.part_number,
@@ -539,11 +542,7 @@ export class BaseUploader extends BaseLoader {
     if (this.verbose) console.log(`start task: ${this.state} => start`)
     // if (['success', 'rapid_success'].includes(this.status)) return
     if (!['waiting', 'error', 'stopped', 'cancelled'].includes(this.state)) return
-    if (this.rapid_upload) {
-      this.start_time = this.start_time || Date.now()
-      this.end_time = new Date()
-      return await this.changeState('rapid_success')
-    }
+
     // 防止多次调用 start()
     this.changeState('start')
     this.doStart()
@@ -582,6 +581,12 @@ export class BaseUploader extends BaseLoader {
       this.timeLogStart('task', this.start_time)
     }
 
+    // 上次暂停前，已经秒传过
+    if (this.rapid_upload) {
+      this.end_time = new Date()
+      return await this.changeState('rapid_success')
+    }
+
     // 1. 启动异步 worker, 计算 crc64
     this.startCrc64Worker()
 
@@ -603,6 +608,7 @@ export class BaseUploader extends BaseLoader {
         // 3. 获取 upload urls， 如果还没创建，先创建（创建过程包含 获取 upload urls）
         if (!this.upload_id) {
           let isRapidSuccess = await this.prepareAndCreate()
+
           if (isRapidSuccess) {
             this.end_time = Date.now()
             this.timeLogEnd('task', Date.now())
@@ -897,12 +903,12 @@ export class BaseUploader extends BaseLoader {
       this.part_info_list[i].upload_url = n.upload_url
     })
 
-    this.rapid_upload = result.rapid_upload
-    await this.changeState('created')
+    this.rapid_upload = result.rapid_upload || false
 
     if (this.stopFlag) {
       throw new Error('stopped')
     }
+    await this.changeState('created')
 
     return result
   }

@@ -26,34 +26,35 @@ export class StandardSerialUploader extends BaseUploader {
   }
 
   async prepareAndCreate() {
+    if (this.stopFlag) throw new Error('stopped')
     // if (!this.ignore_rapid && this.file.size < this.max_size_for_sha1) {
     if (!this.ignore_rapid) {
       // 计算sha1，秒传
-      try {
-        // var rapidUploadResult =
-        const is_rapid_success = await this.checkRapidUpload()
-        if (is_rapid_success) {
-          // 秒传成功， 终止job
+      // try {
+      // var rapidUploadResult =
+      const is_rapid_success = await this.checkRapidUpload()
+      if (is_rapid_success) {
+        // 秒传成功， 终止job
 
-          // fix 暂停后，重新启动。
-          // this.end_time = Date.now()
-          // this.loaded = this.file.size
-          // await this.changeState('rapid_success')
+        // fix 暂停后，重新启动。
+        // this.end_time = Date.now()
+        // this.loaded = this.file.size
+        // await this.changeState('rapid_success')
 
-          // 终止job
-          return true
-        }
-      } catch (e) {
-        if (!this.stopFlag) throw e
+        // 终止job
+        return true
       }
+      // } catch (e) {
+      //   if (!this.stopFlag) throw e
+      // }
     } else {
       // 直接create
-      try {
-        await this.create()
-        return false
-      } catch (e) {
-        if (!this.stopFlag) throw e
-      }
+      // try {
+      await this.create()
+      return false
+      // } catch (e) {
+      //   if (!this.stopFlag) throw e
+      // }
     }
   }
 

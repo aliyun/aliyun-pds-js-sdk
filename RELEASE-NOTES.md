@@ -6,6 +6,7 @@
 
 - refactor: getDownloadURL 等方法增加 revision_id 参数。
 - feat: 上传下载任务增加参数 max_file_size_limit 和 file_ext_list_limit 配置。 
+- fix: 弱网环境秒传create过程中暂停，下次启动会自动秒传成功。 IUpCheckpoint 增加 rapid_upload 字段。
 
 ## 0.2.6
 

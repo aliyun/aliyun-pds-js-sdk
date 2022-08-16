@@ -27,58 +27,63 @@ export class StandardParallelUploader extends ParallelUploader {
   }
 
   async prepareAndCreate() {
-    try {
-      // var rapidUploadResult =
-      const is_rapid_success = await this.checkRapidUpload()
-      if (is_rapid_success) {
-        // 秒传成功， 终止job
+    // try{
+    // var rapidUploadResult =
+    const is_rapid_success = await this.checkRapidUpload()
+    if (is_rapid_success) {
+      // 秒传成功， 终止job
 
-        // 终止job
-        return true
-      }
-    } catch (e) {
-      if (!this.stopFlag) throw e
+      // 终止job
+      return true
     }
+    // } catch (e) {
+    //   if (!this.stopFlag) throw e
+    // }
   }
 
   async checkRapidUpload() {
     this.notNeedCalcSha1 = false
-    // 计算秒传
-    await this.changeState('computing_hash')
 
-    const logKey = `计算秒传 ${this.file.name} (size:${this.file.size}) ${Math.random()}`
-    if (this.verbose) {
-      console.time(logKey)
+    if (this.stopFlag) throw new Error('stopped')
+
+    if (!this.ignore_rapid) {
+      // 计算秒传
+      await this.changeState('computing_hash')
+
+      const logKey = `计算秒传 ${this.file.name} (size:${this.file.size}) ${Math.random()}`
+      if (this.verbose) {
+        console.time(logKey)
+      }
+
+      let throttleFn = throttleInTimes(
+        fn => {
+          fn()
+        },
+        10,
+        100,
+      )
+
+      const sha1 = await this.calcHash(
+        this.file,
+        progress => {
+          throttleFn(() => {
+            // progress
+            this.sha1_progress = Math.round(progress) // 0-100
+            if (this.state == 'computing_hash') this.notifyProgress(this.state, this.sha1_progress)
+          })
+        },
+        () => {
+          return this.stopFlag
+        },
+      )
+
+      if (this.verbose) {
+        console.timeLog(logKey, ' result:', sha1)
+      }
+      this.sha1 = sha1
     }
 
-    let throttleFn = throttleInTimes(
-      fn => {
-        fn()
-      },
-      10,
-      100,
-    )
-
-    const sha1 = await this.calcHash(
-      this.file,
-      progress => {
-        throttleFn(() => {
-          // progress
-          this.sha1_progress = Math.round(progress) // 0-100
-          if (this.state == 'computing_hash') this.notifyProgress(this.state, this.sha1_progress)
-        })
-      },
-      () => {
-        return this.stopFlag
-      },
-    )
-
-    if (this.verbose) {
-      console.timeLog(logKey, ' result:', sha1)
-    }
-
-    // 不秒传
-    if (!this.ignore_rapid) this.sha1 = sha1
+    // 没有预秒传
     this.presha1 = undefined
 
     if (this.stopFlag) throw new Error('stopped')

@@ -177,6 +177,7 @@ interface IUpCheckpoint {
   id?: string
   file_key?: string
   upload_id?: string
+  rapid_upload?: boolean
 
   part_info_list?: IUpPartInfo[]
   crc64_hash?: string // complete 后，服务端返回的
