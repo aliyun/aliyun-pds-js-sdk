@@ -2,6 +2,10 @@
 
 # Release Notes
 
+## 0.2.8
+
+- feat: 增加 user_tags 支持.
+
 ## 0.2.7
 
 - refactor: getDownloadURL 等方法增加 revision_id 参数。
