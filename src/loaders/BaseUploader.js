@@ -117,6 +117,8 @@ export class BaseUploader extends BaseLoader {
       // check_name_mode: overwrite (直接覆盖，以后多版本有用), auto_rename (自动换一个随机名称), refuse (不会创建，告诉你已经存在), ignore (会创建重名的)
       check_name_mode = 'auto_rename',
 
+      user_tags = [], // 标签
+
       max_file_size_limit, // 文件大小限制
       file_ext_list_limit, // 文件后缀限制
 
@@ -190,6 +192,7 @@ export class BaseUploader extends BaseLoader {
     this.init_chunk_con = init_chunk_con || INIT_MAX_CON
     this.chunk_con_auto = chunk_con_auto !== false
 
+    this.user_tags = user_tags
     // this.max_size_for_sha1 = max_size_for_sha1 || MAX_SIZE_FOR_SHA1
     this.min_size_for_pre_sha1 = min_size_for_pre_sha1 || MIN_SIZE_FOR_PRE_SHA1
 
@@ -867,6 +870,9 @@ export class BaseUploader extends BaseLoader {
 
       // 多版本支持，传入 file_id
       opt.file_id = this.file_id
+
+      // 标签
+      if (this.user_tags && this.user_tags.length > 0) opt.user_tags = this.user_tags
     }
 
     let result

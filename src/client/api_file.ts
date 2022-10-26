@@ -811,6 +811,13 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
   getFileDownloadUrl(data: IGetFileDownloadUrlReq, options?: AxiosRequestConfig) {
     return this.postAPI<IGetFileDownloadUrlRes>('/file/get_download_url', data, options)
   }
+  // 标签
+  putFileUserTags(data: IPutFileUserTagsReq, options?: AxiosRequestConfig) {
+    return this.postAPI<{file_id: string}>('/file/put_usertags', data, options)
+  }
+  deleteFileUserTags(data: IDeleteFileUserTagsReq, options?: AxiosRequestConfig) {
+    return this.postAPI<null>('/file/delete_usertags', data, options)
+  }
 }
 
 function formatFileListInfo(items: any[]) {
@@ -918,6 +925,7 @@ interface IFileItemStandard {
   type: TFileType
 
   revision_id?: string
+  revision_version?: number
 
   location?: string
 
@@ -932,6 +940,8 @@ interface IFileItemStandard {
   upload_id?: string
   updated_at?: Date
   url?: string
+
+  user_tags?: {[key: string]: string}
 
   [propName: string]: any
 }
@@ -987,6 +997,7 @@ interface IUpdateFileReq {
 interface ICreateFolderReq extends IParentFileKey {
   name: string
   check_name_mode?: TCheckNameMode
+  user_tags?: {key: string; value: string}[]
 }
 interface ICreateFileReq {
   auto_rename?: boolean
@@ -1013,6 +1024,7 @@ interface ICreateFileReq {
   size?: number
   type?: string // 'file' | 'folder'
   user_meta?: string
+  user_tags?: {key: string; value: string}[]
   [propName: string]: any
 }
 
@@ -1047,6 +1059,8 @@ interface ICreateFileRes extends ICreateFolderRes {
   streams_upload_info?: any
   type: TFileType
   upload_id?: string
+  status?: string
+  exist?: boolean
 }
 
 interface ISearchFileReq {
@@ -1192,6 +1206,16 @@ interface IGetFolderReq {
   file_id: string
 }
 
+interface IPutFileUserTagsReq {
+  drive_id: string
+  file_id: string
+  user_tags: {key: string; value: string}[]
+}
+interface IDeleteFileUserTagsReq {
+  drive_id: string
+  file_id: string
+  key_list: string[]
+}
 export {
   IFileItem,
   IFileItemStandard,
@@ -1209,4 +1233,6 @@ export {
   IToParentFileKey,
   IGetBreadcrumbReq,
   IGetFolderReq,
+  IPutFileUserTagsReq,
+  IDeleteFileUserTagsReq,
 }

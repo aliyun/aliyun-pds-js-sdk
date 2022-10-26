@@ -203,6 +203,9 @@ interface IUpConfig {
   // check_name_mode: overwrite (直接覆盖，以后多版本有用), auto_rename (自动换一个随机名称), refuse (不会创建，告诉你已经存在), ignore (会创建重名的)
   check_name_mode?: CheckNameMode
 
+  // 标签
+  user_tags?: {key: string; value: string}[]
+
   // 是否校验
   checking_crc?: boolean
 
