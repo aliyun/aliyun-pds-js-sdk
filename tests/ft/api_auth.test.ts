@@ -2,7 +2,7 @@
 
 const assert = require('assert')
 import {PDSClient, IGetUserJwtTokenReq, IGetServiceJwtTokenReq, IRefreshTokenReq} from './index'
-
+const https = require('https')
 const Config = require('./conf.js')
 const PATH_TYPE = 'StandardMode'
 
@@ -20,7 +20,7 @@ describe('AuthAPI', function () {
       auth_endpoint,
     })
 
-    let token = await client.getUserJwtToken(params)
+    let token = await client.getUserJwtToken(params, {httpsAgent: new https.Agent({rejectUnauthorized: false})})
 
     assert(token.access_token)
     assert(token.refresh_token)
@@ -28,10 +28,13 @@ describe('AuthAPI', function () {
     assert(token.user_id == user_id)
 
     console.log('----refresh jwt token')
-    let token2 = await client.refreshJwtToken({
-      client_id,
-      refresh_token: token.refresh_token,
-    })
+    let token2 = await client.refreshJwtToken(
+      {
+        client_id,
+        refresh_token: token.refresh_token,
+      },
+      {httpsAgent: new https.Agent({rejectUnauthorized: false})},
+    )
     assert(token2.user_id == token.user_id)
     assert(token2.access_token)
     assert(token2.refresh_token)
@@ -48,7 +51,7 @@ describe('AuthAPI', function () {
       auth_endpoint,
     })
 
-    let token = await client.getServiceJwtToken(params)
+    let token = await client.getServiceJwtToken(params, {httpsAgent: new https.Agent({rejectUnauthorized: false})})
     // console.log('service token:', token)
     assert(token.access_token)
     assert(token.refresh_token)

@@ -176,41 +176,44 @@ export class ParallelUploader extends BaseUploader {
 
       this.notifyPartCompleted(partInfo)
     } catch (e) {
-      delete partInfo.loaded
-      delete partInfo.running
-      delete partInfo.etag
+      this.handleUpPartError(e, partInfo, running_parts)
+    }
+  }
+  handleUpPartError(e, partInfo, running_parts) {
+    delete partInfo.loaded
+    delete partInfo.running
+    delete partInfo.etag
 
-      running_parts[partInfo.part_number] = 0
+    running_parts[partInfo.part_number] = 0
 
-      if (this.verbose && e.message !== 'stopped') {
-        console.log(
-          `[${this.file.name}] upload part[${partInfo.part_number}/${this.part_info_list.length}] errror: ${e.message}`,
-        )
-      }
+    if (this.verbose && e.message !== 'stopped') {
+      console.log(
+        `[${this.file.name}] upload part[${partInfo.part_number}/${this.part_info_list.length}] errror: ${e.message}`,
+      )
+    }
 
-      if (e.response) {
-        if (e.response.status == 404) {
-          if (e.response.data && e.response.data.indexOf('The specified upload does not exist') != -1) {
-            delete this.upload_id
-            this.part_info_list.forEach(n => {
-              delete n.etag
-              delete n.loaded
-              delete n.running
-            })
-          }
-          // should throw anyway
-        } else if (e.response.status == 504 || isNetworkError(e)) {
-          // 重试, 海外连国内，可能会504
-          return
+    if (e.response) {
+      if (e.response.status == 404) {
+        if (e.response.data && e.response.data.indexOf('The specified upload does not exist') != -1) {
+          delete this.upload_id
+          this.part_info_list.forEach(n => {
+            delete n.etag
+            delete n.loaded
+            delete n.running
+          })
         }
-      }
-
-      if (e.message == 'retry_upload_part') {
-        // 重试
+        // should throw anyway
+      } else if (e.response.status == 504 || isNetworkError(e)) {
+        // 重试, 海外连国内，可能会504
         return
       }
-
-      throw e
     }
+
+    if (e.message == 'retry_upload_part') {
+      // 重试
+      return
+    }
+
+    throw e
   }
 }
