@@ -907,6 +907,7 @@ export class BaseUploader extends BaseLoader {
     if (this.path_type == 'StandardMode') this.new_name = result.file_name
     ;(result.part_info_list || []).forEach((n, i) => {
       this.part_info_list[i].upload_url = n.upload_url
+      this.part_info_list[i].content_type = n.content_type || ''
     })
 
     this.rapid_upload = result.rapid_upload || false
