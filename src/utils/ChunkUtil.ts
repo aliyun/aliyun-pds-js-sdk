@@ -119,6 +119,7 @@ function init_chunks_sha1(
       to: loaded,
       etag: n.etag,
       upload_url: n.upload_url,
+      content_type: n.content_type || '',
     })
     offset = loaded
   }

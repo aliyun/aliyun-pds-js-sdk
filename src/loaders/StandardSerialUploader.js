@@ -196,7 +196,7 @@ export class StandardSerialUploader extends BaseUploader {
         partInfo.running = true
 
         const reqHeaders = {
-          'Content-Type': '',
+          'Content-Type': partInfo.content_type || '',
         }
 
         if (this.context.isNode) {

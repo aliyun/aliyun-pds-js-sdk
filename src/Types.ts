@@ -85,6 +85,7 @@ interface IUpPartInfo {
   to?: number
   etag?: string
   upload_url?: string
+  content_type?: string
   running?: boolean
   done?: boolean
 

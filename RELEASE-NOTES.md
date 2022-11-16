@@ -5,6 +5,7 @@
 ## 0.2.8
 
 - feat: 增加 user_tags 支持.
+- feat: createFile, getFileUploadUrl 增加 content_type 参数，返回 part_info 也增加 content_type 字段。如果有此字段，PUT上传需要在消息头带上 content-type。
 
 ## 0.2.7
 

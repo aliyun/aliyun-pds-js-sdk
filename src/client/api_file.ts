@@ -401,7 +401,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
       {
         // data: content,
         headers: {
-          'content-type': '',
+          'content-type': info.part_info_list[0]['content_type'] || '',
         },
       },
       1,

@@ -111,7 +111,7 @@ export class ParallelUploader extends BaseUploader {
     let keep_part_loaded = 0
     try {
       const reqHeaders = {
-        'Content-Type': '',
+        'Content-Type': partInfo.content_type || '',
       }
 
       if (this.context.isNode) {

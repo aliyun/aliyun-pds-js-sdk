@@ -941,6 +941,7 @@ export class BaseUploader extends BaseLoader {
 
     result.part_info_list.forEach((n, i) => {
       this.part_info_list[i].upload_url = n.upload_url
+      this.part_info_list[i].content_type = n.content_type || ''
     })
     return result
   }
