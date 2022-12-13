@@ -52,19 +52,24 @@ async function doesFileExist(file, context) {
 
 /* istanbul ignore next */
 function doesFileExistInBrowser(file) {
+  var blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice
   return new Promise(res => {
     const fr = new FileReader()
-    fr.onabort = function () {
+    fr.onerror = function () {
       // 文件可能已经被删除
       if (fr.error.message.indexOf('A requested file or directory could not be found') === 0) res(fr.error)
       else res()
     }
-    fr.onerror = fr.onabort
-
+    fr.onabort = fr.onerror
     fr.onload = function () {
       res()
     }
-    fr.readAsArrayBuffer(file)
+    if (file.size > 0) {
+      // 不需要全部load，太占内存
+      fr.readAsArrayBuffer(blobSlice.call(file, 0, 1))
+    } else {
+      fr.readAsArrayBuffer(file)
+    }
   })
 }
 

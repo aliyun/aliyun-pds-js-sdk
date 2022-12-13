@@ -2,6 +2,10 @@
 
 # Release Notes
 
+## 0.2.9
+
+- fix: 修复暂停上传后浏览器内存占用大的问题。
+
 ## 0.2.8
 
 - feat: 增加 user_tags 支持.
