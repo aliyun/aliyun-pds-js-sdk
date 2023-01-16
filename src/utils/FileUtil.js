@@ -36,7 +36,10 @@ function getExtName(name, context) {
 }
 
 function getByteLength(str) {
-  return new TextEncoder().encode(str).byteLength
+  if (typeof str == 'string') {
+    return new TextEncoder().encode(str).byteLength
+  }
+  return str.length
 }
 
 async function doesFileExist(file, context) {

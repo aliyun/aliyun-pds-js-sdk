@@ -2,6 +2,10 @@
 
 # Release Notes
 
+## 0.2.10
+
+- fix: 修复 saveFileContent 的 content size 的计算方法。
+
 ## 0.2.9
 
 - fix: 修复暂停上传后浏览器内存占用大的问题。
