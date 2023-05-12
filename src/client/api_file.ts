@@ -386,7 +386,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
     const info = await this.createFile(opt, options)
 
     if (info.exist) {
-      this.throwError(new PDSError('The file with the same name already exists', 'AlreadyExists'))
+      this.throwError(new PDSError('A file with the same name already exists', 'AlreadyExists'))
     }
 
     // 秒传成功
@@ -506,7 +506,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
         )
 
         if (check_name_mode == 'refuse' && info?.name) {
-          this.throwError(new PDSError('The file with the same name already exists', 'AlreadyExists'))
+          this.throwError(new PDSError('A file with the same name already exists', 'AlreadyExists'))
         } else {
           result = info
         }

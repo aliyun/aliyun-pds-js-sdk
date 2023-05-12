@@ -116,6 +116,7 @@ export class BaseUploader extends BaseLoader {
     const {
       // check_name_mode: overwrite (直接覆盖，以后多版本有用), auto_rename (自动换一个随机名称), refuse (不会创建，告诉你已经存在), ignore (会创建重名的)
       check_name_mode = 'auto_rename',
+      check_name_mode_refuse_ignore_error = false, // 默认会 throw
 
       user_tags = [], // 标签
 
@@ -209,6 +210,7 @@ export class BaseUploader extends BaseLoader {
 
     // 同名 策略
     this.check_name_mode = check_name_mode
+    this.check_name_mode_refuse_ignore_error = check_name_mode_refuse_ignore_error
 
     // funs
     this.state_changed = state_changed
@@ -701,10 +703,14 @@ export class BaseUploader extends BaseLoader {
             if (e2.status !== 403) throw e
           }
         } else if (e.message == 'refuse') {
-          // check_name_mode 为 refuse，也算成功。
-          // pass
-          if (this.verbose) {
-            console.log(`${this.file.name} 发现同名文件（check_name_mode==refuse）, 忽略。`)
+          if (!this.check_name_mode_refuse_ignore_error) {
+            // throw AlreadyExists error
+            throw new PDSError('A file with the same name already exists', 'AlreadyExists')
+          } else {
+            // check_name_mode 为 refuse，也算成功。
+            if (this.verbose) {
+              console.log(`${this.file.name} 发现同名文件（check_name_mode==refuse）, 忽略。`)
+            }
           }
         } else {
           throw e
