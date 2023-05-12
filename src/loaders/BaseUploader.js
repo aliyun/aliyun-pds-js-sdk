@@ -700,6 +700,12 @@ export class BaseUploader extends BaseLoader {
             // 如果只有上传权限，没有 getFile 权限，403 认为成功了。TODO：在被回收的情况会有问题，几率较小
             if (e2.status !== 403) throw e
           }
+        } else if (e.message == 'refuse') {
+          // check_name_mode 为 refuse，也算成功。
+          // pass
+          if (this.verbose) {
+            console.log(`${this.file.name} 发现同名文件（check_name_mode==refuse）, 忽略。`)
+          }
         } else {
           throw e
         }
@@ -896,8 +902,7 @@ export class BaseUploader extends BaseLoader {
     if (this.path_type == 'StandardMode' && result.exist) {
       // refuse
       if (this.check_name_mode == 'refuse') {
-        throw new PDSError('A file with the same name already exists', 'AlreadyExists')
-        // throw new PDSError('The resource file has already exists.','AlreadyExist.File')
+        throw new Error('refuse')
       }
       // 覆盖 create
       if (this.check_name_mode == 'overwrite') {
