@@ -191,7 +191,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
             const b = await onFolderRepeat(fileInfo)
             if (!b) {
               retry = -1
-              that.throwError(new PDSError('The folder with the same name already exists', 'AlreadyExists'))
+              that.throwError(new PDSError('A folder with the same name already exists', 'AlreadyExists'))
             }
           }
           // 只问一次
@@ -345,7 +345,7 @@ export class PDSFileAPIClient extends PDSFilePermissionClient {
     data.check_name_mode = data.check_name_mode || 'refuse'
     let info = await this.postAPI<ICreateFolderRes>('/file/create', {type: 'folder', ...data}, options)
     if (info.exist) {
-      this.throwError(new PDSError('The folder with the same name already exists', 'AlreadyExists'))
+      this.throwError(new PDSError('A folder with the same name already exists', 'AlreadyExists'))
     }
     return info
   }

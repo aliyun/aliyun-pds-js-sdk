@@ -2,6 +2,10 @@
 
 # Release Notes
 
+## 0.2.11
+
+- fix: 修复上传 check_name_mode 为 refuse 遇到同名文件应该报错。
+
 ## 0.2.10
 
 - fix: 修复 saveFileContent 的 content size 的计算方法。

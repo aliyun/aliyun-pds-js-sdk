@@ -894,6 +894,11 @@ export class BaseUploader extends BaseLoader {
 
     // 同名策略
     if (this.path_type == 'StandardMode' && result.exist) {
+      // refuse
+      if (this.check_name_mode == 'refuse') {
+        throw new PDSError('A file with the same name already exists', 'AlreadyExists')
+        // throw new PDSError('The resource file has already exists.','AlreadyExist.File')
+      }
       // 覆盖 create
       if (this.check_name_mode == 'overwrite') {
         opt.file_id = result.file_id
