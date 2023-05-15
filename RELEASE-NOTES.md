@@ -4,7 +4,7 @@
 
 ## 0.2.11
 
-- fix: 修复上传 check_name_mode 为 refuse 遇到同名文件应该报错。
+- fix: 修复上传 check_name_mode 为 refuse 遇到同名文件应该报错。增加个字段 check_name_mode_refuse_ignore_error: true 可以忽略报错，最终 task.status 展示 success。
 
 ## 0.2.10
 
