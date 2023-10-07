@@ -3,4 +3,9 @@ node_modules
 dist
 dist-ssr
 *.local
-aliyun-pds-js-sdk.min.js
+aliyun-pds-js-sdk.*
+conf.js
+
+tmp-*
+pnpm-lock.yaml
+package-lock.json

@@ -1,4 +1,3 @@
-<!-- @format -->
 
 <!DOCTYPE html>
 <html>
@@ -13,6 +12,7 @@
      font-family: monospace;
     }
     </style>
+
   </head>
   <body style="padding: 10px">
     <div style="display: none">
@@ -50,14 +50,18 @@
     </section>
     <section>
       <h1>上传下载文件</h1>
+      <button id="btn-upload-browser">browser (标准并行)上传文件</button>
+      <button id="btn-upload-serial-browser">browser (标准串行)上传文件</button>
+      <div>&nbsp;</div>
       <button id="btn-upload">node (标准并行)上传文件</button>
       <button id="btn-upload-serial">node (标准串行)上传文件</button>
-      <button id="btn-upload-hosting">node (托管)上传文件</button>
+      <!-- <button id="btn-upload-hosting">node (托管)上传文件</button> -->
       <button id="btn-download" disabled>node 下载文件</button> 
     </section>
 
     <section id="msg"></section>
 
+    <script src="bin/tmp-js-sdk.min.js"></script>
     <script src="bin/conf.js"></script>
     <script src="bin/common.js"></script>
     <script src="test-crc64.js"></script>

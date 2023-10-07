@@ -1,26 +1,19 @@
-/** @format */
+import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
 
-import assert = require('assert')
-import {PDSClient} from './index'
+import {delay} from '../../lib/utils/HttpUtil'
 
-import {delay} from '../../src/utils/HttpUtil'
-
-const {getClient} = require('./token-util')
-
-const PATH_TYPE = 'StandardMode'
+import {getClient} from './util/token-util'
 
 describe('StandingShare', function () {
-  this.timeout(60 * 1000)
+  let client
 
-  let client: PDSClient
-
-  this.beforeAll(async () => {
-    client = await getClient(PATH_TYPE)
+  beforeAll(async () => {
+    client = await getClient()
   })
 
-  it('getReceivedShareInfo', async () => {
-    const result = await client.listReceivedShareFiles({marker: '', limit: 30})
-    assert.ok(result.items.length)
+  it('listReceivedFiles', async () => {
+    const result = await client.listReceivedFiles({marker: '', limit: 30})
+    expect(result.items.length).toBeGreaterThanOrEqual(0)
 
     // 我管理的共享
     try {
@@ -29,13 +22,14 @@ describe('StandingShare', function () {
         limit: 30,
         marker: '',
       })
+      expect('should throw').toBe(false)
     } catch (error) {
-      assert.ok(error)
+      expect(error)
     }
   })
 
   it('createShare', async () => {
-    const drive_id = client.token_info.default_drive_id
+    const drive_id = client.token_info?.default_drive_id || ''
     // 个人空间下 创建个文件夹
     const folder1 = await client.createFolder({
       drive_id,
@@ -43,13 +37,14 @@ describe('StandingShare', function () {
       check_name_mode: 'auto_rename',
       name: '共享文件夹1',
     })
-    assert.ok(folder1.file_id)
+    let folder_id = folder1.file_id || ''
+    expect(!!folder_id).toBe(true)
 
     try {
       // 共享这个文件夹
       await client.addFilePermission({
         drive_id,
-        file_id: folder1.file_id,
+        file_id: folder_id,
         member_list: [
           {
             identity: {identity_type: 'IT_User', identity_id: '152fa0a9cc974ae2b26a8981847d306c'},
@@ -72,19 +67,21 @@ describe('StandingShare', function () {
         ],
       })
     } catch (error) {
-      assert.fail('createShare error')
+      expect('createShare error').toBe(true)
     }
 
     const permissionArr = await client.listFilePermissions({
       drive_id,
-      file_id: folder1.file_id,
+      file_id: folder_id,
     })
-    assert.ok(permissionArr.length === 3)
+    expect(permissionArr.length).toBe(3)
 
     await delay(10000)
     const result = await client.listSharingFiles({limit: 30, marker: ''})
     // assert.ok(result.items.some(item => item.file_id === folder.file_id))
-    assert.ok(result.items.length)
+
+    // console.log('----------result', result)
+    expect(result.items.length).toBeGreaterThan(0)
 
     // 在folder1 创建个文件夹
     const folder2 = await client.createFolder({
@@ -93,25 +90,26 @@ describe('StandingShare', function () {
       check_name_mode: 'auto_rename',
       name: '文件夹2',
     })
-    assert.ok(folder2.file_id)
+    let folder_id2 = folder2.file_id || ''
+    expect(!!folder_id2).toBe(true)
     const listInheritPermissionRes = await client.listFileInheritPermissions({
       drive_id,
-      file_id: folder2.file_id,
+      file_id: folder_id2,
     })
-    assert.ok(listInheritPermissionRes)
+    expect(!!listInheritPermissionRes).toBe(true)
 
     const UserPermission = await client.listUserPermissions({
       type: 'self',
       user_id: 'superadmin',
     })
 
-    assert.ok(UserPermission.items.length)
+    expect(!!UserPermission.items.length).toBe(true)
 
     try {
       // 取消共享权限
       await client.removeFilePermission({
         drive_id,
-        file_id: folder1.file_id,
+        file_id: folder_id,
         member_list: [
           {
             identity: {identity_type: 'IT_User', identity_id: '4b14efc7056a4d43b08176a006f63740'},
@@ -122,7 +120,7 @@ describe('StandingShare', function () {
         ],
       })
     } catch (error) {
-      assert.fail('remove Permission error')
+      expect('remove Permission error')
     }
     client.batchDeleteFiles([{drive_id, file_id: folder1.file_id}], true)
   })

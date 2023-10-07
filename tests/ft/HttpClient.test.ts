@@ -1,36 +1,28 @@
-/** @format */
-
-import assert = require('assert')
-
-const Config = require('./conf.js')
-
-const {getHttpClient} = require('./token-util')
-
-const PATH_TYPE = 'HostingMode'
+import {describe, expect, it} from 'vitest'
+import Config from './config/conf.js'
+import {getHttpClient} from './util/token-util'
 
 describe('HttpClient', function () {
-  this.timeout(60 * 1000)
-  const {drive_id, api_endpoint} = Config['domains'][PATH_TYPE]
+  const {drive_id, api_endpoint} = Config
   describe('request', () => {
     it('request', async () => {
       // console.log(Config)
 
-      const client = await getHttpClient(PATH_TYPE)
+      const client = await getHttpClient()
 
       let result = await client.postAPI('/drive/get', {drive_id})
-      // console.log(result)
-      assert(result.drive_id == '1')
+      expect(result.drive_id).toBe(drive_id)
     })
 
     it('send', async () => {
       // console.log(Config)
-      const client = await getHttpClient(PATH_TYPE)
-
+      const client = await getHttpClient()
       try {
         await client.send('GET', api_endpoint + '/v2/drive/get', {}, {}, 2)
       } catch (e) {
-        assert(e.status == 404)
-        assert(e.code == 'I404NF')
+        console.log('----------eee', e)
+        expect(e.status).toBe(404)
+        expect(e.code).toBe('I404NF')
       }
     })
   })

@@ -1,22 +1,36 @@
-/** @format */
+
 
 import {createRouter, createWebHistory} from 'vue-router'
 
-import Index from './views/index.vue'
-import Sha1 from './views/Sha1.vue'
+import Pan from './views/pan/index.vue'
+import Calc from './views/calc/index.vue'
 
 const routerHistory = createWebHistory()
 
 let routes = [
   {
-    path: '/',
-    name: 'index',
-    component: Index,
+    path: '/pan',
+    name: 'pan_entry',
+    component: Pan,
   },
   {
-    path: '/sha1',
-    name: 'sha1',
-    component: Sha1,
+    path: '/pan/:driveId',
+    name: 'pan',
+    component: Pan,
+  },
+  {
+    path: '/pan/:driveId/:folderId',
+    name: 'folder',
+    component: Pan,
+  },
+  {
+    path: '/calc',
+    name: 'calc',
+    component: Calc,
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/pan',
   },
 ]
 

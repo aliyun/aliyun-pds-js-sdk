@@ -1,4 +1,3 @@
-tests/web/mocha.js
-tests/web/mocha.css 
-
+/dist/
+examples/vue/components.d.ts
 *.min.js

@@ -1,40 +1,61 @@
-/** @format */
-
-const assert = require('assert')
-import {join} from 'path'
-import {PDSClient} from './index'
-const {getClient} = require('./token-util')
-
-const PATH_TYPE = 'StandardMode'
+import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
+import {delay} from '../../lib/utils/HttpUtil'
+import {getClient, createTestFolder} from './util/token-util'
+import {getTestVideoFile, getTestAudioFile} from './util/file-util'
 
 describe('file_ext', function () {
-  this.timeout(60 * 1000)
   let domainId: string
   let drive_id: string
-  let client: PDSClient
+  let client
+  let test_folder_name = 'test-ext-folder'
+  let test_folder
+  beforeAll(async () => {
+    client = await getClient()
+    drive_id = client.token_info?.default_drive_id || ''
+    domainId = client.token_info?.domain_id || ''
 
-  this.beforeAll(async () => {
-    client = await getClient(PATH_TYPE)
-    drive_id = client.token_info.default_drive_id
-    domainId = client.token_info.domain_id
+    test_folder = await createTestFolder(client, {
+      drive_id,
+      parent_file_id: 'root',
+      name: test_folder_name,
+    })
+    console.log('所有测试在此目录下进行：', test_folder)
+  })
+
+  afterAll(async () => {
+    client = await getClient()
+    drive_id = client.token_info?.default_drive_id || ''
+
+    await client.deleteFile(
+      {
+        drive_id,
+        file_id: test_folder.file_id,
+      },
+      true,
+    )
+
+    console.log('删除测试目录')
   })
 
   it('office', async () => {
     // 清理
     const {items: fileItems = []} = await client.listFiles({
       drive_id,
-      parent_file_id: 'root',
+      parent_file_id: test_folder.file_id,
     })
+    console.log('--batchDeleteFiles')
     await client.batchDeleteFiles(fileItems, true)
+    console.log('--saveFileContent')
 
     const fileRes = await client.saveFileContent({
       drive_id,
-      parent_file_id: 'root',
+      parent_file_id: test_folder.file_id,
       type: 'file',
       name: '文本文档.txt',
       content_type: 'text/plain',
       size: 0,
     })
+    console.log('--getOfficePreviewUrl')
 
     // 预览
     const preRes = await client.getOfficePreviewUrl({
@@ -43,7 +64,8 @@ describe('file_ext', function () {
       allow_copy: true,
       // parent_file_id: fileRes.parent_file_id,
     })
-    assert.ok(preRes.preview_url)
+    expect(!!preRes.preview_url).toBe(true)
+    console.log('--getOfficeEditUrl')
 
     // 编辑
     const editRes = await client.getOfficeEditUrl({
@@ -51,60 +73,85 @@ describe('file_ext', function () {
       file_id: fileRes.file_id,
       // parent_file_id: fileRes.parent_file_id,
     })
-    assert.ok(editRes.edit_url)
+    expect(!!editRes.edit_url).toBe(true)
+    console.log('--refreshOfficeEditToken')
 
     // 刷新
     const refreshRes = await client.refreshOfficeEditToken({
       office_access_token: editRes.office_access_token,
       office_refresh_token: editRes.office_refresh_token,
     })
-    assert.ok(refreshRes.office_access_token)
+    expect(!!refreshRes.office_access_token).toBe(true)
 
     // 清理
-    const {items = []} = await client.listFiles({
+    console.log('--listFiles')
+
+    const {items: fileItems2 = []} = await client.listFiles({
       drive_id,
-      parent_file_id: 'root',
+      parent_file_id: test_folder.file_id,
     })
-    await client.batchDeleteFiles(fileItems, true)
+    await client.batchDeleteFiles(fileItems2, true)
   })
 
   it('video preview', async () => {
-    const localPath = join(__dirname, 'resources/video-test.mov')
-    let cp = await client.uploadFile(localPath, {
+    let f = await getTestVideoFile()
+    console.log('---------f', f)
+
+    let cp = await client.uploadFile(f, {
       drive_id,
-      parent_file_id: 'root',
+      parent_file_id: test_folder.file_id,
     })
+    console.log('----------', cp)
+
+    await delay(1000)
 
     // 视频预览
-    const preRes = await client.getVideoUrlFromDefinition({
+    let preRes = await client.getVideoPreviewPlayMeta({
       drive_id,
-      file_id: cp.file_key,
-      // parent_file_id: 'root',
+      file_id: cp.file_id,
+      category: 'live_transcoding',
+      // get_without_url: true
+      // parent_file_id: test_folder.file_id,
     })
-    console.log('------', preRes)
-    assert(preRes.video_preview_play_info.category == 'live_transcoding')
+
+    console.log('-----------preRes---', preRes)
+
+    // 视频预览
+    preRes = await client.getVideoUrlFromDefinition({
+      drive_id,
+      file_id: cp.file_id,
+      category: 'live_transcoding',
+
+      get_without_url: true,
+      // parent_file_id: test_folder.file_id,
+    })
+    console.log('-----------preRes2---', preRes)
+
+    expect(preRes.video_preview_play_info?.category).toBe('live_transcoding')
   })
 
   it('audio preview', async () => {
-    const localPath = join(__dirname, 'resources/audio-test.mp3')
-    let cp = await client.uploadFile(localPath, {
-      drive_id,
-      parent_file_id: 'root',
-    })
+    let f = await getTestAudioFile()
+    console.log('----------ff', f)
 
+    let cp = await client.uploadFile(f, {
+      drive_id,
+      parent_file_id: test_folder.file_id,
+    })
+    console.log('----------', cp)
     // 音频预览
     const preRes = await client.getAudioUrlFromDefinition({
       drive_id,
       file_id: cp.file_key,
       audio_template_id: 'LQ',
     })
-    assert(preRes.code == 'VideoPreviewWaitAndRetry' || preRes.preview_url)
+    expect(preRes.code == 'VideoPreviewWaitAndRetry' || !!preRes.preview_url).toBe(true)
   })
 
   it('archive files', async () => {
     let folder = await client.createFolder({
       drive_id,
-      parent_file_id: 'root',
+      parent_file_id: test_folder.file_id,
       name: '下载test文件夹',
     })
 
@@ -117,9 +164,9 @@ describe('file_ext', function () {
     }
     const {items = []} = await client.listFiles({
       drive_id,
-      parent_file_id: folder.file_id,
+      parent_file_id: folder.file_id || '',
     })
-    assert(items.length == 3)
+    expect(items.length).toBe(3)
 
     // 打包
     const data = {
@@ -133,12 +180,12 @@ describe('file_ext', function () {
     }
     const packRes = await client.archiveFiles(data)
 
-    assert.ok(packRes.async_task_id)
+    expect(!!packRes.async_task_id).toBe(true)
     const packRes2 = await client.pollingArchiveFiles(data)
 
-    assert.ok(packRes2.async_task_id)
-    assert.ok(packRes2.state === 'Succeed')
-    assert.ok(packRes2.url)
+    expect(!!packRes2.async_task_id).toBe(true)
+    expect(packRes2.state).toBe('Succeed')
+    expect(!!packRes2.url).toBe(true)
 
     await client.batchDeleteFiles([folder], true)
   })

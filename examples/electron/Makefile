@@ -1,10 +1,10 @@
-ELECTRON_BUILDER_BINARIES_MIRROR=https://npm.taobao.org/mirrors/electron-builder-binaries/
-ELECTRON_MIRROR=https://npm.taobao.org/mirrors/electron/ 
+ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/
+ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ 
 
 i:
-	ELECTRON_MIRROR=$(ELECTRON_MIRROR) ELECTRON_BUILDER_BINARIES_MIRROR=$(ELECTRON_BUILDER_BINARIES_MIRROR) npm i
+	ELECTRON_MIRROR=$(ELECTRON_MIRROR) ELECTRON_BUILDER_BINARIES_MIRROR=$(ELECTRON_BUILDER_BINARIES_MIRROR) npm i  --registry=https://registry.npmmirror.com
 run:
-	npm start
+	DEBUG=PDS* npm start
 	
 clean:
 	rm -rf node_modules package-lock.json

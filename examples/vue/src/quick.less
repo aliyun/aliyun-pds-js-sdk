@@ -1,0 +1,150 @@
+.h-100 {
+  height: 100%;
+}
+.w-100 {
+  width: 100%;
+}
+.hv-100 {
+  height: 100vh;
+}
+.wv-100 {
+  width: 100vh;
+}
+.d-block {
+  display: block;
+}
+.d-flex {
+  display: flex;
+}
+.d-inline-block {
+  display: inline-block;
+}
+.d-inline {
+  display: inline;
+}
+.d-none {
+  display: none;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+.flex-1 {
+  flex: 1;
+}
+.left {
+  float: left;
+}
+.right {
+  float: right;
+}
+.break-all {
+  word-break: break-all;
+}
+.keep-all {
+  word-break: keep-all;
+}
+.pointer {
+  cursor: pointer;
+}
+.text-w {
+  font-family: 'Lucida Console', Consolas, 'Courier New', Courier, monospace;
+}
+.text-truncate {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.text-through {
+  text-decoration: line-through;
+}
+.text-center {
+  text-align: center;
+}
+.align-center {
+  align-items: center;
+}
+.justify-center {
+  justify-content: center;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.justify-around {
+  justify-content: space-around;
+}
+.justify-start {
+  justify-content: start;
+}
+.justify-end {
+  justify-content: end;
+}
+.fixed {
+  position: fixed;
+}
+.absolute {
+  position: absolute;
+}
+.relative {
+  position: relative;
+}
+@media (max-width: 769px) {
+  .hidden-sm-and-down {
+    display: none;
+  }
+}
+
+.loop(@counter) when (@counter > -20) {
+  .p-@{counter} {
+    padding: (1px * @counter);
+  }
+  .px-@{counter} {
+    padding-left: (1px * @counter);
+    padding-right: (1px * @counter);
+  }
+  .py-@{counter} {
+    padding-top: (1px * @counter);
+    padding-bottom: (1px * @counter);
+  }
+  .pt-@{counter} {
+    padding-top: (1px * @counter);
+  }
+  .pr-@{counter} {
+    padding-right: (1px * @counter);
+  }
+  .pb-@{counter} {
+    padding-bottom: (1px * @counter);
+  }
+  .pl-@{counter} {
+    padding-left: (1px * @counter);
+  }
+  .m-@{counter} {
+    margin: (1px * @counter);
+  }
+  .mx-@{counter} {
+    margin-left: (1px * @counter);
+    margin-right: (1px * @counter);
+  }
+  .my-@{counter} {
+    margin-top: (1px * @counter);
+    margin-bottom: (1px * @counter);
+  }
+  .mt-@{counter} {
+    margin-top: (1px * @counter);
+  }
+  .mr-@{counter} {
+    margin-right: (1px * @counter);
+  }
+  .mb-@{counter} {
+    margin-bottom: (1px * @counter);
+  }
+  .ml-@{counter} {
+    margin-left: (1px * @counter);
+  }
+  .font-@{counter} {
+    font-size: (1px * @counter);
+  }
+  .loop((@counter - 1)); // 递归调用自身
+}
+
+.loop(100);

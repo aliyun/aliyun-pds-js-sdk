@@ -1,27 +1,23 @@
-/** @format */
+import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
 
-const assert = require('assert')
-import {fs} from '../../src/context/NodeContext'
-import {PDSClient} from './index'
+import {IParentFolderNameId} from '../../lib/client/api_file'
+import {getClient, PDSClient} from './util/token-util'
+import Config from './config/conf.js'
+import {mockFile} from './util/file-util'
 
-const path = require('path')
-const {getClient} = require('./token-util')
-const Config = require('./conf.js')
-const PATH_TYPE = 'StandardMode'
+const isWeb = typeof window == 'object'
 
 describe('ShareLink', function () {
-  this.timeout(60000)
+  let {api_endpoint, drive_id} = Config
 
-  let {api_endpoint, drive_id} = Config.domains[PATH_TYPE]
-
-  let client: PDSClient
+  let client
 
   let file_id
   let folder_id
-  let breadArr = []
+  let breadArr: Omit<IParentFolderNameId, 'parent_file_id'>[] = []
 
-  this.beforeAll(async () => {
-    client = await getClient(PATH_TYPE)
+  beforeAll(async () => {
+    client = await getClient()
 
     folder_id = await client.createFolders(['aa', 'bb', 'cc'], {drive_id, parent_file_id: 'root'})
 
@@ -39,9 +35,10 @@ describe('ShareLink', function () {
 
     breadArr = await client.getBreadcrumbFolderList({drive_id, file_id: folder_id})
     // [{file_id, name }]
+    // console.log('breadArr:', breadArr)
   })
-  this.afterAll(async () => {
-    await client.deleteFile({drive_id, file_id: breadArr[0].file_id}, true)
+  afterAll(async () => {
+    await client.deleteFile({drive_id, file_id: breadArr[0].file_id || ''}, true)
   })
 
   // 创建分享
@@ -54,13 +51,13 @@ describe('ShareLink', function () {
       share_pwd: '',
     })
     let share_id = result.share_id
-    assert.ok(share_id, 'createShareLink')
+    expect(!!share_id).toBe(true)
 
     let item = await client.getShareLinkByAnonymous({share_id})
-    assert(item.share_name)
+    expect(!!item.share_name).toBe(true)
 
     let {share_token} = await client.getShareToken({share_id})
-    assert(share_token)
+    expect(!!share_token).toBe(true)
 
     let newClient = new PDSClient({
       api_endpoint,
@@ -70,9 +67,9 @@ describe('ShareLink', function () {
       {share_id, parent_file_id: 'root'},
       {headers: {'x-share-token': share_token}},
     )
-    assert(items.length == 1)
-    assert(items[0].file_id == file_id)
-    assert(items[0].share_id == share_id)
+    expect(items.length).toBe(1)
+    expect(items[0].file_id).toBe(file_id)
+    expect(items[0].share_id).toBe(share_id)
 
     await client.cancelShareLink({
       share_id,
@@ -90,10 +87,10 @@ describe('ShareLink', function () {
       share_pwd,
     })
     let share_id = result.share_id
-    assert.ok(result.share_id, 'createShareLink')
+    expect(!!result.share_id).toBe(true)
 
     let {share_token} = await client.getShareToken({share_id, share_pwd})
-    assert(share_token)
+    expect(!!share_token).toBe(true)
 
     let newClient = new PDSClient({
       api_endpoint,
@@ -103,9 +100,9 @@ describe('ShareLink', function () {
       {share_id, parent_file_id: 'root'},
       {headers: {'x-share-token': share_token}},
     )
-    assert(items.length == 1)
-    assert(items[0].file_id == file_id)
-    assert(items[0].share_id == share_id)
+    expect(items.length).toBe(1)
+    expect(items[0].file_id).toBe(file_id)
+    expect(items[0].share_id).toBe(share_id)
 
     await client.cancelShareLink({
       share_id,
@@ -124,18 +121,18 @@ describe('ShareLink', function () {
     let share_id = info.share_id
 
     const result1 = await client.listShareLinks()
-    assert.ok(result1.items.length, 'listShareLinks')
+    expect(result1.items.length).toBeGreaterThan(0)
 
     const result2 = await client.listShareLinks({
-      creator: client.token_info.user_id,
+      creator: client.token_info?.user_id,
       marker: '',
     })
-    assert.ok(result2.items.length, 'listShareLinks')
+    expect(result2.items.length).toBeGreaterThan(0)
 
     const result3 = await client.searchShareLinks({
       marker: '',
     })
-    assert.ok(result3.items.length > 0, 'searchShareLinks')
+    expect(result3.items.length).toBeGreaterThan(0)
 
     await client.cancelShareLink({
       share_id,
@@ -144,30 +141,30 @@ describe('ShareLink', function () {
 
   // 查看分享
   it('list files of shareLink', async () => {
-    let folder_id_2 = breadArr[1].file_id
-    let folder_id_3 = breadArr[2].file_id
+    let folder_id_2 = breadArr[1].file_id || ''
+    let folder_id_3 = breadArr[2].file_id || ''
     const result = await client.createShareLink({
       description: '',
       drive_id,
       expiration: new Date(Date.now() + 3600 * 1000),
-      file_id_list: [folder_id_2],
+      file_id_list: [folder_id_2], // bb
       share_pwd: '',
     })
     let share_id = result.share_id
-    assert.ok(share_id, 'createShareLink')
+    expect(!!share_id).toBe(true)
 
     const getInfo = await client.getShareLink({
       share_id,
     })
 
-    assert.ok(share_id == getInfo.share_id, 'getShareLink')
-    assert.ok(getInfo.file_id_list[0] == folder_id_2, 'getShareLink')
+    expect(share_id).toBe(getInfo.share_id)
+    expect(getInfo.file_id_list?.[0]).toBe(folder_id_2)
 
     let item = await client.getShareLinkByAnonymous({share_id})
-    assert(item.share_name)
+    expect(!!item.share_name).toBe(true)
 
     let {share_token} = await client.getShareToken({share_id})
-    assert(share_token)
+    expect(!!share_token).toBe(true)
 
     let newClient = new PDSClient({
       api_endpoint,
@@ -178,18 +175,18 @@ describe('ShareLink', function () {
       {headers: {'x-share-token': share_token}},
     )
 
-    assert(items.length == 1)
-    assert(items[0].file_id == folder_id_2)
-    assert(items[0].share_id == share_id)
+    expect(items.length).toBe(1)
+    expect(items[0].file_id).toBe(folder_id_2)
+    expect(items[0].share_id).toBe(share_id)
 
     // 面包屑
     let bread = await newClient.getBreadcrumbFolderList(
       {share_id, file_id: folder_id_3},
       {headers: {'x-share-token': share_token}},
     )
-    assert(bread.length == 2)
-    assert(bread[0].name == 'bb')
-    assert(bread[1].name == 'cc')
+
+    expect(bread.length).toBe(2)
+    expect(bread[0].name).toBe('bb')
 
     await client.cancelShareLink({
       share_id,
@@ -209,30 +206,31 @@ describe('ShareLink', function () {
       creatable_file_id_list: [folder_id],
     })
     let share_id = result.share_id
-    assert.ok(share_id, 'createUploadShareLink')
+    expect(!!share_id).toBe(true)
 
     let item = await client.getShareLinkByAnonymous({share_id})
-    assert(item.share_name)
+    expect(!!item.share_name).toBe(true)
 
     let {share_token} = await client.getShareToken({share_id})
-    assert(share_token)
+    expect(!!share_token).toBe(true)
 
     let newClient = new PDSClient({
       api_endpoint,
       share_token,
     })
-
     let file_name = 'tmp-sharelink-upfile.txt'
-    let up_file = path.join(__dirname, 'tmp', file_name)
-    fs.writeFileSync(up_file, 'abc')
+    let up_file = await mockFile(file_name, 'abc', 'text/plain')
 
-    let {file_id: up_file_id} = await newClient.uploadFile(up_file, {share_id, parent_file_id: folder_id})
+    let {file_id: up_file_id} = await newClient.uploadFile(up_file, {
+      share_id,
+      parent_file_id: folder_id,
+    })
 
     let {items = []} = await newClient.listFiles({share_id, parent_file_id: folder_id})
-    assert(items.length == 2)
-    assert(items[0].file_id == up_file_id)
-    assert(items[0].share_id == share_id)
-    assert(items[0].name == file_name)
+    expect(items.length).toBe(2)
+    expect(items[0].file_id).toBe(up_file_id)
+    expect(items[0].share_id).toBe(share_id)
+    expect(items[0].name).toBe(file_name)
 
     await client.cancelShareLink({
       share_id,
