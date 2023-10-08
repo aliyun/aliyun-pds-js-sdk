@@ -34,9 +34,6 @@ async function callRetry(func: Function, binding: any, arr: Array<any>, opt: ICa
           continue
         }
       } else {
-        if (e.response?.data?.message) {
-          e.message = e.response.data.message
-        }
         throw e
       }
     }

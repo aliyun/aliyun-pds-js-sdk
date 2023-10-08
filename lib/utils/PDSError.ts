@@ -27,22 +27,12 @@ class PDSError extends Error implements IPDSError {
     // let initErr = typeof err == 'string' ? err : err
     let obj: IPDSError = initFields(err, customCode, status, reqId)
     let msg: string = obj.message
-
     super(msg)
     this.name = 'PDSError'
     // make instanceof effact:  assert(e instanceof PDSError)
     Object.setPrototypeOf(this, PDSError.prototype)
     Object.assign(this, obj)
   }
-  toString() {
-    return getMessage(this)
-  }
-}
-
-function getMessage(obj: IPDSError): string {
-  return `[${obj.type}]${obj.status ? '[' + obj.status + '] ' : ''}${obj.code}:${obj.message}${
-    obj.reqId ? ' [requestId]:' + obj.reqId : ''
-  }`
 }
 
 function initFields(
@@ -156,4 +146,4 @@ function parseErrorXML(str: string): {code?: string; message: string; reqId?: st
   return {code, message, reqId}
 }
 export type {IPDSError}
-export {PDSError, initAxiosError, initFields, getMessage, parseErrorXML, parseErrorData}
+export {PDSError, initAxiosError, initFields, parseErrorXML, parseErrorData}
