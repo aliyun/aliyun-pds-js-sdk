@@ -12,8 +12,9 @@
 * 增加上传前 preCheck 重名方法：preCreateCheck 和 batchCheckFileExists。 check_name_mode 扩展支持: skip, overwrite。
 * examples/vue 增加基本云盘 demo 功能演示，  examples/electron 增加基本桌面客户端功能演示。
 * node.js 计算 sha1 和 crc64 去掉了child_process 模式。因为不推荐在render进程直接使用 node sdk，应该在main 或者main fork的子进程中使用。 web版不再使用 wasm 计算 sha1，直接用 js-sha1。
-* groupMember 相关接口:  addGroupMember, ListGroupMember, RemoveGroupMember。用来替换 membership 相关接口。
+* 新增 groupMember 相关接口:  addGroupMember, ListGroupMembers, RemoveGroupMember。用来替换 membership 相关接口。
 * createAccountLink 不再推荐使用， 推荐改用 linkAccount， 和API文档对齐。增加 unlinkAccount。
+* 新增 role 相关接口: assignRole, cancelAssignRole, listAssignments。
 * 修改 getJwtToken 接口，iat和exp 签名时间扩展为当前时间的前后5分钟。
 * 暴露 getVideoPreviewPlayInfo 和 getVideoPreviewPlayMeta 原始接口。
 * 增加 restoreFileRevision 接口。

@@ -54,11 +54,57 @@ describe('Group', function () {
         group_id: groupInfo.group_id,
       })
 
-      await delay(5000)
+      await delay(2000)
 
-      console.log('-------listGroupMember')
+      console.log('-------assignRole')
 
-      const result = await client.listGroupMember({
+      let res = await client.assignRole({
+        identity: {
+          identity_type: 'IT_User',
+          identity_id: client.token_info?.user_id,
+        },
+        role_id: 'SystemGroupAdmin',
+        manage_resource_type: 'RT_Group',
+        manage_resource_id: groupInfo.group_id,
+      })
+      console.log(res, '<--------返回')
+      await delay(2000)
+
+      let {assignment_list = []} = await client.listAssignments({
+        limit: 100,
+        manage_resource_type: 'RT_Group',
+        manage_resource_id: groupInfo.group_id,
+      })
+      expect(assignment_list.length).toBeGreaterThan(0)
+
+      console.log('-------cancelAssignRole')
+
+      await client.cancelAssignRole({
+        identity: {
+          identity_type: 'IT_User',
+          identity_id: client.token_info?.user_id,
+        },
+        role_id: 'SystemGroupAdmin',
+        manage_resource_type: 'RT_Group',
+        manage_resource_id: groupInfo.group_id,
+      })
+
+      await delay(2000)
+
+      console.log('-------listAssignments')
+
+      let {assignment_list: assignment_list2 = []} = await client.listAssignments({
+        limit: 100,
+        manage_resource_type: 'RT_Group',
+        manage_resource_id: groupInfo.group_id,
+      })
+      console.log(assignment_list2, '<----list_res')
+      assignment_list2 = assignment_list2 || []
+      expect(assignment_list2.length).toBe(0)
+
+      console.log('-------listGroupMembers')
+
+      const result = await client.listGroupMembers({
         member_type: 'user',
         group_id: groupInfo.group_id,
         limit: 100,
@@ -74,7 +120,7 @@ describe('Group', function () {
         group_id: groupInfo.group_id,
       })
 
-      const result2 = await client.listGroupMember({
+      const result2 = await client.listGroupMembers({
         member_type: 'user',
         group_id: groupInfo.group_id,
         limit: 100,

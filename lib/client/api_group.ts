@@ -1,5 +1,5 @@
 import {IContextExt, IClientParams, IPDSRequestConfig, IListReq, IListRes} from '../Types'
-import {IMembershipReq, PDSMembershipApiClient} from './api_membership'
+import {IMembershipReq, TMemberType, PDSMembershipApiClient} from './api_membership'
 import {IUserItem} from './api_user'
 
 export class PDSGroupApiClient extends PDSMembershipApiClient {
@@ -44,7 +44,7 @@ export class PDSGroupApiClient extends PDSMembershipApiClient {
 
   // 列举一个 group 下的所有子 group或user,
   /**
-   * @deprecated Please use listGroupMember instead
+   * @deprecated Please use listGroupMembers instead
    * @param data
    * @param options
    * @returns
@@ -83,11 +83,11 @@ export class PDSGroupApiClient extends PDSMembershipApiClient {
     return this.postAPI<any>('/group/remove_member', data, options)
   }
 
-  listGroupMember(
-    data: IListReq & {group_id: string; member_type?: string},
+  listGroupMembers(
+    data: IListReq & {group_id: string; member_type?: TMemberType},
     options?: IPDSRequestConfig,
-  ): Promise<IListGroupMemberRes> {
-    return this.postAPI<IListGroupMemberRes>('/group/list_member', data, options)
+  ): Promise<IListGroupMembersRes> {
+    return this.postAPI<IListGroupMembersRes>('/group/list_member', data, options)
   }
 }
 
@@ -125,7 +125,7 @@ export interface IGroupItem {
   creator?: string
 }
 
-export interface IListGroupMemberRes {
+export interface IListGroupMembersRes {
   next_marker?: string
   user_items?: IUserItem[]
   group_items?: IGroupItem[]
