@@ -69,6 +69,6 @@ export interface IMembershipItem {
   member_type: TMemberType
   member_role: TMemberRole
   description: string
-  created_at: Date
-  updated_at: Date
+  created_at: number
+  updated_at: number
 }

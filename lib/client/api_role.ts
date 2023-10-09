@@ -43,7 +43,7 @@ export interface IAssignment {
   manage_resource_type?: 'RT_Group' | string // 管理的资源类型，当前仅支持： RT_Group，查询某群组的管理员授权列表
   manage_resource_id?: string // 管理的资源ID，比如群组的ID
   creator?: string
-  created_at?: Date
+  created_at?: number
 }
 export interface IListAssignmentsRes {
   assignment_list: IAssignment[]

@@ -144,7 +144,7 @@ export interface IDriveItem {
   // encrypt_mode?: string
   // encrypt_data_access?: string
 
-  created_at: Date
+  created_at: string
   creator?: string
 
   // action_list?: string[]

@@ -119,8 +119,8 @@ export interface IGroupItem {
   group_id: string
   group_name: string
   description?: string
-  created_at: Date
-  updated_at?: Date
+  created_at: number
+  updated_at?: number
   permission?: any
   creator?: string
 }

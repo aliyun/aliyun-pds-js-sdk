@@ -117,7 +117,7 @@ export interface IUpdateUserReq {
 
 export interface IUserItem {
   avatar?: string // ''
-  created_at?: Date // 1637115816804
+  created_at?: number // 1637115816804
   default_drive_id?: string //'10620'
 
   description?: string // ''
@@ -129,7 +129,7 @@ export interface IUserItem {
   role: TUserRole
   status: TUserStatus
 
-  updated_at?: Date // 1637116004105
+  updated_at?: number // 1637116004105
 
   user_id: string //'152dc494d4094d848f8adc65b91b651f'
   user_name?: string //'王'

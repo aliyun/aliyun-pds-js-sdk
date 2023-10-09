@@ -101,9 +101,9 @@ export interface IAsyncTaskRes {
 
   url?: string
 
-  created_at?: Date
-  started_at?: Date
-  finished_at?: Date
+  created_at?: string
+  started_at?: string
+  finished_at?: string
 
   /**
    * @deprecated use error_message instead

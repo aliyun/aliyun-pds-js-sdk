@@ -69,7 +69,7 @@ export interface IUpdateShareLinkReq {
   share_id?: string
   share_pwd?: string
   share_name?: string
-  expiration?: Date
+  expiration?: string
   description?: string
   // comments?: string
   status?: string
@@ -103,7 +103,7 @@ export interface ICreateShareLinkReq {
 
   share_pwd?: string // 提取码。 提取码长度范围[0, 64]字节 不设置或者设置为空表示无提取码，在获取分享令牌的时候也不用设置提取码参数。 要求使用ASCII可见字符。
   share_name?: string // 分享名。 如果未设置，默认使用file_id_list中的第一个id对应的文件名。 长度范围[0, 128]字符
-  expiration?: Date // 失效时间点。 RFC3339格式，比如："2020-06-28T11:33:00.000+08:00"。 当expiration取值""时，表示永久有效
+  expiration?: string // 失效时间点。 RFC3339格式，比如："2020-06-28T11:33:00.000+08:00"。 当expiration取值""时，表示永久有效
   description?: string // 分享描述。 长度范围[0, 1024]字符
   // comments?: string
   share_icon?: string
@@ -126,7 +126,7 @@ export interface ICreateShareLinkReq {
 }
 
 export interface IShareToken {
-  expire_time?: Date
+  expire_time?: string
   expires_in?: number
   share_token: string
 }
@@ -144,7 +144,7 @@ export interface IAnonymousShareLinkItem {
   download_count?: number
   download_limit?: number
   enable_upload?: boolean
-  expiration?: Date
+  expiration?: string
   preview_limit?: number
   preview_count?: number
   require_login?: boolean
@@ -152,7 +152,7 @@ export interface IAnonymousShareLinkItem {
   share_name?: string
   save_count?: number
   save_limit?: number
-  updated_at?: Date
+  updated_at?: string
   report_count?: number
   video_preview_count?: number
   [key: string]: any
@@ -161,7 +161,7 @@ export interface IAnonymousShareLinkItem {
 // 分享item
 export interface IShareLinkItem {
   access_count?: number // 访问次数
-  created_at?: Date // "2021-11-23T03:52:22.352Z"
+  created_at?: string // "2021-11-23T03:52:22.352Z"
   creator?: string //'2b9dc96336bf4fe08e69f25985a93d86'
   description?: string //''
   download_count?: number // 0
@@ -170,7 +170,7 @@ export interface IShareLinkItem {
   disable_preview?: boolean
   disable_save?: boolean
   drive_id?: string //'2030'
-  expiration?: Date //'2021-11-30T03:50:33.664Z'
+  expiration?: string //'2021-11-30T03:50:33.664Z'
   expired?: boolean // false
   file_id?: string //'617b96d512f5ef997f23435297f882b1bc1c58fc'
   file_id_list?: string[] // ['617b96d512f5ef997f23435297f882b1bc1c58fc']
@@ -192,7 +192,7 @@ export interface IShareLinkItem {
   share_pwd?: string //''
   share_url?: string //''
   status: 'enabled' | 'disabled' //'enabled'
-  updated_at: Date //'2021-11-23T03:52:22.352Z'
+  updated_at: string //'2021-11-23T03:52:22.352Z'
 
   video_preview_count?: number
   [key: string]: any

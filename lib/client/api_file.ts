@@ -822,7 +822,7 @@ export interface IFileItem {
   content_hash_name?: string
   content_type?: string
   crc64_hash?: string
-  created_at?: Date
+  created_at?: string
   creator_id?: string
   creator_type?: string
   description?: string
@@ -868,13 +868,13 @@ export interface IFileItem {
   thumbnail?: string
   trashed?: boolean
   upload_id?: string
-  updated_at?: Date
+  updated_at?: string
   url?: string
 
   user_tags?: {[key: string]: string}
 
   thumbnail_urls?: {[key: string]: string}
-  
+
   [propName: string]: any
 }
 
@@ -959,7 +959,7 @@ export interface ICreateFileReq {
   file_id?: string
   hidden?: boolean
   labels?: string[]
-  last_updated_at?: Date
+  last_updated_at?: string
   meta?: string
   name: string
   part_info_list?: any[]
@@ -1114,7 +1114,7 @@ export interface IGetFileDownloadUrlReq extends IFileKey {
   revision_id?: string //指定版本ID
 }
 export interface IGetFileDownloadUrlRes {
-  expiration: Date
+  expiration: string
   method: TMethod
   url: string
 
