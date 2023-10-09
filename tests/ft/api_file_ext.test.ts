@@ -105,6 +105,20 @@ describe('file_ext', function () {
 
     await delay(1000)
 
+    let info = await client.getFile({
+      drive_id,
+      file_id: cp.file_id,
+      thumbnail_processes: {
+        '480X480': {
+          video_thumbnail_process: 'video/snapshot,t_1000,f_jpg,m_fast,ar_auto,h_0,w_480',
+        },
+      },
+    })
+    // console.log('---info', info)
+    expect(info.thumbnail_urls['480X480']).toContain('https://')
+
+    await delay(1000)
+
     // 视频预览
     let preRes = await client.getVideoPreviewPlayMeta({
       drive_id,

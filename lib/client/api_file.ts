@@ -873,9 +873,21 @@ export interface IFileItem {
 
   user_tags?: {[key: string]: string}
 
+  thumbnail_urls?: {[key: string]: string}
+  
   [propName: string]: any
 }
 
+export interface IThumbnailProcessItem {
+  image_thumbnail_process?: string // 图片类型文件的缩略图规则，参考OSS的图片处理规则。默认为：image/resize,m_fill,h_128,w_128,limit_0
+  video_thumbnail_process?: string // 视频类型文件的缩略图规则，参考OSS的视频截帧处理规则。默认为：video/snapshot,t_1000,f_jpg,w_0,h_0,m_fast,ar_auto
+  office_thumbnail_process?: string // 文档类型文件的缩略图规则，文档类型的文件会选择文档中一页的截图作为原图，此参数是基于该截图来做处理。默认为：image/resize,m_fill,h_128,w_128,limit_0
+}
+// 按分辨率缩略图配置
+export interface IThumbnailProcessItemMap {
+  // definition 可以为自定义string， 如 '480X480': {...}
+  [definition: string]: IThumbnailProcessItem
+}
 // 列举文件或文件夹
 export interface IListFileReq {
   all?: boolean
@@ -883,16 +895,13 @@ export interface IListFileReq {
   share_id?: string
 
   fields?: string // *
+
   image_thumbnail_process?: string
   image_url_process?: string
   url_expire_sec?: number // 900
   video_thumbnail_process?: string
 
-  thumbnail_processes?: {
-    image_thumbnail_process?: string // 图片类型文件的缩略图规则，参考OSS的图片处理规则。默认为：image/resize,m_fill,h_128,w_128,limit_0
-    video_thumbnail_process?: string // 视频类型文件的缩略图规则，参考OSS的视频截帧处理规则。默认为：video/snapshot,t_1000,f_jpg,w_0,h_0,m_fast,ar_auto
-    office_thumbnail_process?: string // 文档类型文件的缩略图规则，文档类型的文件会选择文档中一页的截图作为原图，此参数是基于该截图来做处理。默认为：image/resize,m_fill,h_128,w_128,limit_0
-  }
+  thumbnail_processes?: IThumbnailProcessItemMap
 
   limit?: number
   marker?: string
@@ -1012,6 +1021,8 @@ export interface ISearchFileReq {
   image_url_process?: string
   video_thumbnail_process?: string
 
+  thumbnail_processes?: IThumbnailProcessItemMap
+
   // sign_token?: string
   return_total_count?: boolean //是否返回查询总数   默认值：false
 }
@@ -1083,6 +1094,7 @@ export interface IGetFileReq extends IFileKey {
   image_thumbnail_process?: string
   image_url_process?: string
 
+  thumbnail_processes?: IThumbnailProcessItemMap
   // 不throw
   donot_emit_notfound?: boolean
 }
