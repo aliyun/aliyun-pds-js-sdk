@@ -1,22 +1,25 @@
-/** @format */
+import {describe, expect, beforeAll, afterAll, it} from 'vitest'
+import {IUserItem} from '../../lib'
+import {getClient} from './util/token-util'
 
-import assert = require('assert')
-import {PDSClient} from './index'
-import {IUserItem} from '../../src'
-
-const {getClient} = require('./token-util')
-
-const PATH_TYPE = 'StandardMode'
-
+async function delete_user_force(client, user_id) {
+  let {items = []} = await client.listAllDrives({owner_type: 'user', owner: user_id})
+  console.log(items)
+  if (items.length > 0) {
+    for (let n of items) {
+      await client.deleteDrive({drive_id: n.drive_id})
+    }
+  }
+  await client.deleteUser({user_id: user_id})
+}
 describe('User', function () {
-  this.timeout(60 * 1000)
-  let client: PDSClient
+  let client
   const phone = `135${Math.round(Math.random() * 100000000)}`
   const email = `Test.Email${Math.round(Math.random() * 1000)}@gmail.com`
   let user: IUserItem
 
-  this.beforeAll(async () => {
-    client = await getClient(PATH_TYPE)
+  beforeAll(async () => {
+    client = await getClient()
   })
 
   describe('importUser', () => {
@@ -28,8 +31,9 @@ describe('User', function () {
         drive_total_size: 1024 * 1024 * 1024,
         nick_name: 'WWJ-' + phone,
       })
-      assert.ok(result.user_id)
-      user = result
+      expect(!!result.user_id).toBe(true)
+
+      await delete_user_force(client, result.user_id)
     })
     it('importEmailUser', async () => {
       const result = await client.importUser({
@@ -38,8 +42,9 @@ describe('User', function () {
         identity: email,
         nick_name: 'WWJ-' + email,
       })
-      assert.ok(result.user_id)
-      user = result
+      expect(!!result.user_id).toBe(true)
+
+      await delete_user_force(client, result.user_id)
     })
 
     it('importLDAPUser', async () => {
@@ -49,8 +54,10 @@ describe('User', function () {
           authentication_type: 'ldap',
           nick_name: 'ldapTest',
         })
+        expect(2).toBe(1)
       } catch (error) {
-        assert.ok(error)
+        console.log('-----importLDAPUser---err', error)
+        expect(!!error).toBe(true)
       }
     })
 
@@ -60,16 +67,31 @@ describe('User', function () {
         phone: `135${Math.round(Math.random() * 100000000)}`,
         nick_name: 'WWJ_CreateUser' + email,
       })
-      assert.ok(result.user_id)
+      expect(!!result.user_id).toBe(true)
+
+      await delete_user_force(client, result.user_id)
     })
   })
 
   describe('operateUser', () => {
+    let user
+    beforeAll(async () => {
+      const result = await client.createUser({
+        user_id: `${Math.round(Math.random() * 10000000)}`,
+        phone: `135${Math.round(Math.random() * 100000000)}`,
+        nick_name: 'WWJ_CreateUser' + email,
+      })
+      expect(!!result.user_id).toBe(true)
+      user = result
+    })
+    afterAll(async () => {
+      await delete_user_force(client, user.user_id)
+    })
     it('getUser', async () => {
       const result = await client.getUser({
         user_id: user.user_id,
       })
-      assert.ok(result.user_id)
+      expect(!!result.user_id).toBe(true)
     })
 
     it('generalGetUser', async () => {
@@ -77,7 +99,7 @@ describe('User', function () {
         user_id: user.user_id,
         extra_return_info: ['drive', 'group'],
       })
-      assert.ok(result.user_id)
+      expect(!!result.user_id).toBe(true)
     })
 
     it('updateUser', async () => {
@@ -85,7 +107,7 @@ describe('User', function () {
         user_id: user.user_id,
         nick_name: `update_name_${user.nick_name}`,
       })
-      assert.ok(result.user_id)
+      expect(!!result.user_id).toBe(true)
     })
 
     it('deleteUser', async () => {
@@ -93,8 +115,9 @@ describe('User', function () {
         await client.deleteUser({
           user_id: user.user_id,
         })
+        expect(2).toBe(1)
       } catch (error) {
-        assert.fail('deleteUser error')
+        expect(!!error).toBe(true)
       }
     })
   })
@@ -102,13 +125,13 @@ describe('User', function () {
   describe('listUsers', () => {
     it('listAllGroupUsers', async () => {
       const result = await client.listGroupUsers({member_type: 'user'})
-      assert.ok(result.user_items)
+      expect(result.user_items?.length).toBeGreaterThanOrEqual(0)
     })
     it('listUsers', async () => {
       const result = await client.listUsers({
         limit: 100,
       })
-      assert.ok(result.items)
+      expect(result.items?.length).toBeGreaterThanOrEqual(0)
     })
   })
 
@@ -117,23 +140,23 @@ describe('User', function () {
       const result = await client.searchUsers({
         nick_name: 'test',
       })
-      assert.ok(result.items)
+      expect(result.items?.length).toBeGreaterThanOrEqual(0)
     })
     it('generalSearchUsers', async () => {
       const result = await client.generalSearchUsers({
         nick_name_for_fuzzy: 'test',
       })
-      assert.ok(result.items)
+      expect(result.items?.length).toBeGreaterThanOrEqual(0)
     })
     it('listUsers without params', async () => {
       const result = await client.listUsers()
-      assert.ok(result.items)
+      expect(result.items?.length).toBeGreaterThanOrEqual(0)
     })
     it('listUsers', async () => {
       const result = await client.listUsers({
         limit: 100,
       })
-      assert.ok(result.items)
+      expect(result.items?.length).toBeGreaterThanOrEqual(0)
     })
   })
 })

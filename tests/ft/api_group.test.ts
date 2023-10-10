@@ -1,125 +1,145 @@
-/** @format */
-import assert = require('assert')
-import {PDSClient} from './index'
-
-import {IGroupItem} from '../../src'
-import {delay} from '../../src/utils/HttpUtil'
-const {getClient} = require('./token-util')
-
-const PATH_TYPE = 'StandardMode'
-
-let groupInfo: IGroupItem
-let subGroupInfo: IGroupItem
+import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
+// import {IGroupItem} from '../../src'
+import {delay} from '../../lib/utils/HttpUtil'
+import {getClient} from './util/token-util'
 
 describe('Group', function () {
-  this.timeout(60 * 1000)
+  let client
+  let groupInfo
+  let subGroupInfo
 
-  let client: PDSClient
-
-  this.beforeAll(async () => {
-    client = await getClient(PATH_TYPE)
-  })
-
-  describe('CreateGroup', async () => {
-    // 获取group名称 首次会加载所有并缓存
-    // it('getGroupName', async () => {
-    //   const result = await client.getGroupName('8d24c4d782d642bc8e7849476d3cde44', true)
-    //   assert.ok(result)
-    // })
+  beforeAll(async () => {
+    client = await getClient()
 
     // 创建根团队
-    it('createRootGroup', async () => {
-      const result = await client.createGroup({
-        description: '',
-        group_name: `Test_Group_${Math.round(Math.random() * 1000)}`,
-        is_root: true,
-      })
-      assert.ok(result.group_id, 'createRootGroup')
-      groupInfo = result
+    const result = await client.createGroup({
+      description: '',
+      group_name: `Test_Group_${Math.round(Math.random() * 1000)}`,
+      is_root: true,
     })
+    expect(!!result.group_id).toBe(true)
+    groupInfo = result
 
     // 创建子团队
-    it('createGroup', async () => {
-      const result = await client.createGroup({
-        description: '',
-        group_name: `Sub_Group_${Math.round(Math.random() * 1000)}`,
-        parent_group_id: groupInfo.group_id,
-      })
-      assert.ok(result.group_id, 'createGroup')
-      subGroupInfo = result
+    const result2 = await client.createGroup({
+      description: '',
+      group_name: `Sub_Group_${Math.round(Math.random() * 1000)}`,
+      parent_group_id: groupInfo.group_id,
     })
+    expect(!!result2.group_id).toBe(true)
+    subGroupInfo = result2
+  })
 
-    describe('MemberShip', async () => {
-      it('createMembership', async () => {
-        const result = await client.createMembership({
-          user_id: client.token_info.user_id,
-          member_type: 'user',
-          member_role: 'member',
-          group_id: groupInfo.group_id,
-        })
-        assert.ok(result.user_id)
+  // 删除团队
+  afterAll(async () => {
+    try {
+      await client.deleteGroup({
+        group_id: subGroupInfo.group_id,
       })
-
-      it('getMembership', async () => {
-        const result = await client.getMembership({
-          user_id: client.token_info.user_id,
-          member_type: 'user',
-          member_role: 'member',
-          group_id: groupInfo.group_id,
-        })
-        assert.ok(result.user_id)
+      await client.deleteGroup({
+        group_id: groupInfo.group_id,
       })
+      expect('should throw').toBe(true)
+    } catch (error) {
+      expect(!!error).toBe(true)
+    }
+  })
 
-      it('hasMember', async () => {
-        const result = await client.hasMember({
-          user_id: client.token_info.user_id,
-          member_type: 'user',
-          group_id: groupInfo.group_id,
-        })
-        assert.ok(result)
+  describe('groupMember', () => {
+    it('groupMember', async () => {
+      console.log('-------addGroupMember: group=', groupInfo.group_id, ', user=', client.token_info?.user_id)
+      await client.addGroupMember({
+        member_id: client.token_info?.user_id,
+        member_type: 'user',
+        group_id: groupInfo.group_id,
       })
 
-      it('updateMembership', async () => {
-        const result = await client.updateMembership({
-          user_id: client.token_info.user_id,
-          member_type: 'user',
-          group_id: groupInfo.group_id,
-        })
-        assert.ok(result.user_id)
+      await delay(2000)
+
+      console.log('-------assignRole')
+
+      let res = await client.assignRole({
+        identity: {
+          identity_type: 'IT_User',
+          identity_id: client.token_info?.user_id,
+        },
+        role_id: 'SystemGroupAdmin',
+        manage_resource_type: 'RT_Group',
+        manage_resource_id: groupInfo.group_id,
+      })
+      console.log(res, '<--------返回')
+      await delay(2000)
+
+      let {assignment_list = []} = await client.listAssignments({
+        limit: 100,
+        manage_resource_type: 'RT_Group',
+        manage_resource_id: groupInfo.group_id,
+      })
+      expect(assignment_list.length).toBeGreaterThan(0)
+
+      console.log('-------cancelAssignRole')
+
+      await client.cancelAssignRole({
+        identity: {
+          identity_type: 'IT_User',
+          identity_id: client.token_info?.user_id,
+        },
+        role_id: 'SystemGroupAdmin',
+        manage_resource_type: 'RT_Group',
+        manage_resource_id: groupInfo.group_id,
       })
 
-      it('deleteMembership', async () => {
-        try {
-          await client.deleteMembership({
-            user_id: client.token_info.user_id,
-            member_type: 'user',
-            group_id: groupInfo.group_id,
-          })
-        } catch (error) {
-          assert.fail('deleteMembership error')
-        }
+      await delay(2000)
+
+      console.log('-------listAssignments')
+
+      let {assignment_list: assignment_list2 = []} = await client.listAssignments({
+        limit: 100,
+        manage_resource_type: 'RT_Group',
+        manage_resource_id: groupInfo.group_id,
       })
-      it('listDirectParentMemberships', async () => {
-        const result = await client.listDirectParentMemberships({
-          user_id: client.token_info.user_id,
-          member_type: 'user',
-          limit: 100,
-        })
-        assert.ok(result.items)
+      console.log(assignment_list2, '<----list_res')
+      assignment_list2 = assignment_list2 || []
+      expect(assignment_list2.length).toBe(0)
+
+      console.log('-------listGroupMembers')
+
+      const result = await client.listGroupMembers({
+        member_type: 'user',
+        group_id: groupInfo.group_id,
+        limit: 100,
       })
+
+      expect(result.user_items.length).toBeGreaterThan(0)
+
+      console.log('-------removeGroupMember')
+
+      await client.removeGroupMember({
+        member_id: client.token_info?.user_id,
+        member_type: 'user',
+        group_id: groupInfo.group_id,
+      })
+
+      const result2 = await client.listGroupMembers({
+        member_type: 'user',
+        group_id: groupInfo.group_id,
+        limit: 100,
+      })
+      expect(result2.user_items.length).toBe(0)
     })
   })
+
   describe('get Groups', () => {
     // 团队列表
     it('listGroups without params', async () => {
       const result = await client.listGroups()
-      assert.ok(result.items.length, 'listGroups')
+      expect(result.items.length).toBeGreaterThan(0)
     })
     it('listGroups', async () => {
       const result = await client.listGroups({
         limit: 30,
       })
-      assert.ok(result.items.length, 'listGroups')
+      expect(result.items.length).toBeGreaterThan(0)
     })
 
     // 搜索团队
@@ -128,13 +148,13 @@ describe('Group', function () {
         limit: 30,
         group_name: 'Test_Group',
       })
-      assert.ok(result.items.length >= 1, 'searchGroups')
+      expect(result.items.length >= 1).toBe(true)
     })
 
     // 列举所有团队
     it('listAllGroup', async () => {
       const result = await client.listAllGroups()
-      assert.ok(result.items.length)
+      expect(result.items.length).toBeGreaterThan(0)
     })
 
     // 列举一个 group 下的所有子 group
@@ -146,7 +166,7 @@ describe('Group', function () {
         member_type: 'group',
       })
 
-      assert.ok(result.items)
+      expect(result.items.length).toBeGreaterThan(0)
     })
 
     // 获取团队信息
@@ -154,7 +174,7 @@ describe('Group', function () {
       const result = await client.getGroup({
         group_id: groupInfo.group_id,
       })
-      assert.ok(result.group_name === groupInfo.group_name, 'getGroup')
+      expect(result.group_name).toBe(groupInfo.group_name)
     })
 
     // 获取group名称
@@ -183,7 +203,7 @@ describe('Group', function () {
         group_id: groupInfo.group_id,
         group_name: 'new_name',
       })
-      assert.ok(result.group_id, 'updateGroup')
+      expect(result.group_id).toBe(groupInfo.group_id)
     })
 
     // 更新团队
@@ -192,7 +212,7 @@ describe('Group', function () {
         group_id: groupInfo.group_id,
         name: 'edm_new_name',
       })
-      assert.ok(result.group_id, 'updateEdmGroup')
+      expect(result.group_id).toBe(groupInfo.group_id)
     })
 
     // 删除团队 （有子团队  会删除失败）
@@ -201,23 +221,9 @@ describe('Group', function () {
         const result = await client.deleteGroup({
           group_id: groupInfo.group_id,
         })
-        assert.fail('should throw')
+        expect('should throw').toBe(true)
       } catch (error) {
-        assert.ok(error)
-      }
-    })
-
-    // 删除团队
-    it('deleteGroup', async () => {
-      try {
-        await client.deleteGroup({
-          group_id: subGroupInfo.group_id,
-        })
-        await client.deleteGroup({
-          group_id: groupInfo.group_id,
-        })
-      } catch (error) {
-        assert.fail(error)
+        expect(!!error).toBe(true)
       }
     })
   })

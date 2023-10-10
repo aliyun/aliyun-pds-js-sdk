@@ -5,18 +5,20 @@
   "main": "main.js",
   "scripts": {
     "mirror": "npm config set ELECTRON_MIRROR https://npm.taobao.org/mirrors/electron/ && npm config set ELECTRON_BUILDER_BINARIES_MIRROR https://npm.taobao.org/mirrors/electron-builder-binaries/",
-    "start": "ts-node bin/gen-token.js && electron ."
+    "start": "electron ."
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron": "15.5.7",
+    "electron": "22.3.22",
     "ts-node": "^10.4.0"
   },
   "dependencies": {
-    "@electron/remote": "^2.0.5"
+    "@electron/remote": "^2.0.5",
+    "socket.io": "^4.7.2"
   },
   "engines": {
-    "node": "16.5.0"
-  }
+    "node": "16.17.1"
+  },
+  "repository": "git@github.com:aliyun/aliyun-pds-js-sdk.git"
 }

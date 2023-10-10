@@ -1,19 +1,44 @@
 {
-  "name": "vue",
+  "name": "pds-js-sdk-demo",
   "version": "0.0.0",
   "scripts": {
-    "prestart": "ts-node bin/gen-token.js",
-    "start": "vite",
+    "start": "npm-run-all -p ui sv",
+    "sv": "DEBUG=PDSJS* node lib/app.js",
+    "ui": "vite",
     "build": "vite build",
-    "serve": "vite preview"
+    "serve": "vite preview",
+    "format": "prettier --write 'src/**/*.{js,less,css,vue}'"
   },
   "dependencies": {
-    "vue": "^3.2.16",
-    "vue-router": "^4.0.12"
+    "debug": "~2.6.8",
+    "ejs": "~2.5.5",
+    "koa": "^2.3.0",
+    "koa-bodyparser": "^4.2.0",
+    "koa-convert": "^1.2.0",
+    "koa-json": "^2.0.2",
+    "koa-logger": "^3.0.0",
+    "koa-onerror": "^3.1.0",
+    "koa-router": "^7.2.1"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^1.9.3",
-    "ts-node": "^10.4.0",
-    "vite": "^2.6.4"
-  }
+    "@ant-design/icons-vue": "^6.1.0",
+    "@vitejs/plugin-vue": "^4.2.3",
+    "ant-design-vue": "^4.0.0",
+    "babel-eslint": "7.1.1",
+    "dayjs": "^1.11.9",
+    "eslint": "3.18.0",
+    "less": "^4.2.0",
+    "lodash": "^4.17.21",
+    "mitt": "^3.0.1",
+    "moment": "^2.29.4",
+    "npm-run-all": "^4.1.5",
+    "pptxgenjs": "^3.12.0",
+    "unplugin-vue-components": "^0.25.2",
+    "vite": "^4.4.5",
+    "vue": "^3.3.4",
+    "vue-i18n": "^9.2.2",
+    "vue-router": "^4.2.4",
+    "xlsx": "^0.18.5"
+  },
+  "repository": "git@github.com:aliyun/aliyun-pds-js-sdk.git"
 }

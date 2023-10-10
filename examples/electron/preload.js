@@ -1,8 +1,7 @@
-/** @format */
 const {dialog, getCurrentWindow} = require('@electron/remote')
-window.PDS_SDK = require('../..')
+window.NODE_SDK = require('../..')
 const currentWindow = getCurrentWindow()
-// const {platform, AxiosNodeAdapter} = window.PDS_SDK.Context
+// const {platform, AxiosNodeAdapter} = window.NODE_SDK.Context
 
 // const Axios = require('axios')
 // const os = require('os')
@@ -12,33 +11,17 @@ const currentWindow = getCurrentWindow()
 // const crypto = require('crypto')
 // const http = require('http')
 // const https = require('https')
-
+const {DataTransfer} = require('./datatransfer/preload.js')
 window.ClientBridge = {
-  // Context: {
-  //   isNode: true,
-  //   Axios,
-  //   platform,
-  //   os,
-  //   fs,
-  //   path,
-  //   cp,
-  //   http,
-  //   https,
-  //   crypto,
-  //   AxiosNodeAdapter,
-  // },
-  openUploadDialog,
+  Context: {
+    isNode: true,
+    ...window.NODE_SDK.Context,
+  },
+
+  openDialog,
+
+  DataTransfer,
 }
-
-function openUploadDialog(type) {
-  const prop = {
-    folder: ['openDirectory', 'multiSelections', 'treatPackageAsDirectory', 'showHiddenFiles'],
-    file: ['openFile', 'multiSelections', 'treatPackageAsDirectory', 'showHiddenFiles'],
-  }
-
-  return dialog.showOpenDialog(currentWindow, {
-    title: 'Upload',
-    buttonLabel: 'Upload',
-    properties: prop[type],
-  })
+function openDialog(options) {
+  return dialog.showOpenDialog(currentWindow, options)
 }

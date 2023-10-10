@@ -3,34 +3,43 @@
 > PDS SDK for both Node.js and Javascript in browser.
 
 
-详细帮助文档: https://help.aliyun.com/document_detail/393346.html
+详情请看: https://help.aliyun.com/document_detail/393346.html
+For more information, see: https://help.aliyun.com/document_detail/393346.html
 
 ## Usage
+
+### Node.js
 
 ```
 npm i -S aliyun-pds-js-sdk
 ```
 
-### In Node.js
-
 ```js
 const {PDSClient} = require('aliyun-pds-js-sdk')
+
+// or ES Import
+import {PDSClient} from 'aliyun-pds-js-sdk'
 ```
 
-### In Browser
+### Browser
+
+* via script tag
 
 ```html
 <script src="/path/to/dist/aliyun-pds-js-sdk.min.js"></script>
 ```
+
 ```js
 const {PDSClient} = window.PDS_SDK
 ```
 
-### ES Import
+* or ES Import
 
 ```js
-import {PDSClient} from 'aliyun-pds-js-sdk'
+// 前端使用：
+import {PDSClient} from 'aliyun-pds-js-sdk/browser'  // for Frontend Project
 ```
+
 
 ## Example
 
@@ -50,7 +59,7 @@ const {items = [], next_marker} = await client.listFiles({
 })
 ```
 
-更加详细的介绍，请看[帮助文档](https://help.aliyun.com/document_detail/393346.html)。
+更加详细的介绍，请看[阿里云官网的帮助文档](https://help.aliyun.com/document_detail/393346.html)。
 
 ## Release notes
 

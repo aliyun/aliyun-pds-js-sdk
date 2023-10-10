@@ -1,19 +1,23 @@
 src
+lib
 tests
 examples
 
 .DS_Store
 .vscode
 .husky
-.nyc_output
 coverage 
 
 
-
-t.ts
-j.js
-t2.ts
 Dev.md
+RELEASE-NOTES.md
+build.js
 Makefile
 abc.json
 tsconfig.json
+tsconfig-*.json
+typedoc-*.js
+vite.config.*
+package-lock.json
+pnpm-lock.yaml
+.prettier*

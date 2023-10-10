@@ -1,7 +1,27 @@
-# Vue 3 + Vite
+# PDS JS SDK Demo
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+power by `Vue 3 + koa2`
 
-## Recommended IDE Setup
+## 目录结构
 
-- [VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=johnsoncodehk.volar)
+```
+example/vue/
+  |-- /lib    // 后端 koa 代码
+    |-- /config
+      |-- conf.js // 配置
+  |-- /src    // 前端 vue 代码
+```
+
+注意: 启动前准备好 lib/config/conf.js 内容。详情参考 lib/config/index.js。
+
+
+## 启动命令
+
+```bash
+npm start
+```
+
+## 说明
+
+本示例代码仅包含最基本的文件列表展示和上传下载逻辑，其他功能暂未集成。
+

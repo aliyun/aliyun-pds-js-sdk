@@ -1,39 +1,35 @@
 
-build:pkg lib dist format
-
 i:
-	npm i
+	npm i --registry=https://registry.npmmirror.com
 
-dist:
-	rm -rf dist
-	npm run build:dist
-pkg:
-	npm run build:pkg
-lib:
-	rm -rf lib
-	npm run build:lib
-ut:
-	npm run test:ut
-ft:
-	npm run test:ft
-web:
-	npm run test:web
+build:
+	npm run build
+	npm run format
 
-worker:
-	npm run build:worker:sha1
-publish:build
-	npm publish
-pub:build
-	npm publish --tag=beta
+doc:
+	npm run doc:node
+doc2:
+	npm run doc:web
+test:
+	npm run test:node
+test2:
+	npm run test:browser
 cov:
-	npm run cov
-	open coverage/lcov-report/index.html
+	npm run cov:node
+cov2:
+	npm run cov:browser
+f:format
 format:
 	npm run format
 clean:
-	rm -rf dist lib coverage .nvc_output tests/ft/tmp/tmp-* tests/ut/tmp/tmp-* package-lock.json  node_modules
-	cd examples/vue/ && rm -rf package-lock.json node_modules public/*-token.json
-	cd examples/electron/ && rm -rf package-lock.json node_modules bin/tmp-* bin/*-token.json
-	echo 'done'
+	rm -rf node_modules package-lock.json dist coverage tests/ut/tmp/*
+token:
+	npm run token
+
+publish:build format
+	npm publish
+pub:build
+	npm publish --tag=beta
+
 # 命令和目录名称冲突
-.PHONY:lib dist tests build
+.PHONY:lib dist tests

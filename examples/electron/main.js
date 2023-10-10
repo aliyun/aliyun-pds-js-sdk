@@ -1,10 +1,10 @@
-/** @format */
-
 // main.js
 require('@electron/remote/main').initialize()
 // 控制应用生命周期和创建原生浏览器窗口的模组
 const {app, BrowserWindow} = require('electron')
 const path = require('path')
+
+require('./datatransfer/index').createDataTransfer()
 
 function createWindow() {
   // 创建浏览器窗口
@@ -23,7 +23,8 @@ function createWindow() {
   })
 
   // 加载 index.html
-  mainWindow.loadFile('index.html')
+  // mainWindow.loadFile('index.html')
+  mainWindow.loadURL('http://localhost:5173')
 
   // 打开开发工具
   mainWindow.webContents.openDevTools()
