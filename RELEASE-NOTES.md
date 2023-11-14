@@ -1,6 +1,10 @@
 
 # Release Notes
 
+## 1.1.0
+
+* feat: web端支持服务端打包下载任务。
+
 ## 1.0.0
 
 * 托管模式（HostingMode）下线，js-sdk响应去掉托管模式相关代码。

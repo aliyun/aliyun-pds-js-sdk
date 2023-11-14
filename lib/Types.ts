@@ -287,6 +287,9 @@ interface IDownCheckpoint {
   share_id?: string
   file_id?: string
 
+  // for archive
+  archive_file_ids?: string[]
+
   // to
   file: IFile
 

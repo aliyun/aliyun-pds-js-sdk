@@ -17,6 +17,7 @@ export class WebDownloader extends BaseDownloader {
   private response: Response | null = null
   private last_crc64: string = ''
   private _reader: ReadableStreamDefaultReader<Uint8Array> | null = null
+
   constructor(
     checkpoint: IDownCheckpoint,
     configs: IDownConfig = {},
@@ -34,6 +35,112 @@ export class WebDownloader extends BaseDownloader {
     this.aborters = []
   }
 
+  // for archive files
+  async prepare() {
+    this.changeState('prepare')
+
+    await this.getArchiveDownloadUrl()
+
+    // 获取 size
+    let {crc64, size} = await this.getArchiveFileInfo(this.download_url)
+    this.crc64_hash = crc64
+    this.file.size = size
+  }
+  // 打包，获取 download_url
+  async getArchiveDownloadUrl() {
+    if (!this.archive_async_task_id) {
+      let res1 = await this.vendors.http_util.callRetry(this.doArchiveFiles, this, [], {
+        verbose: this.verbose,
+        getStopFlag: () => {
+          return this.stopFlag
+        },
+      })
+      this.archive_async_task_id = res1.async_task_id
+
+      if (res1.state == 'Succeed') {
+        this.download_url = res1.url || this.download_url
+        return res1
+      }
+      if (res1.state == 'Failed') {
+        throw new Error('Failed to archive files, async task id:' + res1.async_task_id)
+      }
+    }
+
+    if (this.cancelFlag || this.stopFlag) return
+
+    // 服务端打包下载, 轮询直到返回
+    while (true) {
+      let res2 = await this.vendors.http_util.callRetry(this.doGetAsyncTaskInfo, this, [], {
+        verbose: this.verbose,
+        getStopFlag: () => {
+          return this.stopFlag
+        },
+      })
+      if (res2.state == 'Succeed') {
+        this.download_url = res2.url || this.download_url
+        return res2
+      }
+      if (res2.state == 'Failed') {
+        throw new Error('Failed to archive files, async task id:' + res2.async_task_id)
+      }
+
+      if (this.cancelFlag || this.stopFlag) return
+      await new Promise(a => setTimeout(a, 5000)) // wait 5 seconds
+      if (this.cancelFlag || this.stopFlag) return
+    }
+  }
+  // 通过 get url 的 response headers， 获取信息
+  async getArchiveFileInfo(url) {
+    let aborter = new AbortController()
+    this.aborters.push(aborter)
+
+    // 没有 head 方法， 先 get 再 abort
+    let {size, crc64} = await new Promise<{size: number; crc64: string}>((resolve, reject) => {
+      fetch(url, {
+        method: 'GET',
+        signal: aborter.signal,
+      })
+        .then(r => {
+          resolve({
+            crc64: r.headers.get('X-Oss-Hash-Crc64ecma') || '',
+            size: parseInt(r.headers.get('Content-Length') || '0'),
+          })
+          aborter.abort()
+        })
+        .catch(e => {
+          console.warn('abort', e)
+        })
+    })
+    return {size, crc64}
+  }
+  async doArchiveFiles() {
+    const result = await this.http_client_call(
+      'archiveFiles',
+      {
+        drive_id: this.loc_type == 'drive' ? this.loc_id : undefined,
+        share_id: this.loc_type == 'share' ? this.loc_id : undefined,
+        name: this.file.name,
+        files: this.archive_file_ids.map(n => {
+          return {
+            file_id: n,
+          }
+        }),
+      },
+      this.axios_options,
+    )
+    return result
+  }
+  async doGetAsyncTaskInfo() {
+    const result = await this.http_client_call(
+      'getAsyncTaskInfo',
+      {
+        async_task_id: this.archive_async_task_id,
+      },
+      this.axios_options,
+    )
+    this.download_url = result.url || this.download_url
+    return result
+  }
   initChunks() {
     // web 分块策略: 目前仅支持1片
     let [part_info_list, chunk_size] = init_chunks_web_download(this.file.size)
@@ -51,7 +158,9 @@ export class WebDownloader extends BaseDownloader {
 
     if (this.aborters && this.aborters.length > 0) {
       this.aborters.forEach(n => {
-        n.abort()
+        try {
+          n.abort()
+        } catch (e) {}
       })
       this.aborters = []
     }
@@ -220,7 +329,9 @@ export class WebDownloader extends BaseDownloader {
     if (this.verbose) console.time(timeKey)
 
     await this.changeState('checking')
-    this.crc64_hash = await this.headCRC64()
+    if (!this.crc64_hash) {
+      this.crc64_hash = await this.headCRC64()
+    }
 
     this.timeLogEnd('crc64', Date.now())
 

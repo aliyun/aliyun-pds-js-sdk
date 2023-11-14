@@ -22,6 +22,17 @@ export class DownloadAPIClient implements IDownloadAPIClient {
     return this.http_client.postAPI('/file/get_download_url', opt, request_config)
   }
   /* istanbul ignore next */
+  archiveFiles(opt, request_config: IPDSRequestConfig = {}) {
+    opt.donot_emit_error = true
+    // 多个文件打包
+    return this.http_client.postAPI('/file/archive_files', opt, request_config)
+  }
+  /* istanbul ignore next */
+  getAsyncTaskInfo(opt, request_config: IPDSRequestConfig = {}) {
+    opt.donot_emit_error = true
+    return this.http_client.postAPI('/async_task/get', {async_task_id: opt.async_task_id}, request_config)
+  }
+  /* istanbul ignore next */
   axiosDownloadPart(request_config: IPDSRequestConfig = {}) {
     return this.http_client.sendOSS(request_config)
   }
