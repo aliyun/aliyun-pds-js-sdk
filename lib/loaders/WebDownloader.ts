@@ -35,16 +35,18 @@ export class WebDownloader extends BaseDownloader {
     this.aborters = []
   }
 
-  // for archive files
+  // 为了获取 crc64_hash 和 size
   async prepare() {
     this.changeState('prepare')
 
-    await this.getArchiveDownloadUrl()
-
-    // 获取 size
-    let {crc64, size} = await this.getArchiveFileInfo(this.download_url)
-    this.crc64_hash = crc64
-    this.file.size = size
+    if (this.archive_file_ids?.length) {
+      // for archive files
+      await this.getArchiveDownloadUrl()
+      await this.getArchiveFileInfo(this.download_url)
+    } else {
+      // for single file download
+      await this.getDownloadUrl()
+    }
   }
   // 打包，获取 download_url
   async getArchiveDownloadUrl() {
@@ -111,6 +113,9 @@ export class WebDownloader extends BaseDownloader {
           console.warn('abort', e)
         })
     })
+
+    this.crc64_hash = crc64
+    this.file.size = size
     return {size, crc64}
   }
   async doArchiveFiles() {

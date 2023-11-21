@@ -82,7 +82,7 @@ describe('LoadFile download state change', function () {
             expect(downTask.state).toBe('waiting')
 
             downTask.start()
-            expect(downTask.state).toBe('start')
+            expect(downTask.state).toBe('prepare')
 
             downTask.stop()
             expect(downTask.state).toBe('stopped')
@@ -100,7 +100,7 @@ describe('LoadFile download state change', function () {
       })
       await delay(100)
 
-      expect(state_arr.join(',')).toBe('start,stopped,waiting,cancelled')
+      expect(state_arr.join(',')).toBe('start,prepare,stopped,waiting,cancelled')
     })
 
     it('download Task with new params', async () => {
@@ -173,7 +173,7 @@ describe('LoadFile download state change', function () {
             expect(downTask.state).toBe('waiting')
             downTask.start()
 
-            expect(downTask.state).toBe('start')
+            expect(downTask.state).toBe('prepare')
             downTask.stop()
 
             expect(downTask.state).toBe('stopped')
@@ -191,7 +191,7 @@ describe('LoadFile download state change', function () {
       })
       await delay(100)
 
-      expect(state_arr.join(',')).toBe('start,stopped,waiting,cancelled')
+      expect(state_arr.join(',')).toBe('start,prepare,stopped,waiting,cancelled')
     })
   })
 })
