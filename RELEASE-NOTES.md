@@ -4,6 +4,10 @@
 ## 1.1.0
 
 * feat: web端支持服务端打包下载任务。
+* fix: 修复 web 下载 crc64 校验逻辑。
+* fix: 修复 js-sha1 和 wasm 在 node 环境执行 browser 代码。
+* refactor: 兼容打包下载新版 async_task 格式
+
 
 ## 1.0.0
 

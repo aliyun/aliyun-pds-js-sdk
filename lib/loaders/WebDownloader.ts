@@ -3,7 +3,7 @@ import {BaseDownloader} from './BaseDownloader'
 import {randomHex} from '../utils/Formatter'
 import {init_chunks_web_download} from '../utils/ChunkUtil'
 import {PDSError} from '../utils/PDSError'
-
+import {getArchiveTaskResult} from '../utils/LoadUtil'
 import Debug from 'debug'
 const debug = Debug('PDSJS:WebDownloader')
 
@@ -42,7 +42,10 @@ export class WebDownloader extends BaseDownloader {
     if (this.archive_file_ids?.length) {
       // for archive files
       await this.getArchiveDownloadUrl()
-      await this.getArchiveFileInfo(this.download_url)
+
+      if (this.crc64_hash == null || this.file.size == null) {
+        await this.getArchiveFileInfo(this.download_url)
+      }
     } else {
       // for single file download
       await this.getDownloadUrl()
@@ -79,7 +82,8 @@ export class WebDownloader extends BaseDownloader {
         },
       })
       if (res2.state == 'Succeed') {
-        this.download_url = res2.url || this.download_url
+        Object.assign(this, getArchiveTaskResult(res2))
+        this.file.size = this.size
         return res2
       }
       if (res2.state == 'Failed') {
@@ -97,15 +101,15 @@ export class WebDownloader extends BaseDownloader {
     this.aborters.push(aborter)
 
     // 没有 head 方法， 先 get 再 abort
-    let {size, crc64} = await new Promise<{size: number; crc64: string}>((resolve, reject) => {
+    let {size, crc64} = await new Promise<{size: number | null; crc64: string | null}>((resolve, reject) => {
       fetch(url, {
         method: 'GET',
         signal: aborter.signal,
       })
         .then(r => {
           resolve({
-            crc64: r.headers.get('X-Oss-Hash-Crc64ecma') || '',
-            size: parseInt(r.headers.get('Content-Length') || '0'),
+            crc64: r.headers.get('X-Oss-Hash-Crc64ecma'),
+            size: r.headers.get('Content-Length') ? parseInt(r.headers.get('Content-Length') || '0') : null,
           })
           aborter.abort()
         })
@@ -114,8 +118,11 @@ export class WebDownloader extends BaseDownloader {
         })
     })
 
-    this.crc64_hash = crc64
-    this.file.size = size
+    if (crc64) this.crc64_hash = crc64
+    if (size) {
+      this.file.size = size
+      this.size = size
+    }
     return {size, crc64}
   }
   async doArchiveFiles() {
@@ -233,7 +240,7 @@ export class WebDownloader extends BaseDownloader {
         this.timeLogStart('crc64', st)
 
         partInfo.start_time = st
-        partInfo.to = this.size
+        partInfo.to = this.file.size
         partInfo.loaded = 0
         partInfo.crc64_st = st
         this.timeLogStart('part-' + partInfo.part_number, st)

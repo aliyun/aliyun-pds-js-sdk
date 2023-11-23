@@ -1,4 +1,5 @@
 import {
+  getArchiveTaskResult,
   throttleInTimes,
   removeItem,
   calcUploadMaxConcurrency,
@@ -7,6 +8,20 @@ import {
 import {describe, expect, it} from 'vitest'
 
 describe('LoadUtil', function () {
+  it('getArchiveTaskResult', () => {
+    let data = getArchiveTaskResult({
+      archive_file_result: {crc64_hash: '123', url: 'http://x', size: 1},
+      url: 'http://x',
+    })
+    expect(data.download_url).toBe('http://x')
+    expect(data.size).toBe(1)
+    expect(data.crc64_hash).toBe('123')
+
+    data = getArchiveTaskResult({url: 'http://x'})
+    expect(data.download_url).toBe('http://x')
+    expect(data.size).toBe(undefined)
+    expect(data.crc64_hash).toBe(undefined)
+  })
   it('calcUploadMaxConcurrency', () => {
     const M = 1024 * 1024
     expect(calcUploadMaxConcurrency(1 * M, 5 * M, 3)).toBe(3)

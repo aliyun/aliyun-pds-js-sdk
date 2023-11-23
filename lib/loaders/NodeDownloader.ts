@@ -114,19 +114,6 @@ export class NodeDownloader extends BaseDownloader {
     partInfo.running = true
     partInfo.done = false
 
-    // if (this.verbose) {
-    //   console.log(
-    //     `[${this.file.name}] downloading part:`,
-    //     partInfo.part_number,
-    //     ` : ${this.part_info_list.length}`,
-    //     partInfo.from,
-    //     '~',
-    //     partInfo.to,
-    //     ', totol size:',
-    //     this.file.size,
-    //   )
-    // }
-
     try {
       await this.downloadPartRetry(partInfo, {
         method: 'get',
