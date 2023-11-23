@@ -1,3 +1,4 @@
+import './fix-browser-env'
 export * from './Types'
 export * from './client/api_auth'
 export * from './client/api_drive'
