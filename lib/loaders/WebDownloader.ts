@@ -2,8 +2,9 @@ import {IDownCheckpoint, IDownConfig} from '../Types'
 import {BaseDownloader} from './BaseDownloader'
 import {randomHex} from '../utils/Formatter'
 import {init_chunks_web_download} from '../utils/ChunkUtil'
-import {PDSError} from '../utils/PDSError'
+import {PDSError, parseErrorXML} from '../utils/PDSError'
 import {getArchiveTaskResult} from '../utils/LoadUtil'
+import {isNetworkError} from '../utils/HttpUtil'
 import Debug from 'debug'
 const debug = Debug('PDSJS:WebDownloader')
 
@@ -39,6 +40,9 @@ export class WebDownloader extends BaseDownloader {
   async prepare() {
     this.changeState('prepare')
 
+    await this.prepareDownloadUrl()
+  }
+  async prepareDownloadUrl() {
     if (this.archive_file_ids?.length) {
       // for archive files
       await this.getArchiveDownloadUrl()
@@ -172,7 +176,9 @@ export class WebDownloader extends BaseDownloader {
       this.aborters.forEach(n => {
         try {
           n.abort()
-        } catch (e) {}
+        } catch (e) {
+          console.error(e)
+        }
       })
       this.aborters = []
     }
@@ -200,6 +206,33 @@ export class WebDownloader extends BaseDownloader {
     await this.downloadStream(partInfo)
   }
 
+  async fetchOssPart(reqOpt) {
+    let request = fetch(this.download_url, reqOpt)
+    let res = await request
+
+    // 服务端错误处理
+    if (res.status >= 400) {
+      let xmlStr = await res.text()
+      console.error('OSS Error:', xmlStr)
+
+      let xmlInfo = parseErrorXML(xmlStr)
+      let err = new PDSError(xmlInfo.message, xmlInfo.code, res.status, xmlInfo.reqId)
+
+      if (err.code == 'AccessDenied' && err.message.includes('expired')) {
+        // 如果 url 过期
+        // 需要重新获取 downloadUrl
+        await this.prepareDownloadUrl()
+        // 重新 fetch
+        res = await this.fetchOssPart(reqOpt)
+      } else {
+        // 其他错误, throw
+        throw err
+      }
+    }
+
+    return res
+  }
+
   // web download stream
   async downloadStream(partInfo) {
     let aborter = new AbortController()
@@ -219,8 +252,7 @@ export class WebDownloader extends BaseDownloader {
     }
 
     try {
-      let request = fetch(this.download_url, reqOpt)
-      let res = await request
+      let res = await this.fetchOssPart(reqOpt)
 
       let res_headers = {}
       res.headers.forEach((v, k) => {
@@ -233,7 +265,6 @@ export class WebDownloader extends BaseDownloader {
       let last_prog = 0
 
       this._reader = res.body?.getReader() || null
-
       if (!this.stream) {
         // start
         let st = Date.now()
@@ -259,6 +290,7 @@ export class WebDownloader extends BaseDownloader {
 
                   if (done) {
                     controller.close()
+                    return
                   }
 
                   if (that.checking_crc) {
@@ -280,7 +312,17 @@ export class WebDownloader extends BaseDownloader {
                     return new Promise(a => (that.waitUntilResume = a)).then(() => {
                       push()
                     })
-                  } else return err
+                  } else if (isNetworkError(err)) {
+                    // should retry
+                    // // // 网络问题，不用太频繁
+                    setTimeout(() => {
+                      // 尝试 retry
+                      push()
+                    }, 600)
+                    // // 等待通过主流程 speed为0 判断 retry
+                  } else {
+                    Promise.reject(err)
+                  }
                 })
             }
           },
@@ -327,6 +369,9 @@ export class WebDownloader extends BaseDownloader {
         throw new PDSError('stopped', 'stopped')
       } else {
         this.cancelAllDownloadRequests()
+        this.stream = null
+        this.response = null
+        this._reader?.releaseLock?.()
         throw err
       }
     }

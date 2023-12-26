@@ -121,6 +121,7 @@ export class NodeContextExt implements IContextExt {
     }
   }
   calcCrc64(str: string | Uint8Array, last: string = '0') {
+    if (str === undefined || str === null) return last
     return calc_crc64(this.textEncode(str), last)
   }
   calcSha1(str: string | Uint8Array) {

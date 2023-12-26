@@ -8,6 +8,7 @@ describe('src/context/BrowserContextExt', () => {
     ext = new BrowserContextExt(BrowserContext)
   })
   it('calcCrc64', () => {
+    expect(ext.calcCrc64(null, '123')).toBe('123')
     expect(ext.calcCrc64('abc', '0')).toBe('3231342946509354535')
     expect(ext.calcCrc64('中文')).toBe('16371802884590399230')
   })
