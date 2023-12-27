@@ -134,10 +134,11 @@ describe('Web LoadFile', function () {
         )
 
         downTask.on('statechange', (cp, state, error) => {
-          console.log('-----------statechange', cp.state)
+          console.log('-----------statechange', cp.state, error)
           state_arr.push(cp.state)
 
           if (cp.state == 'success') resolve({})
+          else if (cp.state == 'error') reject(error)
         })
         downTask.on('progress', (state, progress) => {
           console.log('download progress: ', state, progress)
@@ -157,7 +158,7 @@ describe('Web LoadFile', function () {
             downTask.stop()
             expect(downTask.state).toBe('stopped')
 
-            await delay(100)
+            await delay(600)
             downTask.start()
           } catch (e) {
             console.error(e)

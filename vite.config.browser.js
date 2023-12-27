@@ -40,6 +40,11 @@ export default defineConfig({
       ],
     },
     browser: {
+      providerOptions: {
+        launch: {
+          devtools: true,
+        }
+      },
       headless: true,
       enabled: true,
       name: 'chrome',

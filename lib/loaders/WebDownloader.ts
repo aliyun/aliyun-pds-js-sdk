@@ -39,7 +39,6 @@ export class WebDownloader extends BaseDownloader {
   // 为了获取 crc64_hash 和 size
   async prepare() {
     this.changeState('prepare')
-
     await this.prepareDownloadUrl()
   }
   async prepareDownloadUrl() {
@@ -206,33 +205,6 @@ export class WebDownloader extends BaseDownloader {
     await this.downloadStream(partInfo)
   }
 
-  async fetchOssPart(reqOpt) {
-    let request = fetch(this.download_url, reqOpt)
-    let res = await request
-
-    // 服务端错误处理
-    if (res.status >= 400) {
-      let xmlStr = await res.text()
-      console.error('OSS Error:', xmlStr)
-
-      let xmlInfo = parseErrorXML(xmlStr)
-      let err = new PDSError(xmlInfo.message, xmlInfo.code, res.status, xmlInfo.reqId)
-
-      if (err.code == 'AccessDenied' && err.message.includes('expired')) {
-        // 如果 url 过期
-        // 需要重新获取 downloadUrl
-        await this.prepareDownloadUrl()
-        // 重新 fetch
-        res = await this.fetchOssPart(reqOpt)
-      } else {
-        // 其他错误, throw
-        throw err
-      }
-    }
-
-    return res
-  }
-
   // web download stream
   async downloadStream(partInfo) {
     let aborter = new AbortController()
@@ -252,7 +224,10 @@ export class WebDownloader extends BaseDownloader {
     }
 
     try {
-      let res = await this.fetchOssPart(reqOpt)
+      let res = await fetchOssPart(this.download_url, reqOpt, async () => {
+        await this.prepareDownloadUrl()
+        return this.download_url
+      })
 
       let res_headers = {}
       res.headers.forEach((v, k) => {
@@ -307,22 +282,7 @@ export class WebDownloader extends BaseDownloader {
                   return push()
                 })
                 .catch(err => {
-                  if (err.name == 'AbortError') {
-                    // 暂停，等待
-                    return new Promise(a => (that.waitUntilResume = a)).then(() => {
-                      push()
-                    })
-                  } else if (isNetworkError(err)) {
-                    // should retry
-                    // // // 网络问题，不用太频繁
-                    setTimeout(() => {
-                      // 尝试 retry
-                      push()
-                    }, 600)
-                    // // 等待通过主流程 speed为0 判断 retry
-                  } else {
-                    Promise.reject(err)
-                  }
+                  return handleReadableStream(err, resumeFun => (that.waitUntilResume = resumeFun), push)
                 })
             }
           },
@@ -398,4 +358,47 @@ export class WebDownloader extends BaseDownloader {
       throw new Error(`crc64_hash not match: ${this.calc_crc64} != ${this.crc64_hash}`)
     }
   }
+}
+
+export function handleReadableStream(err, setResumeFun, next) {
+  if (err.name == 'AbortError') {
+    // 暂停，等待
+    return new Promise(a => setResumeFun(a)).then(() => {
+      next()
+    })
+  } else if (isNetworkError(err)) {
+    // should retry
+    // // // 网络问题，不用太频繁
+    setTimeout(() => {
+      // 尝试 retry
+      next()
+    }, 600)
+    // // 等待通过主流程 speed为0 判断 retry
+  } else {
+    return Promise.reject(err)
+  }
+}
+
+export async function fetchOssPart(url, reqOpt, getUrlFun) {
+  let request = fetch(url, reqOpt)
+  let res = await request
+
+  // 服务端错误处理
+  if (res.status >= 400) {
+    let xmlStr = await res.text()
+    let xmlInfo = parseErrorXML(xmlStr)
+    let err = new PDSError(xmlInfo.message, xmlInfo.code, res.status, xmlInfo.reqId)
+    if (err.code == 'AccessDenied' && err.message.includes('expired')) {
+      // 如果 url 过期
+      // 需要重新获取 downloadUrl
+      let url2 = await getUrlFun()
+      // 重新 fetch
+      res = await fetchOssPart(url2, reqOpt, getUrlFun)
+    } else {
+      // 其他错误, throw
+      throw err
+    }
+  }
+
+  return res
 }
