@@ -13,7 +13,6 @@ console.timeLog = console.timeLog || console.timeEnd
 export class WebDownloader extends BaseDownloader {
   private aborters: AbortController[]
   private waitUntilResume: Function | null = null
-  private waitUntilDone: Function | null = null
   private stream: ReadableStream | null = null
   private response: Response | null = null
   private last_crc64: string = ''
@@ -54,6 +53,22 @@ export class WebDownloader extends BaseDownloader {
       await this.getDownloadUrl()
     }
   }
+
+  // 直接使用浏览器下载
+  async downloadDirectlyUsingBrowser() {
+    await this.prepareDownloadUrl()
+
+    if (!this.download_url) return
+
+    const tmp = document.createElement('a')
+    tmp.href = this.download_url
+    tmp.download = this.file.name
+    tmp.target = '_blank'
+    document.body.appendChild(tmp)
+    tmp.click()
+    document.body.removeChild(tmp)
+  }
+
   // 打包，获取 download_url
   async getArchiveDownloadUrl() {
     if (!this.archive_async_task_id) {
