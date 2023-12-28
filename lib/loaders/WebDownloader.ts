@@ -162,9 +162,12 @@ export class WebDownloader extends BaseDownloader {
     this.part_info_list = part_info_list
   }
   destroy() {
-    // 释放
+    // 取消时调用
+
+    // error 时释放
     this.stream = null
     this.response = null
+    this._reader?.releaseLock?.()
     this._reader = null
   }
 
@@ -237,13 +240,19 @@ export class WebDownloader extends BaseDownloader {
       // this.contentType = res_headers['content-type']
 
       let that = this
-      let last_prog = 0
+
+      let last_opt = {
+        last_prog: 0,
+      }
 
       this._reader = res.body?.getReader() || null
+
       if (!this.stream) {
         // start
         let st = Date.now()
         this.timeLogStart('crc64', st)
+
+        this.waitUntilResume = null
 
         partInfo.start_time = st
         partInfo.to = this.file.size
@@ -261,25 +270,7 @@ export class WebDownloader extends BaseDownloader {
               return that._reader
                 ?.read()
                 .then(res => {
-                  const {done, value} = res
-
-                  if (done) {
-                    controller.close()
-                    return
-                  }
-
-                  if (that.checking_crc) {
-                    that.last_crc64 = that.context_ext.calcCrc64.call(that.context_ext, value, that.last_crc64)
-                  }
-
-                  // 在这里根据 value 统计进度
-                  that.loaded += value?.length
-                  partInfo.loaded += value?.length
-
-                  that.updateProgressStep({last_prog})
-
-                  controller.enqueue(value)
-                  return push()
+                  that.handlePush(partInfo, last_opt, controller, res, push)
                 })
                 .catch(err => {
                   return handleReadableStream(err, resumeFun => (that.waitUntilResume = resumeFun), push)
@@ -287,33 +278,11 @@ export class WebDownloader extends BaseDownloader {
             }
           },
         })
-
-        // ------------------>
       } else {
         this.waitUntilResume?.()
       }
 
-      if (!this.response) {
-        this.response = new Response(this.stream, {
-          headers: res_headers,
-        })
-
-        const b = await this.response.blob()
-
-        const objUrl = URL.createObjectURL(b)
-
-        const tmp = document.createElement('a')
-        tmp.href = objUrl
-        tmp.download = this.file.name
-        document.body.appendChild(tmp)
-        tmp.click()
-
-        document.body.removeChild(tmp)
-        URL.revokeObjectURL(objUrl)
-        this.waitUntilDone?.()
-      } else {
-        await new Promise(a => (this.waitUntilDone = a))
-      }
+      await this.downloadResponse(this.stream, res_headers)
 
       // end
       let et = Date.now()
@@ -328,12 +297,60 @@ export class WebDownloader extends BaseDownloader {
       if ((err as Error).name == 'AbortError') {
         throw new PDSError('stopped', 'stopped')
       } else {
+        // 失败时调用
         this.cancelAllDownloadRequests()
         this.stream = null
         this.response = null
         this._reader?.releaseLock?.()
         throw err
       }
+    }
+  }
+
+  handlePush(partInfo, last_opt, controller, res, push) {
+    const {done, value} = res
+
+    if (done) {
+      controller.close()
+      return
+    }
+
+    if (this.cancelFlag || this.stopFlag) return
+
+    if (this.checking_crc) {
+      this.last_crc64 = this.context_ext.calcCrc64.call(this.context_ext, value, this.last_crc64)
+    }
+
+    // 在这里根据 value 统计进度
+    this.loaded += value?.length
+    partInfo.loaded += value?.length
+    this.updateProgressStep(last_opt)
+
+    controller.enqueue(value)
+    return push()
+  }
+
+  async downloadResponse(stream, res_headers) {
+    if (!this.response) {
+      this.response = new Response(stream, {
+        headers: res_headers,
+      })
+
+      const b = await this.response.blob()
+
+      const objUrl = URL.createObjectURL(b)
+
+      const tmp = document.createElement('a')
+      tmp.href = objUrl
+      tmp.download = this.file.name
+      document.body.appendChild(tmp)
+      tmp.click()
+
+      document.body.removeChild(tmp)
+      URL.revokeObjectURL(objUrl)
+    } else {
+      // 终止。
+      await new Promise(a => {})
     }
   }
 
