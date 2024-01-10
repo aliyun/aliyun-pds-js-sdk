@@ -10,13 +10,17 @@ const debug = Debug('PDSJS:WebDownloader')
 
 console.timeLog = console.timeLog || console.timeEnd
 
+// Using readable streams: https://developer.mozilla.org/zh-CN/docs/Web/API/Streams_API/Using_readable_streams
+
 export class WebDownloader extends BaseDownloader {
   private aborters: AbortController[]
-  private waitUntilResume: Function | null = null
+  private waitUntilSuccess: Function | null = null
   private stream: ReadableStream | null = null
   private response: Response | null = null
   private last_crc64: string = ''
   private _reader: ReadableStreamDefaultReader<Uint8Array> | null = null
+
+  private controller
 
   constructor(
     checkpoint: IDownCheckpoint,
@@ -52,6 +56,8 @@ export class WebDownloader extends BaseDownloader {
       // for single file download
       await this.getDownloadUrl()
     }
+
+    console.log('-----------------prepare DownloadUrl: ', this.download_url)
   }
 
   // 直接使用浏览器下载
@@ -182,7 +188,8 @@ export class WebDownloader extends BaseDownloader {
     // error 时释放
     this.stream = null
     this.response = null
-    this._reader?.releaseLock?.()
+    this._reader?.cancel?.()
+    // this._reader?.releaseLock?.()
     this._reader = null
   }
 
@@ -191,11 +198,7 @@ export class WebDownloader extends BaseDownloader {
 
     if (this.aborters && this.aborters.length > 0) {
       this.aborters.forEach(n => {
-        try {
-          n.abort()
-        } catch (e) {
-          console.error(e)
-        }
+        if (!n?.signal?.aborted) n?.abort?.()
       })
       this.aborters = []
     }
@@ -241,63 +244,82 @@ export class WebDownloader extends BaseDownloader {
       signal: aborter.signal,
     }
 
+    let res_headers = {}
+    let res = await fetchOssPart(this.download_url, reqOpt, async () => {
+      await this.prepareDownloadUrl()
+      return this.download_url
+    })
+
+    res.headers.forEach((v, k) => {
+      res_headers[k] = v
+    })
+
+    // this.contentType = res_headers['content-type']
+
+    let that = this
+
+    let last_opt = {
+      last_prog: 0,
+    }
+
+    this._reader = res.body?.getReader() || null
+
+    let promFun = {resolve: (v: unknown) => {}, reject: (v: unknown) => {}}
+
     try {
-      let res = await fetchOssPart(this.download_url, reqOpt, async () => {
-        await this.prepareDownloadUrl()
-        return this.download_url
+      let url = await new Promise((a, b) => {
+        promFun.resolve = a
+        promFun.reject = b
+
+        if (!this.stream) {
+          // start
+          let st = Date.now()
+          this.timeLogStart('crc64', st)
+
+          partInfo.start_time = st
+          partInfo.to = this.file.size
+          partInfo.loaded = 0
+          partInfo.crc64_st = st
+          this.timeLogStart('part-' + partInfo.part_number, st)
+
+          this.last_crc64 = '0'
+
+          this.stream = new ReadableStream({
+            // start 方法不要用 async/await (会造成内存泄露)
+            start(ctrl) {
+              that.controller = ctrl
+              that.pushStream(promFun, partInfo, last_opt)
+            },
+          })
+        } else {
+          // resume
+          that.pushStream(promFun, partInfo, last_opt)
+        }
+
+        if (!this.response) {
+          this.response = new Response(this.stream, {
+            headers: res_headers,
+          })
+
+          this.response
+            .blob()
+            .then(b => URL.createObjectURL(b))
+            .then(url => {
+              this.waitUntilSuccess?.(url)
+              promFun.resolve(url)
+            })
+            .catch(err => {
+              promFun.reject(err)
+            })
+        } else {
+          new Promise(a => (this.waitUntilSuccess = a)).then(url => {
+            promFun.resolve(url)
+          })
+        }
       })
 
-      let res_headers = {}
-      res.headers.forEach((v, k) => {
-        res_headers[k] = v
-      })
-
-      // this.contentType = res_headers['content-type']
-
-      let that = this
-
-      let last_opt = {
-        last_prog: 0,
-      }
-
-      this._reader = res.body?.getReader() || null
-
-      if (!this.stream) {
-        // start
-        let st = Date.now()
-        this.timeLogStart('crc64', st)
-
-        this.waitUntilResume = null
-
-        partInfo.start_time = st
-        partInfo.to = this.file.size
-        partInfo.loaded = 0
-        partInfo.crc64_st = st
-        this.timeLogStart('part-' + partInfo.part_number, st)
-
-        this.last_crc64 = '0'
-
-        this.stream = new ReadableStream({
-          // start 方法不要用 async/await (会造成内存泄露)
-          start(controller) {
-            return push()
-            function push() {
-              return that._reader
-                ?.read()
-                .then(res => {
-                  that.handlePush(partInfo, last_opt, controller, res, push)
-                })
-                .catch(err => {
-                  return handleReadableStream(err, resumeFun => (that.waitUntilResume = resumeFun), push)
-                })
-            }
-          },
-        })
-      } else {
-        this.waitUntilResume?.()
-      }
-
-      await this.downloadResponse(this.stream, res_headers)
+      console.log('blob url:', url)
+      downloadLink(url, this.file.name)
 
       // end
       let et = Date.now()
@@ -307,18 +329,58 @@ export class WebDownloader extends BaseDownloader {
       partInfo.done = true
       this.timeLogEnd('part-' + partInfo.part_number, et)
     } catch (err) {
-      console.error(err)
+      await this.handleDownloadError(err)
+    }
+  }
 
-      if ((err as Error).name == 'AbortError') {
-        throw new PDSError('stopped', 'stopped')
-      } else {
-        // 失败时调用
-        this.cancelAllDownloadRequests()
-        this.stream = null
-        this.response = null
-        this._reader?.releaseLock?.()
-        throw err
-      }
+  pushStream(promFun, partInfo, last_opt) {
+    return this._reader
+      ?.read()
+      .then(res => {
+        this.handlePush(partInfo, last_opt, this.controller, res, () => {
+          this.pushStream(promFun, partInfo, last_opt)
+        })
+      })
+      .catch(err => {
+        // console.warn('=======stream catch error', err)
+        if (isNetworkError(err)) {
+          // 无网络
+          setTimeout(() => {
+            this.pushStream(promFun, partInfo, last_opt)
+          }, 1000)
+        } else promFun.reject(err)
+      })
+  }
+
+  async handleDownloadError(err) {
+    const errorName = (err as Error)?.name
+    console.warn(err, ', Error name:', errorName)
+    console.warn(', stream:', this.stream?.locked, 'reader', this._reader?.closed)
+    if (errorName == 'AbortError') {
+      throw new PDSError('stopped', 'stopped')
+    } else if (err.message == 'stopped') {
+      throw new PDSError('stopped', 'stopped')
+    } else if (err.message == 'BodyStreamBuffer was aborted') {
+      throw new PDSError('stopped', 'stopped')
+    } else if (err.name == 'TypeError' && err.message == 'Failed to fetch') {
+      // retry
+      console.warn('should retry')
+
+      setTimeout(() => {
+        this.retryAllDownloadRequest()
+      }, 1000)
+      throw new PDSError('stopped', 'stopped')
+    } else {
+      console.error('Download failed:', `[${errorName}]`, err)
+      // 失败
+      this.cancelAllDownloadRequests()
+      this.stream = null
+      this.response = null
+      this._reader?.cancel()
+      this._reader = null
+      // this._reader?.releaseLock?.() // 暂停
+
+      throw err
     }
   }
 
@@ -330,7 +392,9 @@ export class WebDownloader extends BaseDownloader {
       return
     }
 
-    if (this.cancelFlag || this.stopFlag) return
+    if (this.cancelFlag || this.stopFlag) {
+      return
+    }
 
     if (this.checking_crc) {
       this.last_crc64 = this.context_ext.calcCrc64.call(this.context_ext, value, this.last_crc64)
@@ -343,30 +407,6 @@ export class WebDownloader extends BaseDownloader {
 
     controller.enqueue(value)
     return push()
-  }
-
-  async downloadResponse(stream, res_headers) {
-    if (!this.response) {
-      this.response = new Response(stream, {
-        headers: res_headers,
-      })
-
-      const b = await this.response.blob()
-
-      const objUrl = URL.createObjectURL(b)
-
-      const tmp = document.createElement('a')
-      tmp.href = objUrl
-      tmp.download = this.file.name
-      document.body.appendChild(tmp)
-      tmp.click()
-
-      document.body.removeChild(tmp)
-      URL.revokeObjectURL(objUrl)
-    } else {
-      // 终止。
-      await new Promise(a => {})
-    }
   }
 
   async complete() {
@@ -392,25 +432,6 @@ export class WebDownloader extends BaseDownloader {
   }
 }
 
-export function handleReadableStream(err, setResumeFun, next) {
-  if (err.name == 'AbortError') {
-    // 暂停，等待
-    return new Promise(a => setResumeFun(a)).then(() => {
-      next()
-    })
-  } else if (isNetworkError(err)) {
-    // should retry
-    // // // 网络问题，不用太频繁
-    setTimeout(() => {
-      // 尝试 retry
-      next()
-    }, 600)
-    // // 等待通过主流程 speed为0 判断 retry
-  } else {
-    return Promise.reject(err)
-  }
-}
-
 export async function fetchOssPart(url, reqOpt, getUrlFun) {
   let request = fetch(url, reqOpt)
   let res = await request
@@ -433,4 +454,16 @@ export async function fetchOssPart(url, reqOpt, getUrlFun) {
   }
 
   return res
+}
+
+export function downloadLink(url, fileName) {
+  console.debug('downloadLink:', url, fileName)
+  const tmp = document.createElement('a')
+  tmp.href = url
+  tmp.download = fileName
+  document.body.appendChild(tmp)
+  tmp.click()
+
+  document.body.removeChild(tmp)
+  URL.revokeObjectURL(url)
 }

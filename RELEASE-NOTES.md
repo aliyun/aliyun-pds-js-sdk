@@ -8,6 +8,7 @@
 * fix: 修复 js-sha1 和 wasm 在 node 环境执行 browser 代码。
 * refactor: 兼容打包下载新版 async_task 格式
 * fix: 修复 web 下载断网续传逻辑。
+* feat: web下载提供直接使用浏览器下载的方法: downloadDirectlyUsingBrowser。
 
 
 ## 1.0.0
