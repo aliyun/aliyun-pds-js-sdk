@@ -9,7 +9,6 @@ import Debug from 'debug'
 const debug = Debug('PDSJS:WebDownloader')
 
 console.timeLog = console.timeLog || console.timeEnd
-
 // Using readable streams: https://developer.mozilla.org/zh-CN/docs/Web/API/Streams_API/Using_readable_streams
 
 export class WebDownloader extends BaseDownloader {
@@ -56,8 +55,7 @@ export class WebDownloader extends BaseDownloader {
       // for single file download
       await this.getDownloadUrl()
     }
-
-    console.log('-----------------prepare DownloadUrl: ', this.download_url)
+    console.debug('prepare DownloadUrl: ', this.download_url)
   }
 
   // 直接使用浏览器下载
@@ -245,28 +243,30 @@ export class WebDownloader extends BaseDownloader {
     }
 
     let res_headers = {}
-    let res = await fetchOssPart(this.download_url, reqOpt, async () => {
-      await this.prepareDownloadUrl()
-      return this.download_url
-    })
-
-    res.headers.forEach((v, k) => {
-      res_headers[k] = v
-    })
-
-    // this.contentType = res_headers['content-type']
-
-    let that = this
-
-    let last_opt = {
-      last_prog: 0,
-    }
-
-    this._reader = res.body?.getReader() || null
-
-    let promFun = {resolve: (v: unknown) => {}, reject: (v: unknown) => {}}
+    let res
 
     try {
+      res = await fetchOssPart(this.download_url, reqOpt, async () => {
+        await this.prepareDownloadUrl()
+        return this.download_url
+      })
+
+      res.headers.forEach((v, k) => {
+        res_headers[k] = v
+      })
+
+      // this.contentType = res_headers['content-type']
+
+      let that = this
+
+      let last_opt = {
+        last_prog: 0,
+      }
+
+      this._reader = res.body?.getReader() || null
+
+      let promFun = {resolve: (v: unknown) => {}, reject: (v: unknown) => {}}
+
       let url = await new Promise((a, b) => {
         promFun.resolve = a
         promFun.reject = b
@@ -303,13 +303,21 @@ export class WebDownloader extends BaseDownloader {
 
           this.response
             .blob()
-            .then(b => URL.createObjectURL(b))
+            .then(b => {
+              return URL.createObjectURL(b)
+            })
             .then(url => {
               this.waitUntilSuccess?.(url)
               promFun.resolve(url)
             })
             .catch(err => {
-              promFun.reject(err)
+              console.debug('------blob error', err)
+              if (err.name == 'TypeError' && err.message.includes('Failed to fetch')) {
+                // 浏览器缓存空间不足
+                promFun.reject(new PDSError('InsufficientBrowserCacheSpace', 'The browser cache space is insufficient'))
+              } else {
+                promFun.reject(err)
+              }
             })
         } else {
           new Promise(a => (this.waitUntilSuccess = a)).then(url => {
@@ -318,7 +326,6 @@ export class WebDownloader extends BaseDownloader {
         }
       })
 
-      console.log('blob url:', url)
       downloadLink(url, this.file.name)
 
       // end
@@ -342,20 +349,29 @@ export class WebDownloader extends BaseDownloader {
         })
       })
       .catch(err => {
-        // console.warn('=======stream catch error', err)
+        console.debug('=======stream catch error', err)
         if (isNetworkError(err)) {
-          // 无网络
+          // 无网络, 重试 push
           setTimeout(() => {
+            if (this.stopFlag || this.cancelFlag) {
+              promFun.reject(new PDSError('stopped', 'stopped'))
+              return
+            }
             this.pushStream(promFun, partInfo, last_opt)
           }, 1000)
-        } else promFun.reject(err)
+        } else if (err.message.includes(`Failed to execute 'enqueue' on 'ReadableStreamDefaultController'`)) {
+          // 浏览器缓存空间不足 引起的
+          promFun.reject(new PDSError('InsufficientBrowserCacheSpace', 'The browser cache space is insufficient'))
+        } else {
+          promFun.reject(err)
+        }
       })
   }
-
   async handleDownloadError(err) {
     const errorName = (err as Error)?.name
-    console.warn(err, ', Error name:', errorName)
-    console.warn(', stream:', this.stream?.locked, 'reader', this._reader?.closed)
+    console.debug('handleDownloadError', err, ', Error name:', errorName)
+    console.debug('stream is locked:', this.stream?.locked, ', reader:', this._reader)
+
     if (errorName == 'AbortError') {
       throw new PDSError('stopped', 'stopped')
     } else if (err.message == 'stopped') {
@@ -363,7 +379,9 @@ export class WebDownloader extends BaseDownloader {
     } else if (err.message == 'BodyStreamBuffer was aborted') {
       throw new PDSError('stopped', 'stopped')
     } else if (err.name == 'TypeError' && err.message == 'Failed to fetch') {
-      // retry
+      console.warn(err)
+
+      // 其他情况的 Failed to fetch,  停止
       console.warn('should retry')
 
       setTimeout(() => {
@@ -373,7 +391,11 @@ export class WebDownloader extends BaseDownloader {
     } else {
       console.error('Download failed:', `[${errorName}]`, err)
       // 失败
-      this.cancelAllDownloadRequests()
+      try {
+        this.cancelAllDownloadRequests()
+      } catch (e2) {
+        console.warn('cancelAllDownloadRequests error:', e2)
+      }
       this.stream = null
       this.response = null
       this._reader?.cancel()
@@ -388,6 +410,7 @@ export class WebDownloader extends BaseDownloader {
     const {done, value} = res
 
     if (done) {
+      console.debug('done: controller.close()', this.loaded, '/', this.file.size)
       controller.close()
       return
     }
@@ -396,6 +419,10 @@ export class WebDownloader extends BaseDownloader {
       return
     }
 
+    // 先push
+    controller.enqueue(value)
+
+    // 再计算
     if (this.checking_crc) {
       this.last_crc64 = this.context_ext.calcCrc64.call(this.context_ext, value, this.last_crc64)
     }
@@ -405,7 +432,6 @@ export class WebDownloader extends BaseDownloader {
     partInfo.loaded += value?.length
     this.updateProgressStep(last_opt)
 
-    controller.enqueue(value)
     return push()
   }
 

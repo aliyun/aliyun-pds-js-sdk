@@ -2,10 +2,9 @@
 i:
 	npm i --registry=https://registry.npmmirror.com
 
-build:
+build:b f
+b:
 	npm run build
-	npm run format
-
 doc:
 	npm run doc:node
 doc2:
