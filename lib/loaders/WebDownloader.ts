@@ -10,7 +10,7 @@ const debug = Debug('PDSJS:WebDownloader')
 
 console.timeLog = console.timeLog || console.timeEnd
 // Using readable streams: https://developer.mozilla.org/zh-CN/docs/Web/API/Streams_API/Using_readable_streams
-
+// Blob: https://chromium.googlesource.com/chromium/src/+/HEAD/storage/browser/blob/README.md
 export class WebDownloader extends BaseDownloader {
   private aborters: AbortController[]
   private waitUntilSuccess: Function | null = null
