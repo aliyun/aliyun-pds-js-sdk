@@ -286,6 +286,7 @@ interface IDownCheckpoint {
   drive_id?: string
   share_id?: string
   file_id?: string
+  name?: string
 
   // for archive
   archive_file_ids?: string[]

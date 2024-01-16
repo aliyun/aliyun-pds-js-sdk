@@ -94,7 +94,7 @@ export class NodeContextExt implements IContextExt {
     let size = checkpoint.file?.size || checkpoint.size || 0
     return {
       type: checkpoint.content_type,
-      name: download_to ? this.context.path.basename(download_to) : checkpoint.file?.name,
+      name: !!download_to ? this.context.path.basename(download_to) : checkpoint.file?.name || checkpoint.name,
       path: p,
       size,
     }

@@ -303,6 +303,7 @@ export class WebDownloader extends BaseDownloader {
 
           this.response
             .blob()
+            .then(r => this.mockResponseError(r))
             .then(b => {
               return URL.createObjectURL(b)
             })
@@ -310,11 +311,12 @@ export class WebDownloader extends BaseDownloader {
               this.waitUntilSuccess?.(url)
               promFun.resolve(url)
             })
+
             .catch(err => {
               console.debug('------blob error', err)
               if (err.name == 'TypeError' && err.message.includes('Failed to fetch')) {
                 // 浏览器缓存空间不足
-                promFun.reject(new PDSError('InsufficientBrowserCacheSpace', 'The browser cache space is insufficient'))
+                promFun.reject(new PDSError('The browser cache space is insufficient', 'InsufficientBrowserCacheSpace'))
               } else {
                 promFun.reject(err)
               }
@@ -339,7 +341,12 @@ export class WebDownloader extends BaseDownloader {
       await this.handleDownloadError(err)
     }
   }
-
+  protected mockResponseError(r) {
+    return r
+  }
+  protected mockPushStreamError(r) {
+    return r
+  }
   pushStream(promFun, partInfo, last_opt) {
     return this._reader
       ?.read()
@@ -348,6 +355,7 @@ export class WebDownloader extends BaseDownloader {
           this.pushStream(promFun, partInfo, last_opt)
         })
       })
+      .then(r => this.mockPushStreamError(r))
       .catch(err => {
         console.debug('=======stream catch error', err)
         if (isNetworkError(err)) {
@@ -361,7 +369,7 @@ export class WebDownloader extends BaseDownloader {
           }, 1000)
         } else if (err.message.includes(`Failed to execute 'enqueue' on 'ReadableStreamDefaultController'`)) {
           // 浏览器缓存空间不足 引起的
-          promFun.reject(new PDSError('InsufficientBrowserCacheSpace', 'The browser cache space is insufficient'))
+          promFun.reject(new PDSError('The browser cache space is insufficient', 'InsufficientBrowserCacheSpace'))
         } else {
           promFun.reject(err)
         }
@@ -378,16 +386,16 @@ export class WebDownloader extends BaseDownloader {
       throw new PDSError('stopped', 'stopped')
     } else if (err.message == 'BodyStreamBuffer was aborted') {
       throw new PDSError('stopped', 'stopped')
-    } else if (err.name == 'TypeError' && err.message == 'Failed to fetch') {
-      console.warn(err)
+      // } else if (err.name == 'TypeError' && err.message == 'Failed to fetch') {
+      //   console.warn(err)
 
-      // 其他情况的 Failed to fetch,  停止
-      console.warn('should retry')
+      //   // 其他情况的 Failed to fetch,  停止
+      //   console.warn('should retry')
 
-      setTimeout(() => {
-        this.retryAllDownloadRequest()
-      }, 1000)
-      throw new PDSError('stopped', 'stopped')
+      //   setTimeout(() => {
+      //     this.retryAllDownloadRequest()
+      //   }, 1000)
+      //   throw new PDSError('stopped', 'stopped')
     } else {
       console.error('Download failed:', `[${errorName}]`, err)
       // 失败

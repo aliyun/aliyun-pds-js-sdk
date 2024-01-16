@@ -54,7 +54,7 @@ export class BrowserContextExt implements IContextExt {
   }
   parseDownloadTo(download_to: string, checkpoint: Partial<IDownCheckpoint>): IFile {
     let file: IFile = {
-      name: download_to ? basename(download_to) : checkpoint.file?.name || 'unknown',
+      name: !!download_to ? basename(download_to) : checkpoint.file?.name || checkpoint.name || 'unknown',
       path: download_to,
       size: checkpoint.file?.size || checkpoint.size || 0,
     }
