@@ -12,7 +12,7 @@ import {PDSClient} from '../../..'
 
 let Config
 if (process.env.IT_CONFIG) {
-  console.log('Found IT_CONFIG', IT_CONFIG)
+  console.log('Found IT_CONFIG')
   try {
     Config = JSON.parse(Buffer.from(process.env.IT_CONFIG, 'base64').toString())
   } catch (err) {
