@@ -9,6 +9,7 @@
 * refactor: 兼容打包下载新版 async_task 格式
 * fix: 修复 web 下载断网续传逻辑。
 * feat: web下载提供直接使用浏览器下载的方法: downloadDirectlyUsingBrowser。
+* refactor: http 请求增加429重试逻辑，max retry 默认5次。
 
 
 ## 1.0.0

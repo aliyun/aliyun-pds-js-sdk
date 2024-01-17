@@ -14,7 +14,7 @@ describe('BaseUploader Error test', function () {
   describe('mockErrorBeforeCreate', () => {
     it('NotFound.UploadId', async () => {
       let name = `tmp-${domain_id}-std-web-base-up.txt`
-
+      
       let file = await generateFile(name, 50 * 1024 * 1024, 'text/plain')
 
       client = await getClient()

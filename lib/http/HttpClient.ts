@@ -4,9 +4,10 @@ import {IClientParams, IContextExt, ITokenInfo, IPDSRequestConfig, TMethod, Path
 import {PDSError} from '../utils/PDSError'
 
 import Debug from 'debug'
-import {isNetworkError} from '../utils/HttpUtil'
+import {delayRandom, isNetworkError} from '../utils/HttpUtil'
 
 const debug = Debug('PDSJS:HttpClient')
+const MAX_RETRY = 5
 
 export interface IHttpClient {
   contextExt: IContextExt
@@ -26,6 +27,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   path_type: PathType = 'StandardMode'
   version: string = ''
   contextExt: IContextExt
+  retry_count: number
 
   constructor(params: IClientParams, contextExt: IContextExt) {
     super()
@@ -86,7 +88,13 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     return this.contextExt.sendOSS.call(this.contextExt, options)
   }
 
-  async send(method: TMethod, url: string, data = {}, options: IPDSRequestConfig = {}, retries = 0): Promise<any> {
+  async send(
+    method: TMethod,
+    url: string,
+    data = {},
+    options: IPDSRequestConfig = {},
+    retries = MAX_RETRY,
+  ): Promise<any> {
     let req_opt: IPDSRequestConfig = {
       method,
       url,
@@ -105,7 +113,9 @@ export class HttpClient extends EventEmitter implements IHttpClient {
 
       if (retries > 0) {
         // 网络无法连接
-        if (isNetworkError(pdsErr)) {
+        if (pdsErr.status === 429 || isNetworkError(pdsErr)) {
+          console.debug('[should retry] error:', pdsErr)
+          await delayRandom()
           // 重试
           return await this.send(method, url, data, options, --retries)
         }
@@ -120,7 +130,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     pathname: string,
     data: {[key: string]: any} = {},
     options = {},
-    retries = 0,
+    retries = MAX_RETRY,
   ): Promise<any> {
     let req_opt: IPDSRequestConfig = {
       method,
@@ -163,7 +173,9 @@ export class HttpClient extends EventEmitter implements IHttpClient {
 
       if (retries > 0) {
         // 网络无法连接
-        if (isNetworkError(pdsErr)) {
+        if (pdsErr.status === 429 || isNetworkError(pdsErr)) {
+          console.debug('[should retry] error:', pdsErr)
+          await delayRandom()
           // 重试
           return await this.request(endpoint, method, pathname, data, options, --retries)
         }
@@ -174,6 +186,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         if (pdsErr.code?.includes('AccessTokenInvalid')) {
           if (this.refresh_token_fun) {
             await this.customRefreshTokenFun()
+            await delayRandom()
             return await this.request(endpoint, method, pathname, data, options, retries)
           } else {
             throw new PDSError(pdsErr.message, 'TokenExpired')
@@ -184,6 +197,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
           // message: "ShareLinkToken is invalid. expired"
           if (this.refresh_share_token_fun) {
             this.share_token = await this.refresh_share_token_fun()
+            await delayRandom()
             return await this.request(endpoint, method, pathname, data, options, retries)
           } else {
             throw new PDSError(pdsErr.message, 'ShareLinkTokenInvalid')
