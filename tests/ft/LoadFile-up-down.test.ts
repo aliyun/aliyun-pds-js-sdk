@@ -1,5 +1,5 @@
 import {beforeAll, describe, expect, it} from 'vitest'
-import Config from './config'
+import Config from './config/conf'
 
 import {getClient} from './util/token-util'
 import {generateFile, getDownloadLocalPath} from './util/file-util'

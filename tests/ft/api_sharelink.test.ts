@@ -2,7 +2,7 @@ import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
 
 import {IParentFolderNameId} from '../../lib/client/api_file'
 import {getClient, PDSClient} from './util/token-util'
-import Config from './config'
+import Config from './config/conf'
 import {mockFile} from './util/file-util'
 
 const isWeb = typeof window == 'object'

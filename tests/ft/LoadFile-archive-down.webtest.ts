@@ -1,5 +1,5 @@
 import {afterAll, beforeAll, describe, expect, it} from 'vitest'
-import Config from './config'
+import Config from './config/conf'
 import {getClient} from './util/token-util'
 import {generateFile, mockFile} from './util/file-util.js'
 import {delay} from '../../lib/utils/HttpUtil'

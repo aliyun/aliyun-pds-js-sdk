@@ -12,7 +12,7 @@ make ut
 
 先配置 conf.js
 ```
-make lib  # 看 tests/ft/index.js 是否需要 make lib
+make lib  # 看 tests/ft/conf.js 是否需要 make lib
 make ft
 ```
 

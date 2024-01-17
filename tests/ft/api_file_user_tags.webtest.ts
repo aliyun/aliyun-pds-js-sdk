@@ -3,7 +3,7 @@ import {ICreateFileRes} from '../../lib/index'
 import {createTestFolder, getClient} from './util/token-util'
 import {generateFile} from './util/file-util'
 
-import Config from './config'
+import Config from './config/conf'
 
 describe('file user tags test', function () {
   let drive_id: string

@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import Config from './config'
+import Config from './config/conf'
 import {getHttpClient} from './util/token-util'
 
 describe('HttpClient', function () {
