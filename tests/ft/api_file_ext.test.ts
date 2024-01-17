@@ -10,7 +10,7 @@ describe('file_ext', function () {
   let test_folder_name = 'test-ext-folder'
   let test_folder
   beforeAll(async () => {
-    client = await getClient()
+    client = await getClient(true)
     drive_id = client.token_info?.default_drive_id || ''
     domainId = client.token_info?.domain_id || ''
 

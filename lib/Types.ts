@@ -379,6 +379,7 @@ interface IClientParams {
   auth_endpoint?: string
   path_type?: PathType
   version?: string
+  verbose?: boolean
   refresh_token_fun?: () => Promise<ITokenInfo>
   refresh_share_token_fun?: () => Promise<string>
 }

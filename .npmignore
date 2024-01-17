@@ -1,12 +1,13 @@
 src
 lib
 tests
+doc
 examples
 
 .DS_Store
 .vscode
 .husky
-coverage 
+coverage
 
 
 Dev.md

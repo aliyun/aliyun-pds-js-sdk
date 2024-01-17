@@ -5,6 +5,9 @@ import {delay} from '../../lib/utils/HttpUtil'
 import {getClient, createTestFolder} from './util/token-util'
 import {IFileItemKey} from '../../lib/client/api_file'
 
+const LEN = 200
+const PER = 20
+
 describe('FileAPI:gen file 429 & copy', function () {
   let drive_id: string
   let client
@@ -59,13 +62,13 @@ describe('FileAPI:gen file 429 & copy', function () {
       name: 'folder2',
     })
     expect(folder2.type).toBe('folder')
-    const LEN = 200
+
     let t: (IFileItemKey & {name: string})[] = await new Promise(async (a, b) => {
       let arr: (IFileItemKey & {name: string})[] = []
 
       // 在 folder1 下创 200 个文件
       for (let i = 0; i < LEN; i++) {
-        if (i % 50 == 0) {
+        if (i % PER == 0) {
           await delay(1000)
         }
         ;(async function () {

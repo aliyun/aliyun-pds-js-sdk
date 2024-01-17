@@ -142,11 +142,11 @@ class DataTransfer extends EventEmitter {
 
           if (task) {
             task.state = params.state
-            task.error = params.error 
+            task.error = params.error
           }
         }
 
-        if (['stopped','error'].includes(params.state)) {
+        if (['stopped', 'error'].includes(params.state)) {
           let task
           let ind = this[type].waiting.findIndex(n => n.id == params.id)
           if (ind != -1) {

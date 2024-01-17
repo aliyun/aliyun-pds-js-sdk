@@ -25,7 +25,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   path_type: PathType = 'StandardMode'
   version: string = ''
   contextExt: IContextExt
-  retry_count: number
+  verbose: boolean
 
   constructor(params: IClientParams, contextExt: IContextExt) {
     super()
@@ -41,6 +41,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       refresh_share_token_fun,
       path_type = 'StandardMode',
       version = 'v2',
+      verbose = false,
     } = params
 
     Object.assign(this, {
@@ -52,6 +53,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       refresh_share_token_fun,
       path_type,
       version,
+      verbose,
       contextExt,
     })
   }
@@ -99,12 +101,13 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       data,
       ...options,
     }
-    console.debug('send:', JSON.stringify(req_opt))
+    if (this.verbose) console.debug('send:', JSON.stringify(req_opt))
     try {
       let res = await this.contextExt.axiosSend.call(this.contextExt, req_opt)
+      if (this.verbose) console.debug('response:', res.data)
       return res
     } catch (err) {
-      console.debug('send error:', err.response || err)
+      if (this.verbose) console.debug('send error:', err.response || err)
       let pdsErr = new PDSError(err)
 
       this.emitError(pdsErr, req_opt)
@@ -137,7 +140,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       ...options,
     }
 
-    console.debug('request:', JSON.stringify(req_opt))
+    if (this.verbose) console.debug('request:', JSON.stringify(req_opt))
 
     req_opt.headers = req_opt.headers || {}
 
@@ -153,11 +156,11 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     try {
       // 发送请求
       let response = await this.contextExt.axiosSend.call(this.contextExt, req_opt)
-      console.debug('response:', response.data)
+      if (this.verbose) console.debug('response:', response.data)
 
       return response.data
     } catch (e) {
-      console.debug('request error:', e.response || e)
+      if (this.verbose) console.debug('request error:', e.response || e)
 
       let pdsErr = new PDSError(e)
 

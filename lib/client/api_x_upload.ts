@@ -108,7 +108,7 @@ export class PDSUploadAPIClient extends PDSUserApiClient {
         chunk_con_auto: true,
         ignore_rapid: false, //忽略秒传，测试时使用。
 
-        verbose: true, //显示详细日志
+        verbose: this.verbose, //显示详细日志
 
         ...configs,
       },

@@ -1,10 +1,16 @@
-import {PDSClient, PDSError, CalcUtil, ChunkUtil, Context as bContext} from '../../../../dist/browser/aliyun-pds-js-sdk.js'
+import {
+  PDSClient,
+  PDSError,
+  CalcUtil,
+  ChunkUtil,
+  Context as bContext,
+} from '../../../../dist/browser/aliyun-pds-js-sdk.js'
 import tokenStore from './token-store.js'
 import {getTokenThrottle} from './auth.js'
 
 let Context = bContext
 window.CalcUtil = CalcUtil
-window.PDSError=PDSError
+window.PDSError = PDSError
 
 // if (window.ClientBridge.Context) {
 //   const {Context: nContext} = require('../../../../dist/node/node-pds.js')

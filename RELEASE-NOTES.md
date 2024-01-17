@@ -11,6 +11,7 @@
 * feat: web下载提供直接使用浏览器下载的方法: downloadDirectlyUsingBrowser。
 * refactor: http 请求增加429重试逻辑，max retry 默认5次。
 * refactor: 去掉 debug 模块依赖。
+* refactor: 构造函数增加 verbose 参数。
 
 ## 1.0.0
 

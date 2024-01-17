@@ -11,16 +11,17 @@ async function getSuperToken(user_id = 'superadmin') {
   return await import(token_path)
 }
 
-async function getClient() {
+async function getClient(verbose=false) {
   let tokenInfo = await getSuperToken()
   let {api_endpoint, auth_endpoint} = Config
   return new PDSClient({
     token_info: tokenInfo,
     api_endpoint,
     auth_endpoint,
+    verbose
   })
 }
-async function getHttpClient() {
+async function getHttpClient(verbose=false) {
   const {user_id, api_endpoint, auth_endpoint} = Config
   var tokenInfo = await getSuperToken(user_id)
 
@@ -28,6 +29,7 @@ async function getHttpClient() {
     token_info: tokenInfo,
     api_endpoint,
     auth_endpoint,
+    verbose
   })
 }
 

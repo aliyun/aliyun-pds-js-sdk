@@ -100,7 +100,7 @@ export class PDSDownloadApiClient extends PDSUploadAPIClient {
           checking_crc: true,
           init_chunk_con: 1,
           chunk_con_auto: false,
-          verbose: true, //显示详细日志
+          verbose: this.verbose, //显示详细日志
 
           ...configs,
         },
@@ -122,7 +122,7 @@ export class PDSDownloadApiClient extends PDSUploadAPIClient {
         max_chunk_size: 10 * 1024 * 1024, //每片10MB
         init_chunk_con: 5,
         chunk_con_auto: true,
-        verbose: true, //显示详细日志
+        verbose: this.verbose, //显示详细日志
 
         ...configs,
       },

@@ -6,7 +6,10 @@ import {fileURLToPath} from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
+// ft/tmp
 mkdirSync(join(__dirname, '../tmp'), {recursive: true})
+// ut/tmp
+mkdirSync(join(__dirname, '../../ut/tmp'), {recursive: true})
 
 import {PDSClient} from '../../..'
 

@@ -209,7 +209,7 @@ class TaskManager {
               state,
               avg_speed: task.avg_speed,
               error: err?.message,
-              error_code: err?.code
+              error_code: err?.code,
             },
           })
 

@@ -25,7 +25,7 @@ clean:
 token:
 	npm run token
 
-publish:build format
+publish:build
 	npm publish
 pub:build
 	npm publish --tag=beta

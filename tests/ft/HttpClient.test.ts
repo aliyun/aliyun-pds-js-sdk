@@ -8,7 +8,7 @@ describe('HttpClient', function () {
     it('request', async () => {
       // console.log(Config)
 
-      const client = await getHttpClient()
+      const client = await getHttpClient(true)
 
       let result = await client.postAPI('/drive/get', {drive_id})
       expect(result.drive_id).toBe(drive_id)

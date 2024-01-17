@@ -35,7 +35,7 @@ export function formatTime(s, f = 'YYYY-MM-DD HH:mm', defaultValue) {
   return moment(new Date(s)).format(f)
 }
 
-export function formatElapse(s ,defaultValue) {
+export function formatElapse(s, defaultValue) {
   if (!s) return defaultValue || ''
-  return moment(new Date(s+Date.now())).fromNow(true)
+  return moment(new Date(s + Date.now())).fromNow(true)
 }

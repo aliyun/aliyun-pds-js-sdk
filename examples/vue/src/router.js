@@ -1,5 +1,3 @@
-
-
 import {createRouter, createWebHistory} from 'vue-router'
 
 import Pan from './views/pan/index.vue'
