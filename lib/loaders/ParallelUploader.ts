@@ -4,9 +4,6 @@ import {isNetworkError} from '../utils/HttpUtil'
 import {PDSError} from '../utils/PDSError'
 import {IUpPartInfo} from '../Types'
 
-// import Debug from 'debug'
-// const debug = Debug('PDSJS:ParallelUploader')
-
 // 分片并发上传逻辑
 export class ParallelUploader extends BaseUploader {
   private _done_part_loaded = 0

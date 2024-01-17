@@ -5,8 +5,6 @@ import {PDSError} from '../utils/PDSError'
 import {IDownPartInfo} from '../Types'
 
 // const STREAM_HIGH_WATER_MARK = 512 * 1024 // 512KB
-// import Debug from 'debug'
-// const debug = Debug('PDSJS:BaseUploader')
 
 // 分片并发下载逻辑
 export class NodeDownloader extends BaseDownloader {

@@ -3,14 +3,13 @@
   "version": "0.0.0",
   "scripts": {
     "start": "npm-run-all -p ui sv",
-    "sv": "DEBUG=PDSJS* node lib/app.js",
+    "sv": "node lib/app.js",
     "ui": "vite",
     "build": "vite build",
     "serve": "vite preview",
     "format": "prettier --write 'src/**/*.{js,less,css,vue}'"
   },
   "dependencies": {
-    "debug": "~2.6.8",
     "ejs": "~2.5.5",
     "koa": "^2.3.0",
     "koa-bodyparser": "^4.2.0",

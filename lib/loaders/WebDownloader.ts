@@ -5,8 +5,6 @@ import {init_chunks_web_download} from '../utils/ChunkUtil'
 import {PDSError, parseErrorXML} from '../utils/PDSError'
 import {getArchiveTaskResult} from '../utils/LoadUtil'
 import {isNetworkError} from '../utils/HttpUtil'
-import Debug from 'debug'
-const debug = Debug('PDSJS:WebDownloader')
 
 console.timeLog = console.timeLog || console.timeEnd
 // Using readable streams: https://developer.mozilla.org/zh-CN/docs/Web/API/Streams_API/Using_readable_streams

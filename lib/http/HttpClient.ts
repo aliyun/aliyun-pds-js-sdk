@@ -3,10 +3,8 @@ import {IClientParams, IContextExt, ITokenInfo, IPDSRequestConfig, TMethod, Path
 
 import {PDSError} from '../utils/PDSError'
 
-import Debug from 'debug'
 import {delayRandom, isNetworkError} from '../utils/HttpUtil'
 
-const debug = Debug('PDSJS:HttpClient')
 const MAX_RETRY = 5
 
 export interface IHttpClient {
@@ -101,12 +99,12 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       data,
       ...options,
     }
-    debug('send:', JSON.stringify(req_opt))
+    console.debug('send:', JSON.stringify(req_opt))
     try {
       let res = await this.contextExt.axiosSend.call(this.contextExt, req_opt)
       return res
     } catch (err) {
-      debug('send error:', err.response || err)
+      console.debug('send error:', err.response || err)
       let pdsErr = new PDSError(err)
 
       this.emitError(pdsErr, req_opt)
@@ -139,7 +137,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       ...options,
     }
 
-    debug('request:', JSON.stringify(req_opt))
+    console.debug('request:', JSON.stringify(req_opt))
 
     req_opt.headers = req_opt.headers || {}
 
@@ -155,11 +153,11 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     try {
       // 发送请求
       let response = await this.contextExt.axiosSend.call(this.contextExt, req_opt)
-      debug('response:', response.data)
+      console.debug('response:', response.data)
 
       return response.data
     } catch (e) {
-      debug('request error:', e.response || e)
+      console.debug('request error:', e.response || e)
 
       let pdsErr = new PDSError(e)
 

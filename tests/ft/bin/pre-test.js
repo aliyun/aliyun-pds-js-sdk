@@ -11,16 +11,15 @@ mkdirSync(join(__dirname, '../tmp'), {recursive: true})
 import {PDSClient} from '../../..'
 
 let Config
-if(process.env.IT_CONFIG){
+if (process.env.IT_CONFIG) {
   console.log('Found IT_CONFIG', IT_CONFIG)
-  try{
-    Config = JSON.parse(Buffer.from(process.env.IT_CONFIG,'base64').toString())
-  }catch(err){
+  try {
+    Config = JSON.parse(Buffer.from(process.env.IT_CONFIG, 'base64').toString())
+  } catch (err) {
     console.error('parse env IT_CONFIG error', err)
   }
 }
-const config_path = join(__dirname,'..', 'config/conf')
-
+const config_path = join(__dirname, '..', 'config/conf')
 
 init()
 async function init() {
@@ -32,7 +31,7 @@ async function init() {
 }
 
 async function fetchSuperToken(user_id = 'superadmin') {
-  if(!Config){
+  if (!Config) {
     Config = (await import(config_path)).default
   }
 
