@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import Config from './config/conf.js'
+import Config from './config'
 import {join} from 'path'
 import {execSync} from 'child_process'
 import {existsSync, writeFileSync, statSync, unlinkSync} from 'fs'

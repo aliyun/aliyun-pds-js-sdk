@@ -1,4 +1,4 @@
-import Config from '../config/conf.js'
+import Config from '../config'
 
 const isWeb = typeof window == 'object'
 
@@ -11,17 +11,17 @@ async function getSuperToken(user_id = 'superadmin') {
   return await import(token_path)
 }
 
-async function getClient(verbose=false) {
+async function getClient() {
   let tokenInfo = await getSuperToken()
   let {api_endpoint, auth_endpoint} = Config
   return new PDSClient({
     token_info: tokenInfo,
     api_endpoint,
     auth_endpoint,
-    verbose
+    verbose: true,
   })
 }
-async function getHttpClient(verbose=false) {
+async function getHttpClient() {
   const {user_id, api_endpoint, auth_endpoint} = Config
   var tokenInfo = await getSuperToken(user_id)
 
@@ -29,7 +29,7 @@ async function getHttpClient(verbose=false) {
     token_info: tokenInfo,
     api_endpoint,
     auth_endpoint,
-    verbose
+    verbose: false,
   })
 }
 

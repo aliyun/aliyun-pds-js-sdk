@@ -1,5 +1,5 @@
 import {describe, expect, it, beforeEach, afterEach} from 'vitest'
-import Config from './config/conf.js'
+import Config from './config'
 import {getClient} from './util/token-util'
 import {generateFile, mockFile} from './util/file-util.js'
 import {PDSError} from '../../lib/utils/PDSError.js'

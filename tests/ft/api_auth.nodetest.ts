@@ -1,6 +1,6 @@
 import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
 import {PDSClient} from './util/token-util'
-import Config from './config/conf.js'
+import Config from './config'
 
 describe('AuthAPI', function () {
   let client

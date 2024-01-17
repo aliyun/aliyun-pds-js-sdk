@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import Config from './config/conf.js'
+import Config from './config'
 import {getHttpClient} from './util/token-util'
 
 describe('HttpClient', function () {
@@ -8,7 +8,7 @@ describe('HttpClient', function () {
     it('request', async () => {
       // console.log(Config)
 
-      const client = await getHttpClient(true)
+      const client = await getHttpClient()
 
       let result = await client.postAPI('/drive/get', {drive_id})
       expect(result.drive_id).toBe(drive_id)

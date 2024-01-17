@@ -1,7 +1,7 @@
 import {join, dirname} from 'path'
 import {mkdirSync, readFileSync, writeFileSync} from 'fs'
 import {fileURLToPath} from 'url'
-
+import Config from '../config'
 // es 没有 __filename 全局变量，需要模拟
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -13,17 +13,6 @@ mkdirSync(join(__dirname, '../../ut/tmp'), {recursive: true})
 
 import {PDSClient} from '../../..'
 
-let Config
-if (process.env.IT_CONFIG) {
-  console.log('Found IT_CONFIG')
-  try {
-    Config = JSON.parse(Buffer.from(process.env.IT_CONFIG, 'base64').toString())
-  } catch (err) {
-    console.error('parse env IT_CONFIG error', err)
-  }
-}
-const config_path = join(__dirname, '..', 'config/conf')
-
 init()
 async function init() {
   let t = await fetchSuperToken('superadmin')
@@ -34,10 +23,6 @@ async function init() {
 }
 
 async function fetchSuperToken(user_id = 'superadmin') {
-  if (!Config) {
-    Config = (await import(config_path)).default
-  }
-
   const {domain_id, client_id, api_endpoint, auth_endpoint, private_key} = Config
   const token_path = join(__dirname, '..', 'tmp', `tmp-token-${domain_id}-${user_id}.json`)
   let token

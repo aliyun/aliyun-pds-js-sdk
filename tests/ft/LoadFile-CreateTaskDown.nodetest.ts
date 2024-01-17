@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest'
 import {delay} from '../../lib/utils/HttpUtil'
 
-import Config from './config/conf.js'
+import Config from './config'
 
 import {join} from 'path'
 import {execSync} from 'child_process'

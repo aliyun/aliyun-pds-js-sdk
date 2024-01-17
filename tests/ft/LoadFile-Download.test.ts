@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest'
 
-import Config from './config/conf.js'
+import Config from './config'
 
 import {getClient} from './util/token-util'
 import {generateFile, getDownloadLocalPath} from './util/file-util.js'

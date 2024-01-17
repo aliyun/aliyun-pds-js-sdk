@@ -2,7 +2,7 @@ import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
 import {ICreateFileRes} from '../../lib/index'
 import {createTestFolder, getClient} from './util/token-util'
 
-import Config from './config/conf.js'
+import Config from './config'
 import {join} from 'path'
 import {execSync} from 'child_process'
 import {existsSync} from 'fs'
