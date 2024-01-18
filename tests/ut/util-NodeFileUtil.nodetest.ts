@@ -1,7 +1,8 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import * as NodeContext from '../../lib/context/NodeContext'
-import {describe, expect, it} from 'vitest'
+import {delay} from '../../lib/utils/HttpUtil'
+import {beforeAll, describe, expect, it} from 'vitest'
 import {
   calc_sha1,
   calc_crc64,
@@ -14,6 +15,10 @@ import {
 import {init_chunks_sha1} from '../../lib/utils/ChunkUtil'
 
 describe('src/context/NodeFileUtil', () => {
+  beforeAll(async () => {
+    // 等待，防止wasm未初始化 calcCrc64 报错
+    await delay(500)
+  })
   describe('calc_sha1', () => {
     describe('calc_crc64', () => {
       it('calc_crc64', () => {

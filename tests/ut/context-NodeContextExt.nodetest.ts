@@ -1,11 +1,14 @@
 import {beforeAll, describe, expect, it} from 'vitest'
 import * as NodeContext from '../../lib/context/NodeContext'
+import {delay} from '../../lib/utils/HttpUtil'
 import {NodeContextExt, streamToString, pipeWS} from '../../lib/context/NodeContextExt'
 
 describe('src/context/NodeContextExt', () => {
   let ext
-  beforeAll(() => {
+  beforeAll(async () => {
     ext = new NodeContextExt(NodeContext)
+    // 等待，防止wasm未初始化 calcCrc64 报错
+    await delay(500)
   })
   it('calcCrc64', () => {
     expect(ext.calcCrc64(undefined, '123')).toBe('123')
