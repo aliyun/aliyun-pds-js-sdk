@@ -1,7 +1,8 @@
 import {describe, expect, it, beforeEach, afterEach} from 'vitest'
 import Config from './config/conf'
 import {getClient} from './util/token-util'
-import {generateFile, mockFile} from './util/file-util.js'
+import {generateFile} from './util/file-util.js'
+import {downloadLink} from '../../lib/loaders/WebDownloader.js'
 
 describe('WebDownloader Error test', function () {
   let file_id
@@ -243,6 +244,16 @@ describe('WebDownloader Error test', function () {
       expect(cp2.drive_id).toBe(drive_id)
       expect(cp2.loc_id).toBe(drive_id)
       expect(cp2.loc_type).toBe('drive')
+    })
+
+    it('Multi downloadLink', async () => {
+      console.log('---------------开始下载 -----------------------')
+      // 下载
+      let info = await client.postAPI('/file/get_download_url', {drive_id, file_id})
+      for (var i = 0; i < 10; i++) {
+        await downloadLink(info.url, 'test' + i)
+      }
+      expect(i).toBe(10)
     })
   })
 })

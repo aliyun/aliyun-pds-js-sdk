@@ -62,13 +62,7 @@ export class WebDownloader extends BaseDownloader {
 
     if (!this.download_url) return
 
-    const tmp = document.createElement('a')
-    tmp.href = this.download_url
-    tmp.download = this.file.name
-    tmp.target = '_blank'
-    document.body.appendChild(tmp)
-    tmp.click()
-    document.body.removeChild(tmp)
+    downloadLink(this.download_url, this.file.name)
   }
 
   // 打包，获取 download_url
@@ -488,14 +482,36 @@ export async function fetchOssPart(url, reqOpt, getUrlFun) {
   return res
 }
 
+// 单个文件:  a link
+// export async function downloadLink2(url, fileName) {
+//   console.debug('downloadLink:', url, fileName)
+//   const tmp = document.createElement('a')
+//   tmp.href = url
+//   tmp.download = fileName
+//   tmp.target = '_blank'  //_blank:会打开很多个tab，然后消失掉，有点影响体验。如果没有此项，同时下载多次该方法，可能仅下载一次。
+
+//   document.body.appendChild(tmp)
+//   tmp.click()
+
+//   setTimeout(()=>{
+//     document.body.removeChild(tmp)
+//     URL.revokeObjectURL(url)
+//   },10)
+// }
+
+// 单个文件:  iframe 可连续下载
 export function downloadLink(url, fileName) {
   console.debug('downloadLink:', url, fileName)
-  const tmp = document.createElement('a')
-  tmp.href = url
-  tmp.download = fileName
-  document.body.appendChild(tmp)
-  tmp.click()
+  const iframe = document.createElement('iframe')
+  iframe.style.display = 'none' // 防止影响页面
+  iframe.style.height = '0px' // 防止影响页面
+  iframe.src = url
+  document.body.appendChild(iframe) // 这一行必须，iframe挂在到dom树上才会发请求
 
-  document.body.removeChild(tmp)
+  // 无法触发onload事件，10s 之后删除
+  setTimeout(() => {
+    iframe.remove()
+  }, 10 * 1000)
+
   URL.revokeObjectURL(url)
 }

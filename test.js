@@ -1,3 +1,7 @@
+/**
+ * Usage:
+ *    TEST_TYPE=browser node --max_old_space_size=9000 --experimental-modules ./test.js
+ */
 import { execSync } from 'child_process'
 
 let failed = 0;
