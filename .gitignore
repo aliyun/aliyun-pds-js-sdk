@@ -13,7 +13,9 @@ dist
 dist-ssr
 *.local
 /types
+
 /coverage
+
 /tests/ut/tmp/*
 /doc/
 
@@ -37,3 +39,5 @@ pnpm-lock.yaml
 t.js
 conf.js 
 conf.json
+.env
+up.sh

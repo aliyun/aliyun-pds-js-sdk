@@ -35,16 +35,16 @@
     "build": "npm run build:version && npm run build:node && npm run build:browser && npm run dts",
     "format": "prettier --write 'lib/**/*.{js,mjs,ts}' 'tests/**/*.{js,mjs,ts}' examples/**/*.{js,vue,ts}",
     "test": "vitest",
-    "test2": "vitest --ui --config vite.config.browser.js",
+    "test2": "vitest --config vite.config.browser.js",
     "test:node": "vitest --coverage",
-    "test:browser": "vitest --coverage --ui --config vite.config.browser.js",
+    "test:browser": "vitest --coverage --config vite.config.browser.js",
     "token": "tsx tests/ft/bin/pre-test.js",
     "pretest:node": "npm run token",
     "pretest:browser": "npm run token",
     "precov:node": "npm run token",
     "precov:browser": "npm run token",
     "cov:node": "vitest run --coverage && open-cli coverage/node/index.html",
-    "cov:browser": "vitest run --coverage --ui --config vite.config.browser.js && open-cli coverage/browser/index.html"
+    "cov:browser": "vitest run --coverage --config vite.config.browser.js && open-cli coverage/browser/index.html"
   },
   "directories": {
     "test": "tests/"
@@ -58,9 +58,7 @@
     "@vitest/coverage-v8": "^0.34.3",
     "@vitest/ui": "^0.34.3",
     "axios": "^0.24.0",
-    "cross-env": "^7.0.3",
-    "fast-glob": "^3.3.1",
-    "hash-wasm": "^4.9.0",
+    "cross-env": "^7.0.3", 
     "js-sha1": "^0.6.0",
     "open-cli": "^7.2.0",
     "prettier": "^3.0.3",

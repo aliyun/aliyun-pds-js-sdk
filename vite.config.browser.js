@@ -24,6 +24,7 @@ export default defineConfig({
       'tests/ft/*.test.js',
       'tests/ft/*.webtest.js',
     ],
+    // environment: 'happy-dom',
     coverage: {
       provider: 'istanbul',
       reporter: ['html'],

@@ -22,3 +22,9 @@ vite.config.*
 package-lock.json
 pnpm-lock.yaml
 .prettier*
+.env
+up.sh
+test.js
+test.log
+t.js
+conf.js

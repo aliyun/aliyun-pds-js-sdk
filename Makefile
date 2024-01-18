@@ -21,7 +21,7 @@ f:format
 format:
 	npm run format
 clean:
-	rm -rf node_modules package-lock.json dist coverage tests/ut/tmp/*
+	rm -rf node_modules package-lock.json pnpm-lock.yaml dist doc coverage/node coverage/browser tests/ut/tmp/*
 token:
 	npm run token
 
