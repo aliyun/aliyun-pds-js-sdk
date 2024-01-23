@@ -1,10 +1,13 @@
-import {IContext, IFile, ICalcFileParams, IUpPartInfo, IContextExt, IDownCheckpoint} from '../Types'
+import {IContext, IFile, ICalcFileParams, IUpPartInfo, IContextExt, IDownCheckpoint, THashName} from '../Types'
 import {PDSError} from '../utils/PDSError'
 import {
   calc_crc64,
   calc_sha1,
   calc_file_parts_sha1,
   calc_file_sha1,
+  calc_sha256,
+  calc_file_parts_sha256,
+  calc_file_sha256,
   calc_file_crc64,
   slice_file,
   does_file_exist,
@@ -64,8 +67,22 @@ export class BrowserContextExt implements IContextExt {
     if (str === undefined || str === null) return last
     return calc_crc64(this.textEncode(str), last)
   }
+  /**
+   * @deprecated Please use calcHash() instead
+   */
   calcSha1(str: string | Uint8Array) {
-    return calc_sha1(this.textEncode(str))
+    return this.calcHash('sha1', str)
+  }
+
+  calcHash(hashName: THashName, str: string | Uint8Array) {
+    switch (hashName) {
+      case 'sha1':
+        return calc_sha1(this.textEncode(str))
+      case 'sha256':
+        return calc_sha256(this.textEncode(str))
+      default:
+        throw new PDSError('Invalid hash_name', 'InvalidHashName')
+    }
   }
   textEncode(str: string | Uint8Array): Uint8Array {
     if (typeof str == 'string') {
@@ -73,31 +90,38 @@ export class BrowserContextExt implements IContextExt {
     }
     return str
   }
-  async calcFileSha1(
+  async calcFileHash(
     params: ICalcFileParams & {
+      hash_name?: THashName
       pre_size?: number
-      process_calc_sha1_size: number
+      process_calc_hash_size?: number
     },
   ) {
-    let {file, pre_size, onProgress, getStopFlag} = params
-    return await calc_file_sha1(file, pre_size || 0, onProgress, getStopFlag)
+    let {file, hash_name, pre_size, onProgress, getStopFlag} = params
+    hash_name = params.hash_name || 'sha1'
+    pre_size = pre_size || 0
+
+    if (hash_name == 'sha1') return await calc_file_sha1(file, pre_size, onProgress, getStopFlag)
+    else if (hash_name == 'sha256') return await calc_file_sha256(file, pre_size, onProgress, getStopFlag)
+    else throw new PDSError('Invalid hash_name', 'InvalidHashName')
   }
-  async calcFilePartsSha1(
+  async calcFilePartsHash(
     params: ICalcFileParams & {
-      part_info_list: IUpPartInfo[]
-      process_calc_sha1_size: number
+      hash_name?: THashName
+      part_info_list?: IUpPartInfo[]
+      process_calc_hash_size?: number
     },
   ) {
-    let {file, part_info_list, onProgress, getStopFlag} = params
-    return await calc_file_parts_sha1(file, part_info_list || [], onProgress, getStopFlag)
+    let {file, hash_name, part_info_list, onProgress, getStopFlag} = params
+    hash_name = params.hash_name || 'sha1'
+    part_info_list = part_info_list || []
+
+    if (hash_name == 'sha1') return await calc_file_parts_sha1(file, part_info_list, onProgress, getStopFlag)
+    else if (hash_name == 'sha256') return await calc_file_parts_sha256(file, part_info_list, onProgress, getStopFlag)
+    else throw new PDSError('Invalid hash_name', 'InvalidHashName')
   }
 
-  async calcFileCrc64(
-    params: ICalcFileParams & {
-      part_info_list: IUpPartInfo[]
-      process_calc_sha1_size: number
-    },
-  ) {
+  async calcFileCrc64(params: ICalcFileParams) {
     let {file, onProgress, getStopFlag} = params
     return await calc_file_crc64(file, onProgress, getStopFlag)
   }

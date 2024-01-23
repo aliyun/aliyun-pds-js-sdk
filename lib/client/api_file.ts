@@ -7,6 +7,7 @@ import {
   TMethod,
   TCheckNameMode,
   TCheckNameModeExt,
+  THashName,
 } from '../Types'
 
 import {PDSFileRevisionAPIClient} from './api_file_revision'
@@ -391,7 +392,7 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
   async saveFileContent(
     fileInfo: ISaveFileContentReq | IFileItem,
     content = '',
-    config: {check_name_mode?: TCheckNameMode; ignore_rapid?: boolean} = {},
+    config: {check_name_mode?: TCheckNameMode; ignore_rapid?: boolean; hash_name?: THashName} = {},
     options?: IPDSRequestConfig,
   ) {
     let opt: ICreateFileReq = {
@@ -409,11 +410,13 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
 
     // 强制不秒传，测试用
     if (!config.ignore_rapid) {
-      const sha1 = this.contextExt.calcSha1(content)
+      let hash_name = config.hash_name || 'sha1'
+
+      const hash = this.contextExt.calcHash(hash_name, content)
 
       Object.assign(opt, {
-        content_hash_name: 'sha1',
-        content_hash: sha1,
+        content_hash_name: hash_name,
+        content_hash: hash,
       })
     }
     const info = await this.createFile(opt, options)

@@ -9,6 +9,8 @@ type TMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD'
 
 type PathType = 'StandardMode' // 标准模式
 
+type THashName = 'sha1' | 'sha256'
+
 type FileType =
   | 'file' // 文件
   | 'folder' // 文件夹(目录)
@@ -34,6 +36,7 @@ type UploadState =
 // DownloadState 没有 computing_hash & rapid_success
 type DownloadState =
   | 'waiting' // 排队中， 等待下载
+  | 'prepare' // 准备中
   | 'start' // 开始
   | 'created' // 创建成功
   | 'running' // 下载中
@@ -82,7 +85,7 @@ interface IContext {
   CRC64?: any
 }
 interface IFileKey {
-  share_id?: string // 分享id。 如果此视频通过分享访问，那么设置shareid、不设置driveid且传递shareToken，否则需要设置drive_id
+  share_id?: string // 分享id。 如果此视频通过分享访问，那么设置 shareId、不设置 driveId 且传递 shareToken，否则需要设置 drive_id
   drive_id?: string
   file_id: string
   // [key:string]:any
@@ -118,6 +121,7 @@ interface IUpPartInfo {
   end_time?: number
   // 并发上传 片 context
   parallel_sha1_ctx?: IShardContext
+  parallel_sha256_ctx?: IShardContext
 }
 interface IPartMap<T> {
   [partNumber: number]: T
@@ -134,7 +138,8 @@ interface ICustomCrc64FunOpt {
   context?: IContext
 }
 
-interface ICustomSha1FunOpt {
+interface ICustomHashFunOpt {
+  hash_name?: THashName
   file: string | IFile // HTML File, IFile, 或者 file_path
   onProgress: (prog: number) => void
   getStopFlag: () => boolean
@@ -144,7 +149,8 @@ interface ICustomSha1FunOpt {
   end?: number
   context?: IContext
 }
-interface ICustomMultiSha1FunOpt {
+
+interface ICustomPartsHashFunOpt {
   file: string | IFile // HTML File, IFile, 或者 file_path
   onProgress: (prog: number) => void
   getStopFlag: () => boolean
@@ -175,7 +181,7 @@ interface IDownPartInfo {
 }
 
 interface IShardContext {
-  h: [number, number, number, number, number]
+  h: number[]
   length: number
 }
 
@@ -227,15 +233,27 @@ interface IUpConfig {
   check_name_mode?: TCheckNameModeExt
   check_name_mode_refuse_ignore_error?: boolean
 
+  // 上传秒传计算文件 hash 方法
+  hash_name?: THashName
+
   // 标签
   user_tags?: {key: string; value: string}[]
 
   // 是否校验
   checking_crc?: boolean
 
-  // 秒传相关
+  /**
+   * @deprecated Please use min_size_for_pre_hash instead
+   */
   min_size_for_pre_sha1?: number
+  /**
+   * @deprecated Please use min_size_for_hash instead
+   */
   max_size_for_sha1?: number
+
+  // 秒传相关
+  min_size_for_pre_hash?: number
+  min_size_for_hash?: number
 
   // 限制
   max_file_size_limit?: number // 文件大小限制
@@ -247,15 +265,33 @@ interface IUpConfig {
   chunk_con_auto?: boolean // 自动调整并发数策略
 
   custom_crc64_fun?: (opt: ICustomCrc64FunOpt) => Promise<string> //自定义 计算crc64的方法
-  custom_sha1_fun?: (opt: ICustomSha1FunOpt) => Promise<string> //自定义 计算sha1的方法
+
+  /**
+   * @deprecated Please use custom_parts_sha1_fun instead
+   */
+  custom_sha1_fun?: (opt: ICustomHashFunOpt) => Promise<string> //自定义 计算sha1的方法
+  /**
+   * @deprecated Please use custom_parts_hash_fun instead
+   */
   custom_parts_sha1_fun?: (
-    opt: ICustomMultiSha1FunOpt,
+    opt: ICustomPartsHashFunOpt,
   ) => Promise<{part_info_list: IUpPartInfo[]; content_hash: string}> //自定义计算 sha1 方法 (分part)
+
+  custom_hash_fun?: (opt: ICustomHashFunOpt) => Promise<string> //自定义 计算 sha1/sha256 的方法
+  custom_parts_hash_fun?: (
+    opt: ICustomPartsHashFunOpt,
+  ) => Promise<{part_info_list: IUpPartInfo[]; content_hash: string}> //自定义计算 sha1/sha256 方法 (分part)
 
   // 标准模式是否启用分片并发上传
   parallel_upload?: boolean
 
+  /**
+   * @deprecated no longer support process_calc_*
+   */
   process_calc_crc64_size?: number // 文件大小超过多少，将启用子进程计算 crc64
+  /**
+   * @deprecated no longer support process_calc_*
+   */
   process_calc_sha1_size?: number // 文件大小超过多少，将启用子进程计算 sha1
 
   // 最大分片数：10000片
@@ -426,17 +462,23 @@ interface IContextExt {
   fileMustExists(file: IFile)
 
   textEncode(str: string | Uint8Array): Uint8Array
+  /**
+   * @deprecated Please use calcHash() instead
+   */
   calcSha1(str: string): string
-  calcFileSha1(
+  calcHash(hash_name: THashName, str: string): string
+  calcFileHash(
     params: ICalcFileParams & {
+      hash_name?: THashName
       pre_size?: number
-      process_calc_sha1_size?: number
+      process_calc_hash_size?: number
     },
   )
-  calcFilePartsSha1(
+  calcFilePartsHash(
     params: ICalcFileParams & {
+      hash_name?: THashName
       part_info_list?: IUpPartInfo[]
-      process_calc_sha1_size?: number
+      process_calc_hash_size?: number
     },
   )
   calcFileCrc64(params: ICalcFileParams & {process_calc_crc64_size?: number})
@@ -461,6 +503,9 @@ interface ICalcFileParams {
 }
 
 export type {
+  THashName,
+  ICustomHashFunOpt,
+  ICustomPartsHashFunOpt,
   IPDSRequestConfig,
   TMethod,
   IPartMap,

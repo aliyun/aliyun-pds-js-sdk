@@ -1,6 +1,11 @@
 
 # Release Notes
 
+## 1.2.0
+
+* feat: 上传支持 sha256 计算hash方法。
+
+
 ## 1.1.0
 
 * feat: web端支持服务端打包下载任务。

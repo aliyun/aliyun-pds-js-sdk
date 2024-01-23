@@ -3,7 +3,7 @@ import {describe, expect, it} from 'vitest'
 import {
   get_available_size,
   find_64x,
-  init_chunks_sha1,
+  init_chunks_sha,
   init_chunks_parallel,
   init_chunks_download,
   calc_uploaded,
@@ -104,7 +104,7 @@ describe('ChunkUtil', function () {
     })
   })
 
-  describe('init_chunks_sha1', () => {
+  describe('init_chunks_sha', () => {
     it('file', () => {
       let t: string[] = []
       for (let i = 0; i < 100; i++) t.push(`test-${i}`)
@@ -112,7 +112,7 @@ describe('ChunkUtil', function () {
 
       // const file = new File([t.join('\n')], 'hello.txt', {type: 'plain/text'})
 
-      let [part_info_list, chunk_size] = init_chunks_sha1(str.length, [], 64)
+      let [part_info_list, chunk_size] = init_chunks_sha(str.length, [], 64)
 
       expect(part_info_list.length).toBe(7)
       expect(chunk_size).toBe(128)
@@ -121,7 +121,7 @@ describe('ChunkUtil', function () {
     it('empty file', () => {
       // const file = new File([], 'zero.txt', {type: 'plain/text'})
       let str = ''
-      let [part_info_list, chunk_size] = init_chunks_sha1(str.length, [], 64)
+      let [part_info_list, chunk_size] = init_chunks_sha(str.length, [], 64)
       expect(part_info_list.length).toBe(1)
       expect(chunk_size).toBe(64)
     })
@@ -132,7 +132,7 @@ describe('ChunkUtil', function () {
       const etag = `"lasdfasofasdfk23"`
       // const file = new File([t.join('\n')], 'hello.txt', {type: 'plain/text'})
       let str = t.join('\n')
-      let [part_info_list, chunk_size] = init_chunks_sha1(str.length, [], 64)
+      let [part_info_list, chunk_size] = init_chunks_sha(str.length, [], 64)
       expect(part_info_list.length).toBe(7)
       expect(chunk_size).toBe(128)
 
@@ -140,7 +140,7 @@ describe('ChunkUtil', function () {
       parts[0].loaded = 128
       parts[0].etag = etag
 
-      let [part_info_list2, chunk_size2] = init_chunks_sha1(str.length, parts, 64)
+      let [part_info_list2, chunk_size2] = init_chunks_sha(str.length, parts, 64)
       expect(part_info_list2.length).toBe(7)
       expect(chunk_size2).toBe(128)
 

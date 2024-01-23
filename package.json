@@ -1,6 +1,6 @@
 {
   "name": "aliyun-pds-js-sdk",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "description": "PDS SDK for javascript",
   "files": [
@@ -58,8 +58,9 @@
     "@vitest/coverage-v8": "^0.34.3",
     "@vitest/ui": "^0.34.3",
     "axios": "^0.24.0",
-    "cross-env": "^7.0.3", 
+    "cross-env": "^7.0.3",
     "js-sha1": "^0.6.0",
+    "js-sha256": "^0.10.1",
     "open-cli": "^7.2.0",
     "prettier": "^3.0.3",
     "tsx": "^3.12.10",

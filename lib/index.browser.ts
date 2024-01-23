@@ -19,13 +19,19 @@ import {BrowserContextExt} from './context/BrowserContextExt'
 import {PDSDownloadApiClient} from './client/api_y_download'
 import {HttpClient as Http_Client} from './http/HttpClient'
 
-import {calc_crc64, calc_sha1, calc_file_sha1, calc_file_parts_sha1, calc_file_crc64} from './context/BrowserFileUtil'
-import {init_chunks_download, init_chunks_parallel, init_chunks_sha1} from './utils/ChunkUtil'
+import {
+  calc_crc64,
+  calc_file_crc64,
+  calc_sha1,
+  calc_file_sha1,
+  calc_file_parts_sha1,
+  calc_sha256,
+  calc_file_sha256, // 串行
+  calc_file_parts_sha256, // 并行，按part计算中间值
+} from './context/BrowserFileUtil'
+import {init_chunks_download, init_chunks_parallel, init_chunks_sha} from './utils/ChunkUtil'
 import {IClientParams, IContext} from './Types'
 import {PDSError} from './utils/PDSError'
-// import * as ChunkUtil from './utils/ChunkUtil'
-// import * as JS_CRC64 from './utils/JS_CRC64'
-// import * as JS_SHA1 from './utils/JS_SHA1'
 export * from './utils/Formatter'
 import pkg from './pkg'
 
@@ -34,15 +40,22 @@ console.log('%caliyun-pds-js-sdk@' + version, `${version.includes('-') ? 'color:
 
 const CalcUtil = {
   calc_crc64,
+  calc_file_crc64,
   calc_sha1,
   calc_file_sha1, // 串行
   calc_file_parts_sha1, // 并行，按part计算中间值
-  calc_file_crc64,
+  calc_sha256,
+  calc_file_sha256, // 串行
+  calc_file_parts_sha256, // 并行，按part计算中间值
 }
 const ChunkUtil = {
   init_chunks_download,
   init_chunks_parallel,
-  init_chunks_sha1,
+  /**
+   * @deprecated please use linkAccount instead
+   */
+  init_chunks_sha1: init_chunks_sha,
+  init_chunks_sha,
 }
 class PDSClient extends PDSDownloadApiClient {
   constructor(opt: IClientParams, ctx: IContext = Context) {
