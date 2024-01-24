@@ -98,7 +98,7 @@ describe('Web LoadFile', function () {
         {
           ignore_rapid: true,
           parallel_upload: false,
-          max_size_for_sha1: 5 * 1024 * 1024,
+          max_size_for_hash: 5 * 1024 * 1024,
 
           verbose: true, //显示详细日志
           onReady(t) {
@@ -131,9 +131,10 @@ describe('Web LoadFile', function () {
           drive_id,
         },
         {
+          ignore_rapid: false,
           parallel_upload: false,
           verbose: true, //显示详细日志
-          min_size_for_pre_sha1: 4 * 1024 * 1024,
+          min_size_for_pre_hash: 4 * 1024 * 1024,
           onReady(t) {
             task = t
           },
@@ -157,7 +158,7 @@ describe('Web LoadFile', function () {
 
       // 下载
       let fileInfo = await client.postAPI('/file/get', {drive_id, file_id})
-      console.log(fileInfo)
+      console.log('---fileInfo:', fileInfo)
 
       var cp2 = await client.downloadFile(fileInfo, '', {
         max_chunk_size: 3 * 1024 * 1024,

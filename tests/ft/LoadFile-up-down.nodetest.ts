@@ -117,10 +117,10 @@ describe('LoadFile', function () {
             console.log('---------state', state, err)
           },
           onProgress(state, progress) {
-            console.log('onProgress:', state, progress, task.speed / 1024 / 1024 + 'MB/s')
+            // console.log('onProgress:', state, progress, task.speed / 1024 / 1024 + 'MB/s')
           },
           onPartComplete(cp, partInfo) {
-            console.log('onPartComplete:', partInfo.part_number, '---done-------')
+            // console.log('onPartComplete:', partInfo.part_number, '---done-------')
           },
         },
       )
@@ -139,17 +139,18 @@ describe('LoadFile', function () {
           drive_id,
         },
         {
+          ignore_rapid: false,
           parallel_upload: false,
           verbose: true, //显示详细日志
-          min_size_for_pre_sha1: 4 * 1024 * 1024,
+          min_size_for_pre_hash: 4 * 1024 * 1024,
           onReady(t) {
             task = t
           },
           onProgress(state, progress) {
-            console.log('onProgress:', state, progress, task.speed / 1024 / 1024 + 'MB/s')
+            // console.log('onProgress:', state, progress, task.speed / 1024 / 1024 + 'MB/s')
           },
           onPartComplete(cp, partInfo) {
-            console.log('onPartComplete:', partInfo.part_number, '---done-------')
+            // console.log('onPartComplete:', partInfo.part_number, '---done-------')
           },
         },
       )
@@ -165,7 +166,7 @@ describe('LoadFile', function () {
 
       // 下载
       let fileInfo = await client.postAPI('/file/get', {drive_id, file_id})
-      console.log(fileInfo)
+      console.log('---fileInfo:', fileInfo)
 
       var cp2 = await client.downloadFile(fileInfo, to, {
         max_chunk_size: 3 * 1024 * 1024,

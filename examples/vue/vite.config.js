@@ -5,7 +5,7 @@ import {AntDesignVueResolver} from 'unplugin-vue-components/resolvers'
 
 const ORIGIN = 'http://127.0.0.1:3300'
 
-const {domain_id, api_endpoint} = require('./lib/config')
+const {domain_id, api_endpoint, data_hash_name} = require('./lib/config')
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -26,6 +26,7 @@ export default defineConfig({
     Global: {
       domain_id,
       api_endpoint,
+      data_hash_name,
     },
   },
   server: {

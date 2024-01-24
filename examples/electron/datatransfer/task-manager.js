@@ -104,11 +104,12 @@ class TaskManager {
     }
   }
 
-  createUploadTask({file, parent_file_id, drive_id, check_name_mode}) {
+  createUploadTask({file, parent_file_id, drive_id, check_name_mode, hash_name='sha1'}) {
     console.log('[TaskManager] createUploadTask:', {file, parent_file_id, drive_id, check_name_mode})
     let task = this.#client.createUploadTask(
       {file, drive_id, parent_file_id},
       {
+        hash_name, // sha1, sha256
         check_name_mode, // refuse, auto_rename, overwrite, skip
         ignore_rapid: true, // 忽略秒传，测试用
 

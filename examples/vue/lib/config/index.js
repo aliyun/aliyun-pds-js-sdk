@@ -3,6 +3,7 @@ const domain_id = ''
 let cfg = {
   port: 3300,
   domain_id,
+  data_hash_name: 'sha1', // sha1, sha256
   api_endpoint: `https://${domain_id}.api.pds.aliyunccp.com`,
   jwt_app_id: '',
   jwt_app_private_key: `-----BEGIN PRIVATE KEY-----
