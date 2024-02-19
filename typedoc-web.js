@@ -3,4 +3,5 @@ export default {
   out: 'doc/web',
   name: 'Web版本',
   readme: 'README.md',
+  commentStyle: 'All',
 }

@@ -7,7 +7,8 @@ interface IPDSRequestConfig extends AxiosRequestConfig {
 
 type TMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD'
 
-type PathType = 'StandardMode' // 标准模式
+/** 标准模式 */
+type PathType = 'StandardMode'
 
 type THashName = 'sha1' | 'sha256'
 
@@ -85,7 +86,8 @@ interface IContext {
   CRC64?: any
 }
 interface IFileKey {
-  share_id?: string // 分享id。 如果此视频通过分享访问，那么设置 shareId、不设置 driveId 且传递 shareToken，否则需要设置 drive_id
+  /** 分享id。 如果此视频通过分享访问，那么设置 shareId、不设置 driveId 且传递 shareToken，否则需要设置 drive_id */
+  share_id?: string
   drive_id?: string
   file_id: string
   // [key:string]:any
@@ -95,10 +97,11 @@ interface IFile {
   path?: string
   name: string
   size: number
-  type?: string // content-type
+  /** content-type */
+  type?: string
   slice?(start: number, end: number): any
-
-  temp_path?: string // for download
+  /** for download only */
+  temp_path?: string
 }
 
 interface IUpPartInfo {
@@ -115,11 +118,11 @@ interface IUpPartInfo {
   running?: boolean
   done?: boolean
 
-  // 上传本片的开始时间
+  /** 上传本片的开始时间 */
   start_time?: number
-  // 上传本片的结束时间
+  /** 上传本片的结束时间 */
   end_time?: number
-  // 并发上传 片 context
+  /** 并发上传 片 context */
   parallel_sha1_ctx?: IShardContext
   parallel_sha256_ctx?: IShardContext
 }
@@ -229,7 +232,11 @@ interface IUpCheckpoint {
 }
 
 interface IUpConfig {
-  // check_name_mode: overwrite (直接覆盖，以后多版本有用), auto_rename (自动换一个随机名称), refuse (不会创建，告诉你已经存在), ignore (会创建重名的)
+  /**
+   * - overwrite (直接覆盖，以后多版本有用)
+   * - auto_rename (自动换一个随机名称)
+   * - refuse (不会创建，告诉你已经存在), ignore (会创建重名的)
+   */
   check_name_mode?: TCheckNameModeExt
   check_name_mode_refuse_ignore_error?: boolean
 

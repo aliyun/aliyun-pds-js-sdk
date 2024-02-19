@@ -42,8 +42,8 @@ export class PDSGroupApiClient extends PDSMembershipApiClient {
     return this.postAPI<IListRes<IGroupItem>>('/group/search', data, options)
   }
 
-  // 列举一个 group 下的所有子 group或user,
   /**
+   * 列举一个 group 下的所有子 group或user,
    * @deprecated Please use listGroupMembers instead
    * @param data
    * @param options
@@ -74,11 +74,11 @@ export class PDSGroupApiClient extends PDSMembershipApiClient {
     return this.listAllItems<IGroupItem, IListReq>('/group/list', data, options)
   }
 
-  // 添加用户到group
+  /** 添加用户到group */
   addGroupMember(data: IAddGroupMemberReq, options?: IPDSRequestConfig) {
     return this.postAPI<any>('/group/add_member', data, options)
   }
-  // 从 group 移除用户
+  /** 从 group 移除用户 */
   removeGroupMember(data: IRemoveGroupMemberReq, options?: IPDSRequestConfig) {
     return this.postAPI<any>('/group/remove_member', data, options)
   }
@@ -92,13 +92,15 @@ export class PDSGroupApiClient extends PDSMembershipApiClient {
 }
 
 export interface IAddGroupMemberReq {
-  group_id: string // 目标群组ID，表示将成员添加到目标群组下
+  /** 目标群组ID，表示将成员添加到目标群组下 */
+  group_id: string
   /* 成员类型，当前只能添加用户，群组可以在创建时直接选择加入的父群组
   user（用户）
   注意：群组只能作为一个群组的成员，不能同时成为多个群组的成员。 用户可以同时成为多个群组的成员
   */
   member_type: 'user'
-  member_id: string // 成员ID， 当member_type为user时，此字段填对应的userID。
+  /** 成员ID， 当member_type为user时，此字段填对应的userID。*/
+  member_id: string
 }
 export interface IRemoveGroupMemberReq extends IAddGroupMemberReq {}
 

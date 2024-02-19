@@ -46,11 +46,11 @@ export class PDSFileExtAPIClient extends PDSDriveAPIClient {
   }
   /**
    * 获取转码后音视频支持的清晰度列表
+   * 获取清晰度列表：可以替代 getVideoPreviewPlayInfo, {get_without_url:true}
    * @param data
    * @param options
    * @returns
    */
-  // 获取清晰度列表：可以替代 getVideoPreviewPlayInfo, {get_without_url:true}
   getVideoPreviewPlayMeta(data: IGetVideoPreviewPlayMetaReq, options?: IPDSRequestConfig) {
     return this.postAPI<IGetVideoPreviewPlayMetaRes>('/file/get_video_preview_play_meta', data, options)
   }
@@ -71,12 +71,16 @@ export class PDSFileExtAPIClient extends PDSDriveAPIClient {
     return this.getVideoPreviewPlayInfo(opt, options)
   }
 
-  // 服务端打包下载，返回 异步任务ID
+  /**
+   * 服务端打包下载，返回 异步任务ID
+   */
   archiveFiles(data: IArchiveFileReq, options: IPDSRequestConfig = {}) {
     return this.postAPI<IArchiveFileRes>('/file/archive_files', data, options)
   }
 
-  // 服务端打包下载, 轮询直到返回
+  /**
+   * 服务端打包下载, 轮询直到返回
+   */
   async pollingArchiveFiles(data: IArchiveFileReq, options: IPDSRequestConfig = {}) {
     const {async_task_id} = await this.archiveFiles(data, options)
     return await this.pollingAsyncTask(async_task_id, 5000, options)

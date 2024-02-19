@@ -159,7 +159,7 @@ export interface IListGroupUserRes {
   readonly next_marker?: any
 }
 
-export interface IUserGeneralSearchReq {
+export interface IUserGeneralSearchReq extends IListReq {
   nick_name?: string
   nick_name_for_fuzzy?: string
   parent_group_id_list?: string[]

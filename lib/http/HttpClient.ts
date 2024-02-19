@@ -68,6 +68,13 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     this.share_token = share_token
   }
 
+  /**
+   * 基础 API 服务调用方法。基于此方法，可以封装出调用任何 PDS API 方法。
+   * @param pathname <string> 调用 API 服务的 pathname。 比如 API 是 /v2/file/list, 此处传入 /file/list 即可。
+   * @param data     <object> 调用 pathname 对应接口的参数 JSON。
+   * @param options
+   * @returns
+   */
   async postAPI<T = any>(pathname: string, data = {}, options: IPDSRequestConfig = {}): Promise<T> {
     return await this.request(this.api_endpoint || '', 'POST', pathname, data, options)
   }
