@@ -108,14 +108,29 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       data,
       ...options,
     }
-    if (this.verbose) console.debug('send:', JSON.stringify(req_opt))
+    if (this.verbose) {
+      console.log('request:', {
+        method: req_opt.method,
+        url: req_opt.url,
+        headers: req_opt?.headers,
+        params: req_opt?.params,
+        data: req_opt?.data,
+      })
+    }
     try {
       let res = await this.contextExt.axiosSend.call(this.contextExt, req_opt)
-      if (this.verbose) console.debug('response:', res.data)
+      if (this.verbose) {
+        console.log('response:', {
+          status: res.status,
+          headers: res.headers,
+          data: res.data,
+        })
+      }
       return res
     } catch (err) {
-      if (this.verbose) console.debug('send error:', err.response || err)
       let pdsErr = new PDSError(err)
+
+      if (this.verbose) console.log('error:', pdsErr)
 
       this.emitError(pdsErr, req_opt)
 
@@ -147,7 +162,15 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       ...options,
     }
 
-    if (this.verbose) console.debug('request:', JSON.stringify(req_opt))
+    if (this.verbose) {
+      console.log('request:', {
+        method: req_opt.method,
+        url: req_opt.url,
+        headers: req_opt?.headers,
+        params: req_opt?.params,
+        data: req_opt?.data,
+      })
+    }
 
     req_opt.headers = req_opt.headers || {}
 
@@ -163,13 +186,19 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     try {
       // 发送请求
       let response = await this.contextExt.axiosSend.call(this.contextExt, req_opt)
-      if (this.verbose) console.debug('response:', response.data)
+      if (this.verbose) {
+        console.log('response:', {
+          status: response.status,
+          headers: response.headers,
+          data: response.data,
+        })
+      }
 
       return response.data
     } catch (e) {
-      if (this.verbose) console.debug('request error:', e.response || e)
-
       let pdsErr = new PDSError(e)
+
+      if (this.verbose) console.log('error:', pdsErr)
 
       // 不是每个 http error 都emit
       if (
