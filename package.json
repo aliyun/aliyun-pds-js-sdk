@@ -36,15 +36,13 @@
     "format": "prettier --write 'lib/**/*.{js,mjs,ts}' 'tests/**/*.{js,mjs,ts}' examples/**/*.{js,vue,ts}",
     "test": "vitest",
     "test2": "vitest --config vite.config.browser.js",
-    "test:node": "vitest --coverage",
-    "test:browser": "vitest --coverage --config vite.config.browser.js",
+    "test:node": "npm run token && vitest --coverage",
+    "test:browser": "npm run token && vitest --coverage --config vite.config.browser.js",
     "token": "tsx tests/ft/bin/pre-test.js",
-    "pretest:node": "npm run token",
-    "pretest:browser": "npm run token",
-    "precov:node": "npm run token",
-    "precov:browser": "npm run token",
-    "cov:node": "vitest run --coverage && open-cli coverage/node/index.html",
-    "cov:browser": "vitest run --coverage --config vite.config.browser.js && open-cli coverage/browser/index.html"
+    "cov:node": "npm run token && vitest run --coverage && open-cli coverage/node/index.html",
+    "cov:browser": "npm run token && vitest run --coverage --config vite.config.browser.js && open-cli coverage/browser/index.html",
+    "cov:node2": "npm run token && vitest run --coverage --no-color",
+    "cov:browser2": "npm run token && vitest run --coverage --no-color"
   },
   "directories": {
     "test": "tests/"
