@@ -12,7 +12,7 @@ let covBranch = ''
 let covFunction = ''
 
 let testType = process.env.TEST_TYPE || 'node'
-
+let isWindows = process.platform == 'win32'
 try {
   execSync(`npm run cov:${testType} -- --silent --run --no-color	> ./test.log`, {cwd: process.cwd()})
 } catch (e) {
@@ -22,10 +22,9 @@ try {
 }
 
 try {
-  const str = execSync(
-    process.platform == 'win32' ? 'powershell gc -tail 500 -encoding utf8 test.log' : `tail -n 500 ./test.log`,
-    {cwd: process.cwd()},
-  ).toString()
+  const str = execSync(isWindows ? 'powershell gc -tail 500 -encoding utf8 test.log' : `tail -n 500 ./test.log`, {
+    cwd: process.cwd(),
+  }).toString()
   str.split('\n').forEach(line => {
     if (/failed/.test(line)) {
       failed = line.replace(/.*\s(\d+)\sfailed.*/, '$1')
@@ -56,4 +55,4 @@ try {
 const msg = `TEST_CASE_AMOUNT:{"passed": ${passed},"failed": ${failed},"skipped":${skipped} }`
 console.log(msg)
 
-execSync(`cp ./test.log coverage/${testType}`, {cwd: process.cwd()})
+execSync(`${isWindows ? 'powershell ' : ''}cp ./test.log coverage/${testType}`, {cwd: process.cwd()})
