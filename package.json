@@ -42,7 +42,7 @@
     "cov:node": "npm run token && vitest run --coverage && open-cli coverage/node/index.html",
     "cov:browser": "npm run token && vitest run --coverage --config vite.config.browser.js && open-cli coverage/browser/index.html",
     "cov:node2": "npm run token && vitest run --coverage --no-color",
-    "cov:browser2": "npm run token && vitest run --coverage --no-color"
+    "cov:browser2": "npm run token && vitest run --coverage --no-color --config vite.config.browser.js"
   },
   "directories": {
     "test": "tests/"
