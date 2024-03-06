@@ -1,7 +1,6 @@
 import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
 // import {IGroupItem} from '../../src'
-import {delay} from '../../lib/utils/HttpUtil'
-import {getClient} from './util/token-util'
+import {getClient, delay} from './util/token-util'
 
 describe('Group', function () {
   let client
@@ -15,7 +14,7 @@ describe('Group', function () {
     const result = await client.createGroup({
       description: '',
       group_name: `Test_Group_${Math.round(Math.random() * 1000)}`,
-      is_root: true,
+      // is_root: true,
     })
     expect(!!result.group_id).toBe(true)
     groupInfo = result

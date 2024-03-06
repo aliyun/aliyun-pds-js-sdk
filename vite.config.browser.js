@@ -26,6 +26,7 @@ export default defineConfig({
     ],
     // environment: 'happy-dom',
     coverage: {
+      reportOnFailure:true,
       provider: 'istanbul',
       reporter: ['html'],
       reportsDirectory: join(__dirname, './coverage/browser'),

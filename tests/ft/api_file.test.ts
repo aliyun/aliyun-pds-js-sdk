@@ -1,8 +1,6 @@
 import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
 
-import {delay} from '../../lib/utils/HttpUtil'
-
-import {getClient, createTestFolder} from './util/token-util'
+import {getClient, delay, createTestFolder} from './util/token-util'
 
 describe('FileAPI', function () {
   let drive_id: string
@@ -18,6 +16,8 @@ describe('FileAPI', function () {
       parent_file_id: 'root',
       name: test_folder_name,
     })
+
+    expect(!!test_folder.file_id).toBe(true)
 
     console.log('所有测试在此目录下进行：', test_folder)
   })

@@ -1,10 +1,9 @@
 import {describe, expect, it} from 'vitest'
-import {delay} from '../../lib/utils/HttpUtil'
 
 import Config from './config/conf'
 
 import {generateFile} from './util/file-util'
-import {getClient} from './util/token-util'
+import {getClient, delay} from './util/token-util'
 
 describe('LoadFile upload state change', function () {
   describe('createTask', () => {

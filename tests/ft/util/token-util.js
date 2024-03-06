@@ -61,4 +61,9 @@ async function createTestFolder(client, {drive_id, parent_file_id, name}) {
   })
   return test_folder
 }
-export {getSuperToken, getClient, getHttpClient, createTestFolder, PDSClient}
+
+function delay(ms) {
+  console.log(`delay: ${ms} ms`)
+  return new Promise(a => setTimeout(a, ms))
+}
+export {getSuperToken, getClient, getHttpClient, createTestFolder, delay, PDSClient}

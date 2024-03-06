@@ -1,6 +1,5 @@
 import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
-import {delay} from '../../lib/utils/HttpUtil'
-import {getClient, createTestFolder} from './util/token-util'
+import {getClient, delay, createTestFolder} from './util/token-util'
 import {getTestVideoFile, getTestAudioFile} from './util/file-util'
 
 describe('file_ext', function () {

@@ -1,9 +1,8 @@
 import {describe, expect, it} from 'vitest'
-import {delay} from '../../lib/utils/HttpUtil'
 
 import Config from './config/conf'
 
-import {getClient} from './util/token-util'
+import {getClient, delay} from './util/token-util'
 import {generateFile} from './util/file-util'
 
 describe('LoadFile download state change', function () {

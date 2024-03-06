@@ -256,6 +256,10 @@ describe('LoadFile', function () {
       expect(cp2.state).toBe('success')
 
       expect(statSync(join(__dirname, 'tmp', local_name)).size == 0).toBe(true)
+
+      console.log('---------------删除-----------------------', file_id)
+
+      await client.postAPI('/file/delete', {drive_id, file_id, permanently: true})
     })
   })
 })

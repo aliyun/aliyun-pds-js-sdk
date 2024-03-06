@@ -1,8 +1,7 @@
 import {afterAll, beforeAll, describe, expect, it} from 'vitest'
 import Config from './config/conf'
-import {getClient} from './util/token-util'
+import {getClient, delay} from './util/token-util'
 import {generateFile, mockFile} from './util/file-util.js'
-import {delay} from '../../lib/utils/HttpUtil'
 
 describe('Web LoadFile', function () {
   describe('StandardMode', () => {

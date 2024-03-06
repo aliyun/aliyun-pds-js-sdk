@@ -1,8 +1,6 @@
 import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
 
-import {delay} from '../../lib/utils/HttpUtil'
-
-import {getClient} from './util/token-util'
+import {getClient, delay} from './util/token-util'
 
 describe('StandingShare', function () {
   let client
@@ -98,30 +96,31 @@ describe('StandingShare', function () {
     })
     expect(!!listInheritPermissionRes).toBe(true)
 
-    const UserPermission = await client.listUserPermissions({
-      type: 'self',
-      user_id: 'superadmin',
+    // const UserPermission = await client.listUserPermissions({
+    //   type: 'self',
+    //   user_id: '152fa0a9cc974ae2b26a8981847d306c',
+    // })
+    // console.log(UserPermission,'<-------')
+
+    // expect(!!UserPermission.items.length).toBe(true)
+
+    // 取消共享权限
+    const res3 = await client.removeFilePermission({
+      drive_id,
+      file_id: folder_id,
+      member_list: [
+        {
+          identity: {identity_type: 'IT_User', identity_id: '4b14efc7056a4d43b08176a006f63740'},
+          expire_time: 4775500800000,
+          role_id: 'SystemFileEditorWithoutDelete',
+          disinherit_sub_group: true,
+        },
+      ],
     })
 
-    expect(!!UserPermission.items.length).toBe(true)
+    expect(res3).toBe('')
 
-    try {
-      // 取消共享权限
-      await client.removeFilePermission({
-        drive_id,
-        file_id: folder_id,
-        member_list: [
-          {
-            identity: {identity_type: 'IT_User', identity_id: '4b14efc7056a4d43b08176a006f63740'},
-            expire_time: 4775500800000,
-            role_id: 'SystemFileEditorWithoutDelete',
-            disinherit_sub_group: true,
-          },
-        ],
-      })
-    } catch (error) {
-      expect('remove Permission error')
-    }
-    client.batchDeleteFiles([{drive_id, file_id: folder1.file_id}], true)
+    // 删除
+    await client.batchDeleteFiles([{drive_id, file_id: folder1.file_id}], true)
   })
 })

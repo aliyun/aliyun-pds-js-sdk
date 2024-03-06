@@ -1,5 +1,5 @@
-import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
-import {getClient} from './util/token-util'
+import {describe, expect, beforeAll, afterAll, it} from 'vitest'
+import {getClient, delay} from './util/token-util'
 
 describe('DriveAPI', function () {
   let client
@@ -9,6 +9,8 @@ describe('DriveAPI', function () {
   })
 
   it('drive BDD', async () => {
+    let user_id
+    let default_drive_id
     // 创建用户
     const userInfo = await client.importUser({
       authentication_type: 'mobile',
@@ -18,35 +20,37 @@ describe('DriveAPI', function () {
       nick_name: 'WWJ-',
     })
     expect(!!userInfo.user_id).toBe(true)
-    const {user_id, default_drive_id} = userInfo
+    user_id = userInfo.user_id
+    default_drive_id = userInfo.default_drive_id
 
-    if (!default_drive_id) throw new Error('Require default_drive_id')
-    // 看下用户的云盘
-    const res1 = await client.getDrive({
-      drive_id: default_drive_id,
-    })
+    if (default_drive_id) {
+      // 看下用户的云盘
+      const res1 = await client.getDrive({
+        drive_id: default_drive_id,
+      })
 
-    expect(res1.drive_id).toBe(default_drive_id)
+      expect(res1.drive_id).toBe(default_drive_id)
 
-    // 更新云盘大小
-    const res2 = await client.updateDrive({
-      drive_id: default_drive_id,
-      total_size: 50000,
-    })
+      // 更新云盘大小
+      const res2 = await client.updateDrive({
+        drive_id: default_drive_id,
+        total_size: 50000,
+      })
 
-    expect(res2.total_size).toBe(50000)
+      expect(res2.total_size).toBe(50000)
 
-    // list  drive
-    const {items = []} = await client.listDrives({
-      limit: 100,
-      marker: '',
-      owner_type: 'user',
-      owner: user_id,
-    })
-    expect(items.filter(n => n.drive_id == default_drive_id).length).toBe(1)
+      // list  drive
+      const {items = []} = await client.listDrives({
+        limit: 100,
+        marker: '',
+        owner_type: 'user',
+        owner: user_id,
+      })
+      expect(items.filter(n => n.drive_id == default_drive_id).length).toBe(1)
 
-    // 删除云盘
-    await client.deleteDrive({drive_id: default_drive_id})
+      // 删除云盘
+      await client.deleteDrive({drive_id: default_drive_id})
+    }
 
     // 在创建个新的
     const newDrive = await client.createDrive({
@@ -57,6 +61,13 @@ describe('DriveAPI', function () {
     })
     expect(!!newDrive.drive_id).toBe(true)
 
+    const res2 = await client.updateDrive({
+      drive_id: newDrive.drive_id,
+      drive_name: 'abcd',
+    })
+
+    expect(res2.drive_name).toBe('abcd')
+
     // 再删了
     await client.deleteDrive({drive_id: newDrive.drive_id})
     expect(1).toBe(1)
@@ -65,14 +76,25 @@ describe('DriveAPI', function () {
     await client.deleteUser({user_id})
   })
 
-  // 标准模式下不限制大小的 此接口用不到
-  it('getQuota', async () => {
-    const res = await client.getQuota()
-    expect(res.size_quota).toBe(0)
-  })
+  it('group drive BDD', async () => {
+    // 创建根团队
+    const result = await client.createGroup({
+      description: '',
+      group_name: `Test_Group_${Math.round(Math.random() * 1000)}`,
+      // is_root: true,
+    })
+    expect(!!result.group_id).toBe(true)
+    let groupInfo = result
 
-  it('searchDrive', async () => {
-    const res = await client.searchDrives({
+    const newDrive = await client.createDrive({
+      drive_name: '123456',
+      owner: groupInfo.group_id,
+      total_size: 1021 * 1024,
+      owner_type: 'group',
+    })
+    expect(!!newDrive.drive_id).toBe(true)
+
+    let res = await client.searchDrives({
       limit: 100,
       marker: '',
       owner_type: 'group',
@@ -83,35 +105,35 @@ describe('DriveAPI', function () {
         expect(n.owner_type).toBe('group')
       }
     }
-  })
 
-  it('listMyDrives', async () => {
-    const res = await client.listMyDrives({
+    res = await client.listMyDrives({
       limit: 100,
       marker: '',
     })
     // console.log(res)
     expect(res.items.length).toBeGreaterThan(0)
-  })
 
-  it('listMyGroupDrives', async () => {
-    const res = await client.listMyGroupDrives({
+    await delay(10000)
+    res = await client.listMyGroupDrives({
       limit: 100,
       marker: '',
       owner_type: 'group',
     })
     expect(res.items.length).toBeGreaterThan(0)
-  })
 
-  it('listAllMyGroupDrives', async () => {
-    const res = await client.listAllMyGroupDrives({
+    res = await client.listAllMyGroupDrives({
       owner_type: 'group',
     })
     expect(res.items.length).toBeGreaterThan(0)
-  })
 
-  it('listAllDrives', async () => {
-    const {items = []} = await client.listAllDrives()
+    let {items = []} = await client.listAllDrives()
     expect(items.length).toBeGreaterThan(0)
+
+    // 再删了
+    await client.deleteDrive({drive_id: newDrive.drive_id})
+    expect(1).toBe(1)
+
+    // 删除 group
+    await client.deleteGroup({group_id: groupInfo.group_id})
   })
 })

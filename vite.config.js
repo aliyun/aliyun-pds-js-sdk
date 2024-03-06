@@ -51,6 +51,7 @@ export default defineConfig({
       'tests/ft/*.nodetest.js',
     ],
     coverage: {
+      reportOnFailure:true,
       provider: 'istanbul',
       reporter: ['html'],
       reportsDirectory: join(__dirname, './coverage/node'),
