@@ -1,23 +1,11 @@
 import {describe, expect, beforeAll, afterAll, it} from 'vitest'
 import {IUserItem} from '../../lib'
-import {getClient} from './util/token-util'
+import {getClient, deleteUserForce} from './util/token-util'
 
 async function delete_user_force(client, user_id) {
-  try {
-    let {items = []} = await client.listAllDrives({owner_type: 'user', owner: user_id})
-    console.log(items)
-    if (items.length > 0) {
-      for (let n of items) {
-        await client.deleteDrive({drive_id: n.drive_id})
-      }
-    }
-    await client.deleteUser({user_id: user_id})
-  } catch (e) {
-    if (e.status != 404) {
-      throw e
-    }
-  }
+  await deleteUserForce(client, user_id)
 }
+
 describe('User', function () {
   let client
   const phone = `135${Math.round(Math.random() * 100000000)}`

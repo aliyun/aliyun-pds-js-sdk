@@ -66,4 +66,21 @@ function delay(ms) {
   console.log(`delay: ${ms} ms`)
   return new Promise(a => setTimeout(a, ms))
 }
-export {getSuperToken, getClient, getHttpClient, createTestFolder, delay, PDSClient}
+
+async function deleteUserForce(client, user_id) {
+  try {
+    let {items = []} = await client.listAllDrives({owner_type: 'user', owner: user_id})
+    // console.log(items)
+    if (items.length > 0) {
+      for (let n of items) {
+        await client.deleteDrive({drive_id: n.drive_id})
+      }
+    }
+    await client.deleteUser({user_id: user_id})
+  } catch (e) {
+    if (e.status != 404) {
+      throw e
+    }
+  }
+}
+export {getSuperToken, getClient, getHttpClient, createTestFolder, delay, deleteUserForce, PDSClient}
