@@ -4,6 +4,8 @@
 ## 1.2.0
 
 * feat: 上传支持 sha256 计算hash方法。
+* test: 测试 case 优化。
+* refactor: token失效或者没有token的情况下，调接口应该emit error。
 
 
 ## 1.1.0

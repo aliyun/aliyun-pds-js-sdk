@@ -60,6 +60,33 @@ describe('src/http/HttpClient', () => {
       let data = await client.request('https://xxx', 'POST', '/v2/file/list', {})
       expect(data.a).toBe(1)
     })
+    it('no token', async () => {
+      var mockContext = {
+        axiosSend: () => {
+          
+        },
+      }
+      let client = new HttpClient({api_endpoint: 'https://xxx'}, mockContext)
+ 
+      let resolveOnError
+      client.on('error',(err)=>{
+        resolveOnError(err)
+      })
+      let prom = new Promise(a=>{
+        resolveOnError = a
+      })
+      
+      try {
+        await client.request('https://xxx', 'POST', '/v2/file/list', {})
+        expect(2).toBe(1)
+      } catch (e) {
+        console.log(e)
+        expect(e.code == 'TokenExpired')
+      }
+
+      let err = await prom 
+      expect(err.code).toBe('AccessTokenInvalid')
+    })
 
     it('TokenExpired', async () => {
       var mockContext = {

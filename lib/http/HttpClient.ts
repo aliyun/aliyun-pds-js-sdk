@@ -178,12 +178,14 @@ export class HttpClient extends EventEmitter implements IHttpClient {
 
     let hasShareToken = !!req_opt.headers['x-share-token']
 
-    if (!hasShareToken) {
-      await this.checkRefreshToken(req_opt)
-      req_opt.headers['Authorization'] = 'Bearer ' + this.token_info?.access_token
-    }
-
     try {
+
+      // 如果没有token或token失效，统一 emitError
+      if (!hasShareToken) {
+        await this.checkRefreshToken(req_opt)
+        req_opt.headers['Authorization'] = 'Bearer ' + this.token_info?.access_token
+      }
+
       // 发送请求
       let response = await this.contextExt.axiosSend.call(this.contextExt, req_opt)
       if (this.verbose) {
