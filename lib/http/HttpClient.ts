@@ -134,9 +134,16 @@ export class HttpClient extends EventEmitter implements IHttpClient {
 
       this.emitError(pdsErr, req_opt)
 
+      // 网络无法连接
+      if (isNetworkError(pdsErr)) {
+        console.debug('[should retry] error:', pdsErr)
+        await delayRandom()
+        // 重试
+        return await this.send(method, url, data, options, retries)
+      }
       if (retries > 0) {
-        // 网络无法连接
-        if (pdsErr.status === 429 || isNetworkError(pdsErr)) {
+        // 服务端限流
+        if (pdsErr.status === 429) {
           console.debug('[should retry] error:', pdsErr)
           await delayRandom()
           // 重试
@@ -179,7 +186,6 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     let hasShareToken = !!req_opt.headers['x-share-token']
 
     try {
-
       // 如果没有token或token失效，统一 emitError
       if (!hasShareToken) {
         await this.checkRefreshToken(req_opt)
@@ -210,9 +216,17 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         this.emitError(pdsErr, req_opt)
       }
 
+      // 网络无法连接
+      if (isNetworkError(pdsErr)) {
+        console.debug('[should retry] error:', pdsErr)
+        await delayRandom()
+        // 重试
+        return await this.request(endpoint, method, pathname, data, options, retries)
+      }
+
       if (retries > 0) {
-        // 网络无法连接
-        if (pdsErr.status === 429 || isNetworkError(pdsErr)) {
+        // 服务端限流
+        if (pdsErr.status === 429) {
           console.debug('[should retry] error:', pdsErr)
           await delayRandom()
           // 重试
