@@ -234,27 +234,25 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         }
       }
 
-      if (pdsErr.status == 401) {
-        // token 失效
-        if (pdsErr.code?.includes('AccessTokenInvalid')) {
-          if (this.refresh_token_fun) {
-            await this.customRefreshTokenFun()
-            await delayRandom()
-            return await this.request(endpoint, method, pathname, data, options, retries)
-          } else {
-            throw new PDSError(pdsErr.message, 'TokenExpired')
-          }
-        } else if (pdsErr.code?.includes('ShareLinkTokenInvalid')) {
-          // share_token 失效
-          // code: "ShareLinkTokenInvalid"
-          // message: "ShareLinkToken is invalid. expired"
-          if (this.refresh_share_token_fun) {
-            this.share_token = await this.refresh_share_token_fun()
-            await delayRandom()
-            return await this.request(endpoint, method, pathname, data, options, retries)
-          } else {
-            throw new PDSError(pdsErr.message, 'ShareLinkTokenInvalid')
-          }
+      // token 失效
+      if (/AccessTokenInvalid|TokenExpired/.test(pdsErr.code || '')) {
+        if (this.refresh_token_fun) {
+          await this.customRefreshTokenFun()
+          await delayRandom()
+          return await this.request(endpoint, method, pathname, data, options, retries)
+        } else {
+          throw new PDSError(pdsErr.message, 'TokenExpired')
+        }
+      } else if (pdsErr.code?.includes('ShareLinkTokenInvalid')) {
+        // share_token 失效
+        // code: "ShareLinkTokenInvalid"
+        // message: "ShareLinkToken is invalid. expired"
+        if (this.refresh_share_token_fun) {
+          this.share_token = await this.refresh_share_token_fun()
+          await delayRandom()
+          return await this.request(endpoint, method, pathname, data, options, retries)
+        } else {
+          throw new PDSError(pdsErr.message, 'ShareLinkTokenInvalid')
         }
       }
 
