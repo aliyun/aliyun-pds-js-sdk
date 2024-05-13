@@ -104,6 +104,8 @@ export interface ICreateDriveReq {
 
   status?: TDriveStatus
   total_size?: number // 总大小，单位为字节，不限制大小时填 -1
+
+  disable_assign_group_default_permission?: boolean // 表示创建团队云盘不自动授权
 }
 
 export interface IUpdateDriveReq {

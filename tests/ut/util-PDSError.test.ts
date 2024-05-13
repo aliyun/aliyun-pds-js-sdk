@@ -6,7 +6,7 @@ import Axios from 'axios'
 
 describe('PDSError', function () {
   describe('initFields', () => {
-    const {domain_id} = {domain_id: 'bj123'}
+    const {domain_id} = {domain_id: 'daily100018'}
 
     it('initFields client error', async () => {
       try {
@@ -40,7 +40,7 @@ describe('PDSError', function () {
         expect('should throw').toBeFalsy()
       } catch (e) {
         let obj = initFields(e)
-        expect(obj.status == 401)
+        expect(obj.status).toBe(401)
         expect(!!obj.reqId).toBe(true)
         expect(obj.code == 'AccessTokenInvalid')
         expect(obj.message == 'AccessToken is invalid. ErrValidateTokenFailed')

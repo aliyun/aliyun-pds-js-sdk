@@ -74,7 +74,7 @@ export function formatGeneralUserItems(items: IUserItem[]) {
 
 export type TUserStatus = 'enabled' | 'disabled'
 export type TUserRole = 'user' | 'admin' | 'superadmin' | 'subdomain_super_admin' | 'subdomain_admin'
-export type TUserExtraReturnInfoType = Array<'group' | 'drive'>
+export type TUserExtraReturnInfoType = Array<'group' | 'drive' | 'account' | string>
 
 export interface ISearchUsersReq extends IListReq {
   email?: string
@@ -160,19 +160,30 @@ export interface IListGroupUserRes {
 }
 
 export interface IUserGeneralSearchReq extends IListReq {
+  phone?: string
+  email?: string
+  status?: string
+  role?: string
   nick_name?: string
   nick_name_for_fuzzy?: string
   parent_group_id_list?: string[]
   direct_parent_group_id?: string
   extra_return_info?: TUserExtraReturnInfoType
+
+  order_by?: string
+  order_direction?: string
 }
 
-export interface IImportUserReq {
+export interface IAuthenticationInfo {
   authentication_type: TAuthenticationType
   authentication_display_name?: string
   identity: string
+  /* 额外信息authentication_type为mobile时，此字段为国家编号，不填默认86。 */
   extra?: string
   custom_identity?: string
+}
+
+export interface IImportUserReq extends IAuthenticationInfo {
   nick_name?: string
   auto_create_drive?: boolean
   drive_total_size?: number
@@ -180,4 +191,9 @@ export interface IImportUserReq {
   plain_password?: string
   deny_change_password_by_self?: boolean
   need_change_password_next_login?: boolean
+  // 新增可选字段
+  authentication_list?: IAuthenticationInfo[]
+  email?: string
+  phone?: string
+  phone_region?: string
 }
