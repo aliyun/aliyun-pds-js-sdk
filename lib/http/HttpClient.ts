@@ -189,6 +189,9 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       // 如果没有token或token失效，统一 emitError
       if (!hasShareToken) {
         await this.checkRefreshToken(req_opt)
+      }
+
+      if (this.token_info?.access_token) {
         req_opt.headers['Authorization'] = 'Bearer ' + this.token_info?.access_token
       }
 
