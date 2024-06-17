@@ -10,7 +10,6 @@ describe('User', function () {
   let client
   const phone = `135${Math.round(Math.random() * 100000000)}`
   const email = `Test.Email${Math.round(Math.random() * 1000)}@gmail.com`
-  let user: IUserItem
 
   beforeAll(async () => {
     client = await getClient()

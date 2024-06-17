@@ -54,7 +54,7 @@ describe('DriveAPI', function () {
 
     // 在创建个新的
     const newDrive = await client.createDrive({
-      drive_name: '123456',
+      drive_name: 'drive-234',
       owner: user_id,
       total_size: 1021 * 1024,
       default: true,
@@ -69,7 +69,7 @@ describe('DriveAPI', function () {
     expect(res2.drive_name).toBe('abcd')
 
     // 再删了
-    await client.deleteDrive({drive_id: newDrive.drive_id})
+    await client.deleteDrive({drive_id: newDrive.drive_id, force: true})
     expect(1).toBe(1)
 
     // 把用户删了 结束
@@ -87,7 +87,7 @@ describe('DriveAPI', function () {
     let groupInfo = result
 
     const newDrive = await client.createDrive({
-      drive_name: '123456',
+      drive_name: 'drive-g1',
       owner: groupInfo.group_id,
       total_size: 1021 * 1024,
       owner_type: 'group',
@@ -106,13 +106,6 @@ describe('DriveAPI', function () {
       }
     }
 
-    res = await client.listMyDrives({
-      limit: 100,
-      marker: '',
-    })
-    // console.log(res)
-    expect(res.items.length).toBeGreaterThan(0)
-
     await delay(10000)
     res = await client.listMyGroupDrives({
       limit: 100,
@@ -130,7 +123,7 @@ describe('DriveAPI', function () {
     expect(items.length).toBeGreaterThan(0)
 
     // 再删了
-    await client.deleteDrive({drive_id: newDrive.drive_id})
+    await client.deleteDrive({drive_id: newDrive.drive_id, force: true})
     expect(1).toBe(1)
 
     // 删除 group

@@ -1,13 +1,45 @@
 import {afterAll, beforeAll, describe, expect, it} from 'vitest'
 import Config from './config/conf'
-import {getClient, delay} from './util/token-util'
+import {getClient, getTestDrive, createTestFolder, delay} from './util/token-util'
 import {generateFile, mockFile} from './util/file-util.js'
 
 describe('Web LoadFile', function () {
-  describe('StandardMode', () => {
-    const {domain_id, drive_id} = Config
-    let client
+  let drive_id: string
+  let client
+  let test_folder
 
+  let parent_file_id
+  const {domain_id} = Config
+  beforeAll(async () => {
+    client = await getClient()
+
+    // 创建个新的
+    const newDrive = await getTestDrive(client)
+
+    drive_id = newDrive.drive_id
+
+    test_folder = await createTestFolder(client, {
+      drive_id,
+      parent_file_id: 'root',
+      name: `test-file-${Math.random().toString(36).substring(2)}`,
+    })
+    parent_file_id = test_folder.file_id
+
+    console.log('所有测试在此目录下进行：', test_folder)
+  })
+  afterAll(async () => {
+    console.log('删除测试目录')
+
+    await client.deleteFile(
+      {
+        drive_id,
+        file_id: test_folder.file_id,
+      },
+      true,
+    )
+  })
+
+  describe('StandardMode', () => {
     var cp, cp2
     beforeAll(async () => {
       let name = `tmp-${domain_id}-archive-1M.txt`
@@ -15,7 +47,6 @@ describe('Web LoadFile', function () {
       let name2 = `tmp-${domain_id}-archive2-2M.txt`
       let file2 = await generateFile(name2, 2 * 1024 * 1024, 'text/plain')
 
-      client = await getClient()
       let task
       // 上传
       cp = await client.uploadFile(

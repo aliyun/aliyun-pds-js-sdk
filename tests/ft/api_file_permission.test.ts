@@ -1,6 +1,6 @@
 import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
 
-import {getClient, delay, deleteUserForce} from './util/token-util'
+import {getClient, getTestDrive, delay, deleteUserForce} from './util/token-util'
 
 describe('StandingShare', function () {
   let client
@@ -27,7 +27,11 @@ describe('StandingShare', function () {
   })
 
   it('createShare', async () => {
-    const drive_id = client.token_info?.default_drive_id || ''
+    // 创建个新的
+    const newDrive = await getTestDrive(client)
+
+    const drive_id = newDrive.drive_id
+
     // 个人空间下 创建个文件夹
     const folder1 = await client.createFolder({
       drive_id,

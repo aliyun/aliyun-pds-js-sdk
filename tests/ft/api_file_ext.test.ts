@@ -1,46 +1,48 @@
 import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
-import {getClient, delay, createTestFolder} from './util/token-util'
+import {getClient, delay, getTestDrive, createTestFolder} from './util/token-util'
 import {getTestVideoFile, getTestAudioFile} from './util/file-util'
 
 describe('file_ext', function () {
   let domainId: string
   let drive_id: string
   let client
-  let test_folder_name = 'test-ext-folder'
-  let test_folder
+  let parent_file_id
   beforeAll(async () => {
     client = await getClient()
-    drive_id = client.token_info?.default_drive_id || ''
+    // 创建个新的
+    const newDrive = await getTestDrive(client)
+
+    drive_id = newDrive.drive_id
     domainId = client.token_info?.domain_id || ''
 
-    test_folder = await createTestFolder(client, {
+    let test_folder = await createTestFolder(client, {
       drive_id,
       parent_file_id: 'root',
-      name: test_folder_name,
+      name: `test-file-${Date.now()}`,
     })
+    parent_file_id = test_folder.file_id
     console.log('所有测试在此目录下进行：', test_folder)
   })
 
   afterAll(async () => {
     client = await getClient()
-    drive_id = client.token_info?.default_drive_id || ''
+
+    console.log('删除测试目录')
 
     await client.deleteFile(
       {
         drive_id,
-        file_id: test_folder.file_id,
+        file_id: parent_file_id,
       },
       true,
     )
-
-    console.log('删除测试目录')
   })
 
   it('office', async () => {
     // 清理
     const {items: fileItems = []} = await client.listFiles({
       drive_id,
-      parent_file_id: test_folder.file_id,
+      parent_file_id,
     })
     console.log('--batchDeleteFiles')
     await client.batchDeleteFiles(fileItems, true)
@@ -48,7 +50,7 @@ describe('file_ext', function () {
 
     const fileRes = await client.saveFileContent({
       drive_id,
-      parent_file_id: test_folder.file_id,
+      parent_file_id,
       type: 'file',
       name: '文本文档.txt',
       content_type: 'text/plain',
@@ -87,7 +89,7 @@ describe('file_ext', function () {
 
     const {items: fileItems2 = []} = await client.listFiles({
       drive_id,
-      parent_file_id: test_folder.file_id,
+      parent_file_id,
     })
     await client.batchDeleteFiles(fileItems2, true)
   })
@@ -98,7 +100,7 @@ describe('file_ext', function () {
 
     let cp = await client.uploadFile(f, {
       drive_id,
-      parent_file_id: test_folder.file_id,
+      parent_file_id,
     })
     console.log('----------', cp)
 
@@ -149,7 +151,7 @@ describe('file_ext', function () {
 
     let cp = await client.uploadFile(f, {
       drive_id,
-      parent_file_id: test_folder.file_id,
+      parent_file_id,
     })
     console.log('----------', cp)
     // 音频预览
@@ -164,7 +166,7 @@ describe('file_ext', function () {
   it('archive files', async () => {
     let folder = await client.createFolder({
       drive_id,
-      parent_file_id: test_folder.file_id,
+      parent_file_id,
       name: '下载test文件夹',
     })
 

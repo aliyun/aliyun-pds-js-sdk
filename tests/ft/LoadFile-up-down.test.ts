@@ -1,14 +1,43 @@
-import {beforeAll, describe, expect, it} from 'vitest'
+import {beforeAll, afterAll, describe, expect, it} from 'vitest'
 import Config from './config/conf'
 
-import {getClient} from './util/token-util'
+import {getClient, getTestDrive, createTestFolder} from './util/token-util'
 import {generateFile, getDownloadLocalPath} from './util/file-util'
 
 describe('uploadFile & downloadFile', function () {
-  const {domain_id, drive_id} = Config
+  let drive_id: string
   let client
+  let test_folder
+
+  let parent_file_id
+  const {domain_id} = Config
   beforeAll(async () => {
     client = await getClient()
+
+    // 创建个新的
+    const newDrive = await getTestDrive(client)
+
+    drive_id = newDrive.drive_id
+
+    test_folder = await createTestFolder(client, {
+      drive_id,
+      parent_file_id: 'root',
+      name: `test-file-${Math.random().toString(36).substring(2)}`,
+    })
+    parent_file_id = test_folder.file_id
+
+    console.log('所有测试在此目录下进行：', test_folder)
+  })
+  afterAll(async () => {
+    console.log('删除测试目录')
+
+    await client.deleteFile(
+      {
+        drive_id,
+        file_id: test_folder.file_id,
+      },
+      true,
+    )
   })
 
   describe('uploadFile', () => {
@@ -58,6 +87,7 @@ describe('uploadFile & downloadFile', function () {
           file,
           {
             drive_id,
+            parent_file_id,
           },
           {
             ignore_rapid: true,
@@ -92,6 +122,7 @@ describe('uploadFile & downloadFile', function () {
         file,
         {
           drive_id,
+          parent_file_id,
         },
         {
           parallel_upload: false,
