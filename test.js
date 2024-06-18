@@ -3,7 +3,7 @@
  *    TEST_TYPE=browser node --max_old_space_size=9000 --experimental-modules ./test.js
  */
 import {execSync, exec} from 'child_process'
-import {appendFileSync} from 'fs'
+import {appendFileSync, existsSync, unlinkSync} from 'fs'
 
 const TEST_FILE = 'test.log'
 
@@ -21,7 +21,7 @@ init()
 
 async function init() {
   try {
-    execSync('rm -rf ./test.log')
+    if (existsSync(TEST_FILE)) unlinkSync(TEST_FILE)
 
     await new Promise((resolve, reject) => {
       let child = exec(`npm run cov:${testType}2 -- --silent --run --no-color`, {cwd: process.cwd()})
