@@ -7,7 +7,7 @@ import {execSync} from 'child_process'
 import {existsSync, unlinkSync} from 'fs'
 
 import {getClient, getTestDrive, createTestFolder, delay} from './util/token-util'
-
+import {generateFile} from './util/file-util'
 describe('LoadFile download state change', function () {
   let drive_id: string
   let client
@@ -54,7 +54,7 @@ describe('LoadFile download state change', function () {
       if (existsSync(downTo)) unlinkSync(downTo)
 
       // mock 文件
-      if (!existsSync(from)) execSync(`dd if=/dev/zero of=${from} bs=1024 count=10000`)
+      await generateFile(fromName, 10 * 1024 * 1024, 'text/plain')
 
       // 上传
       var cp = await client.uploadFile(
@@ -142,7 +142,7 @@ describe('LoadFile download state change', function () {
       if (existsSync(downTo)) unlinkSync(downTo)
 
       // mock 文件
-      if (!existsSync(from)) execSync(`dd if=/dev/zero of=${from} bs=1024 count=50000`)
+      await generateFile(fromName, 10 * 1024 * 1024, 'text/plain')
 
       // 上传
       var cp = await client.uploadFile(

@@ -42,12 +42,9 @@ describe('LoadFile upload state change', function () {
     })
 
     it('uploadTask standard mode', async () => {
-      // let from = join(__dirname, `tmp/tmp-${domain_id}-upload-task.txt`)
-
       // mock 文件
       let file_name = `tmp-${domain_id}-upload-task.txt`
       let file = await generateFile(file_name, 1024 * 10000, 'text/plain')
-      // if (!existsSync(from)) execSync(`dd if=/dev/zero of=${from} bs=1024 count=10000`)
 
       // 上传
       console.log('=========上传', file_name)

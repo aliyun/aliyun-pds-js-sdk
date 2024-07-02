@@ -6,7 +6,7 @@ import Config from './config/conf'
 import {join} from 'path'
 import {execSync} from 'child_process'
 import {existsSync} from 'fs'
-
+import {generateFile} from './util/file-util'
 describe('file user tags test', function () {
   let drive_id: string
   let client
@@ -56,7 +56,7 @@ describe('file user tags test', function () {
     let from = join(__dirname, 'tmp', fname)
 
     // mock 文件
-    if (!existsSync(from)) execSync(`dd if=/dev/zero of=${from} bs=1024 count=1000`)
+    await generateFile(fname, 1 * 1024 * 1024, 'text/plain')
 
     var client = await getClient()
 

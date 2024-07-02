@@ -104,8 +104,24 @@ class TaskManager {
     }
   }
 
-  createUploadTask({file, parent_file_id, drive_id, check_name_mode, ignore_rapid, parallel_upload,  hash_name='sha1'}) {
-    console.log('[TaskManager] createUploadTask:', {file, parent_file_id, drive_id, check_name_mode, ignore_rapid,parallel_upload, hash_name})
+  createUploadTask({
+    file,
+    parent_file_id,
+    drive_id,
+    check_name_mode,
+    ignore_rapid,
+    parallel_upload,
+    hash_name = 'sha1',
+  }) {
+    console.log('[TaskManager] createUploadTask:', {
+      file,
+      parent_file_id,
+      drive_id,
+      check_name_mode,
+      ignore_rapid,
+      parallel_upload,
+      hash_name,
+    })
     let task = this.#client.createUploadTask(
       {file, drive_id, parent_file_id},
       {

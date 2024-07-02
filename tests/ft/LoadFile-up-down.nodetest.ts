@@ -5,6 +5,7 @@ import {execSync} from 'child_process'
 import {existsSync, writeFileSync, statSync, unlinkSync} from 'fs'
 
 import {getClient, getTestDrive, createTestFolder} from './util/token-util'
+import {generateFile} from './util/file-util'
 
 describe('LoadFile', function () {
   let drive_id: string
@@ -41,10 +42,11 @@ describe('LoadFile', function () {
     )
   })
   it('parallel_upload: true', async () => {
-    let from = join(__dirname, `tmp/tmp-${domain_id}-std-upload.txt`)
+    let fileName = `tmp-${domain_id}-std-upload.txt`
+    let from = join(__dirname, `tmp`, fileName)
 
     // // mock 文件
-    if (!existsSync(from)) execSync(`dd if=/dev/zero of=${from} bs=1024 count=50000`)
+    await generateFile(fileName, 50 * 1024 * 1024, 'text/plain')
 
     let task
     // 上传
@@ -112,13 +114,14 @@ describe('LoadFile', function () {
   })
 
   it('parallel_upload: false, rapid', async () => {
-    let from = join(__dirname, 'tmp', `tmp-${domain_id}-upload-50MB.txt`)
+    let fileName = `tmp-${domain_id}-upload-50MB.txt`
+    let from = join(__dirname, 'tmp', fileName)
     let local_name = `tmp-${domain_id}-50MB-2.txt`
     let to = join(__dirname, 'tmp', local_name)
     if (existsSync(to)) unlinkSync(to)
 
     // mock 文件
-    if (!existsSync(from)) execSync(`dd if=/dev/zero of=${from} bs=1024 count=50000`)
+    await generateFile(fileName, 50 * 1024 * 1024, 'text/plain')
 
     console.log('---------------开始上传-----------------------')
     let task

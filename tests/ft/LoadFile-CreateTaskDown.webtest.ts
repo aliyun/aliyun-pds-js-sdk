@@ -50,11 +50,6 @@ describe('LoadFile download state change', function () {
 
       let downTo = ''
 
-      // if (existsSync(downTo)) unlinkSync(downTo)
-
-      // // mock 文件
-      // if (!existsSync(from)) execSync(`dd if=/dev/zero of=${from} bs=1024 count=10000`)
-
       // mock 文件
       let file = await generateFile(fromName, 10 * 1024 * 1024, 'text/plain')
 
@@ -140,11 +135,6 @@ describe('LoadFile download state change', function () {
       const filename = `tmp-${domain_id}-down-test-123-2.txt`
 
       let downTo = ''
-
-      // if (existsSync(downTo)) unlinkSync(downTo)
-
-      // // mock 文件
-      // if (!existsSync(from)) execSync(`dd if=/dev/zero of=${from} bs=1024 count=10000`)
 
       let file = await generateFile(fromName, 50 * 1024 * 1024, 'text/plain')
 
