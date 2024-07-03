@@ -8,6 +8,7 @@
 * refactor: token失效或者没有token的情况下，调接口应该emit error。
 * refactor: importUser, generalSearchUsers,createDrive 3个接口新增一些可选参数。
 * fix: 修复httpClient，以支持分享页面同时使用 x-share-token和access token的场景。
+* fix: 修复`uploadFile` 方法的参数: upload_to 由 `IUpCheckpoint` 改为 `Partial<IUpCheckpoint>`。
 
 ## 1.1.0
 

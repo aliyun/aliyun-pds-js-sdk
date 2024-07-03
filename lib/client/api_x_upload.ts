@@ -45,7 +45,7 @@ export class PDSUploadAPIClient extends PDSUserApiClient {
    */
   uploadFile(
     file: string | IFile,
-    upload_to: IUpCheckpoint,
+    upload_to: Partial<IUpCheckpoint>,
     upload_options: IUploadOptions = {},
     request_config?: IPDSRequestConfig,
   ): Promise<IUpCheckpoint> {
@@ -60,16 +60,16 @@ export class PDSUploadAPIClient extends PDSUserApiClient {
 
     upload_to.file = this.contextExt.parseUploadIFile(file)
 
+    let upCheckpoint: IUpCheckpoint = {
+      path_type: this.path_type,
+      parent_file_id: 'root',
+      ...upload_to,
+      file: this.contextExt.parseUploadIFile(file),
+    }
+
     return new Promise<IUpCheckpoint>((resolve, reject) => {
       var task = this.createUploadTask(
-        {
-          // file: _file,
-          path_type: this.path_type,
-
-          parent_file_id: 'root',
-
-          ...upload_to,
-        },
+        upCheckpoint,
         {
           ...configs,
         },
