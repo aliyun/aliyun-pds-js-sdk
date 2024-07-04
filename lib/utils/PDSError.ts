@@ -1,4 +1,5 @@
-import {AxiosError, AxiosResponse} from 'axios'
+import {AxiosError} from 'axios'
+import {IPDSRequestConfig, IPDSResponse} from '../Types'
 
 interface IPDSError {
   message: string
@@ -7,7 +8,8 @@ interface IPDSError {
   reqId?: string
   type?: string
   stack?: string
-  response?: AxiosResponse
+  requestConfig?: IPDSRequestConfig
+  response?: IPDSResponse
 }
 
 class PDSError extends Error implements IPDSError {
@@ -17,7 +19,8 @@ class PDSError extends Error implements IPDSError {
   status?: number
   reqId?: string
   type: string = 'ClientError'
-  response?: AxiosResponse
+  requestConfig?: IPDSRequestConfig
+  response?: IPDSResponse
   constructor(
     err: IPDSError | PDSError | AxiosError | Error | string,
     customCode?: string,
@@ -52,8 +55,8 @@ function initFields(
     obj.reqId = reqId || err.reqId
     obj.type = err.type || 'ClientError'
 
-    let {data, headers, statusText, status: _status} = err.response || {}
-    obj.response = {data, headers, statusText, status: _status} as AxiosResponse
+    obj.requestConfig = initRequestConfig(err.requestConfig)
+    obj.response = initResponse(err.response)
     return obj
   }
   if ((err as AxiosError)?.isAxiosError) {
@@ -89,7 +92,8 @@ function initAxiosError(err: AxiosError): IPDSError {
   }
 
   if (err.response != null) {
-    obj.response = err.response
+    obj.requestConfig = initRequestConfig(err.config)
+    obj.response = initResponse(err.response)
     obj.status = err.response.status
     obj.type = 'ServerError'
     obj.reqId = err.response.headers['x-ca-request-id']
@@ -124,6 +128,23 @@ function initAxiosError(err: AxiosError): IPDSError {
     obj.message = err.message
   }
   return obj
+}
+function initRequestConfig(config) {
+  if (!config) return undefined
+  let {method, url, data, params, headers, responseType} = config || {}
+  return {
+    method,
+    url,
+    data,
+    params,
+    headers,
+    responseType,
+  } as IPDSRequestConfig
+}
+function initResponse(res) {
+  if (!res) return undefined
+  let {data, headers, statusText, status: _status} = res || {}
+  return {data, headers, statusText, status: _status} as IPDSResponse
 }
 
 function parseErrorData(data) {

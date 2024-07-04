@@ -1,7 +1,10 @@
-import {AxiosRequestConfig} from 'axios'
+import {AxiosRequestConfig, AxiosResponse} from 'axios'
 import {PDSError} from './utils/PDSError'
 
 interface IPDSRequestConfig extends AxiosRequestConfig {
+  [propName: string]: any
+}
+interface IPDSResponse extends AxiosResponse {
   [propName: string]: any
 }
 
@@ -514,6 +517,7 @@ export type {
   ICustomHashFunOpt,
   ICustomPartsHashFunOpt,
   IPDSRequestConfig,
+  IPDSResponse,
   TMethod,
   IPartMap,
   PathType,
