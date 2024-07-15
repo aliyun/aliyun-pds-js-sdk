@@ -10,6 +10,7 @@
 * fix: 修复httpClient，以支持分享页面同时使用 x-share-token和access token的场景。
 * refactor: 修复`uploadFile` 方法的参数: upload_to 由 `IUpCheckpoint` 改为 `Partial<IUpCheckpoint>`。
 * refactor: PDSError 增加 requestConfig 字段。
+* fix: 修复 HttpClient 的 isNetworkError 方法。
 
 ## 1.1.0
 

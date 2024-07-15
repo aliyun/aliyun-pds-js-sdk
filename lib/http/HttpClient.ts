@@ -135,7 +135,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       this.emitError(pdsErr, req_opt)
 
       // 网络无法连接
-      if (isNetworkError(pdsErr)) {
+      if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
         console.debug('[should retry] error:', pdsErr)
         await delayRandom()
         // 重试
