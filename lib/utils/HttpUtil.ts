@@ -53,9 +53,7 @@ function isStoppableError(e: Error): boolean {
 
 // 这些错误，重试多次后，暂停，下次可以断点续传
 function isNetworkError(e: Error): boolean {
-  if (e.message == 'Network Error') return true
-  if (e.message?.startsWith?.('getaddrinfo ENOTFOUND')) return true
-  return /socket|timeout ECONNRESET| ETIMEDOUT|EPIPE/i.test(e.message || '')
+  return /Network Error|socket|getaddrinfo ENOTFOUND|timeout | ECONNRESET| ETIMEDOUT|EPIPE/i.test(e.message)
 }
 
 function isOssUrlExpired(e: AxiosError): boolean {

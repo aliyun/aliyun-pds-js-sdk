@@ -131,6 +131,16 @@ describe('HttpUtil', function () {
     it('isNetworkError', () => {
       expect(isNetworkError(new Error('Network Error'))).toBeTruthy
     })
+
+    it('ClientError', () => {
+      let g = {
+        message: 'Network Error [code: ClientError]',
+        name: 'PDSError',
+        code: 'ClientError',
+        type: 'ClientError',
+      }
+      expect(isNetworkError(g)).toBeTruthy
+    })
   })
   describe('isOssUrlExpired', () => {
     it('isOssUrlExpired', async () => {
