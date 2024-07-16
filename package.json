@@ -1,6 +1,6 @@
 {
   "name": "aliyun-pds-js-sdk",
-  "version": "1.2.0-beta.12",
+  "version": "1.2.0-beta.13",
   "type": "module",
   "description": "PDS SDK for javascript",
   "files": [
@@ -41,8 +41,8 @@
     "token": "tsx tests/ft/bin/pre-test.js",
     "cov:node": "npm run token && vitest run --coverage && open-cli coverage/node/index.html",
     "cov:browser": "npm run token && vitest run --coverage --config vite.config.browser.js && open-cli coverage/browser/index.html",
-    "cov:node2": "npm run token && vitest run --coverage --no-color",
-    "cov:browser2": "npm run token && vitest run --coverage --no-color --config vite.config.browser.js"
+    "cov:node2": "npm run token && vitest run --coverage",
+    "cov:browser2": "npm run token && vitest run --coverage --config vite.config.browser.js"
   },
   "directories": {
     "test": "tests/"

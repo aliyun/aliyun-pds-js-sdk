@@ -1,5 +1,5 @@
 import {describe, expect, it, vi} from 'vitest'
-import {fetchOssPart} from '../../lib/loaders/WebDownloader'
+import {fetchOssPart, downloadLink} from '../../lib/loaders/WebDownloader'
 
 describe('WebDownloader', function () {
   // describe('catchReadableStream', function () {
@@ -101,6 +101,17 @@ describe('WebDownloader', function () {
       }
 
       expect(done).toBe(0)
+    })
+  })
+
+  describe('downloadLink', () => {
+    it('blob', async () => {
+      for (let i = 0; i < 10; i++) {
+        let f = new File(['abc' + i], `a-${i}.txt`)
+        let url = URL.createObjectURL(f.slice(0))
+        downloadLink(url, `a-${i}.txt`)
+      }
+      await new Promise(a => setTimeout(a, 3000))
     })
   })
 })

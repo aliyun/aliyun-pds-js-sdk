@@ -45,6 +45,22 @@ describe('src/context/NodeContextExt', () => {
       let content = await streamToString(stream)
       expect(content).toBe('abc')
     })
+
+    it('is not a stream', async () => {
+      let content = await streamToString('a')
+      expect(content).toBe('a')
+    })
+
+    it('renameFile', async () => {
+      let {path, fs} = NodeContext
+      let p = path.join(__dirname, 'tmp', 'tmp-streamToStream.txt')
+      fs.writeFileSync(p, 'abc')
+      let p2 = path.join(__dirname, 'tmp', 'tmp-streamToStream2.txt')
+
+      await ext.renameFile(p, p2)
+      let content = fs.readFileSync(p2).toString()
+      expect(content).toBe('abc')
+    })
   })
 
   describe('pipeWS', () => {
@@ -76,6 +92,140 @@ describe('src/context/NodeContextExt', () => {
 
       fs.unlinkSync(p)
       fs.unlinkSync(p2)
+    })
+
+    it('stop', async () => {
+      let {path, fs} = NodeContext
+      let content = 'abc'
+      let p = path.join(__dirname, 'tmp', 'tmp-streamToStream.txt')
+      let p2 = path.join(__dirname, 'tmp', 'tmp-streamToStream2.txt')
+      fs.writeFileSync(p, content)
+      fs.writeFileSync(p2, '')
+      let stream = fs.createReadStream(p)
+
+      try {
+        await pipeWS({
+          fs,
+          stream,
+          downloadPath: p2,
+          start: 0,
+          loaded: 0,
+          total: 3,
+          block_size: 1,
+          onProgress: a => {
+            console.log(a)
+          },
+          getStopFlag: () => true,
+        })
+      } catch (err) {
+        expect(err.code).toBe('stopped')
+      }
+
+      fs.unlinkSync(p)
+      fs.unlinkSync(p2)
+    })
+    it('size not match', async () => {
+      let {path, fs} = NodeContext
+      let content = 'abc'
+      let p = path.join(__dirname, 'tmp', 'tmp-streamToStream.txt')
+      let p2 = path.join(__dirname, 'tmp', 'tmp-streamToStream2.txt')
+      fs.writeFileSync(p, content)
+      fs.writeFileSync(p2, '')
+      let stream = fs.createReadStream(p)
+
+      try {
+        await pipeWS({
+          fs,
+          stream,
+          downloadPath: p2,
+          start: 0,
+          loaded: 0,
+          total: 4,
+          block_size: 1,
+          onProgress: a => {
+            console.log(a)
+          },
+          getStopFlag: () => false,
+        })
+      } catch (err) {
+        expect(err.message).toBe('LengthNotMatchError')
+      }
+
+      fs.unlinkSync(p)
+      fs.unlinkSync(p2)
+    })
+  })
+
+  describe('calcFileHash', () => {
+    let ext
+    beforeAll(async () => {
+      ext = new NodeContextExt(NodeContext)
+      // 等待，防止wasm未初始化 calcCrc64 报错
+      await delay(500)
+    })
+    it('sha1', async () => {
+      let content = 'abc'
+      let {path, fs} = NodeContext
+      let p = path.join(__dirname, 'tmp', 'tmp-calcFileHash-test1.txt')
+      fs.writeFileSync(p, content)
+
+      let opt = {
+        hash_name: 'sha1',
+        // file: p,
+        file_path: p,
+        verbose: true,
+        pre_size: 1024,
+        process_calc_hash_size: 50 * 1024 * 1024, // 文件大小超过将启用子进程计算 sha1
+        onProgress: () => {},
+        getStopFlag: () => false,
+      }
+
+      let str = await ext.calcFileHash(opt)
+      expect(str).toBe('A9993E364706816ABA3E25717850C26C9CD0D89D')
+    })
+    it('sha256', async () => {
+      let content = 'abc'
+      let {path, fs} = NodeContext
+      let p = path.join(__dirname, 'tmp', 'tmp-calcFileHash-test2.txt')
+      fs.writeFileSync(p, content)
+
+      let opt = {
+        hash_name: 'sha256',
+        // file: p,
+        file_path: p,
+        verbose: true,
+        pre_size: 1024,
+        process_calc_hash_size: 50 * 1024 * 1024, // 文件大小超过将启用子进程计算 sha1
+        onProgress: () => {},
+        getStopFlag: () => false,
+      }
+
+      let str = await ext.calcFileHash(opt)
+      expect(str).toBe('BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD')
+    })
+    it('invalid sha555', async () => {
+      let content = 'abc'
+      let {path, fs} = NodeContext
+      let p = path.join(__dirname, 'tmp', 'tmp-calcFileHash-test2.txt')
+      fs.writeFileSync(p, content)
+
+      let opt = {
+        hash_name: 'sha555',
+        // file: p,
+        file_path: p,
+        verbose: true,
+        pre_size: 1024,
+        process_calc_hash_size: 50 * 1024 * 1024, // 文件大小超过将启用子进程计算 sha1
+        onProgress: () => {},
+        getStopFlag: () => false,
+      }
+
+      try {
+        await ext.calcFileHash(opt)
+        expect(1).toBe(2)
+      } catch (err) {
+        expect(err.code).toBe('InvalidHashName')
+      }
     })
   })
 })

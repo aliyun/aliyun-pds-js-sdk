@@ -85,6 +85,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     let res = await this.send('POST', getUrl(this.api_endpoint || '', this.version, pathname), data, options)
     return res.data
   }
+  /* istanbul ignore next */
   async postAuthAnonymous<T = any>(pathname: string, data = {}, options: IPDSRequestConfig = {}): Promise<T> {
     let res = await this.send('POST', getUrl(this.auth_endpoint || '', this.version, pathname), data, options)
     return res.data

@@ -1,6 +1,7 @@
 import {beforeAll, describe, expect, it} from 'vitest'
 import * as BrowserContext from '../../lib/context/BrowserContext'
 import {BrowserContextExt} from '../../lib/context/BrowserContextExt'
+import {delay} from '../../lib/utils/HttpUtil'
 
 describe('src/context/BrowserContextExt', () => {
   let ext
@@ -30,5 +31,60 @@ describe('src/context/BrowserContextExt', () => {
       ),
     ).toBe('B14F92E6DD519D2539AF71D4E07BFE0B60223074C873464308A0E2F89364C7C3')
     expect(ext.calcHash('sha256', '中文')).toBe('72726D8818F693066CEB69AFA364218B692E62EA92B385782363780F47529C21')
+  })
+})
+
+describe('calcFileHash', () => {
+  let ext
+  beforeAll(async () => {
+    ext = new BrowserContextExt(BrowserContext)
+    // 等待，防止wasm未初始化 calcCrc64 报错
+    await delay(500)
+  })
+  it('sha1', async () => {
+    let opt = {
+      hash_name: 'sha1',
+      file: new File(['abc'], 'a.txt'),
+      verbose: true,
+      pre_size: 1024,
+      process_calc_hash_size: 50 * 1024 * 1024, // 文件大小超过将启用子进程计算 sha1
+      onProgress: () => {},
+      getStopFlag: () => false,
+    }
+
+    let str = await ext.calcFileHash(opt)
+    expect(str).toBe('A9993E364706816ABA3E25717850C26C9CD0D89D')
+  })
+  it('sha256', async () => {
+    let opt = {
+      hash_name: 'sha256',
+      file: new File(['abc'], 'a.txt'),
+      verbose: true,
+      pre_size: 1024,
+      process_calc_hash_size: 50 * 1024 * 1024, // 文件大小超过将启用子进程计算 sha1
+      onProgress: () => {},
+      getStopFlag: () => false,
+    }
+
+    let str = await ext.calcFileHash(opt)
+    expect(str).toBe('BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD')
+  })
+  it('invalid sha555', async () => {
+    let opt = {
+      hash_name: 'sha555',
+      file: new File(['abc'], 'a.txt'),
+      verbose: true,
+      pre_size: 1024,
+      process_calc_hash_size: 50 * 1024 * 1024, // 文件大小超过将启用子进程计算 sha1
+      onProgress: () => {},
+      getStopFlag: () => false,
+    }
+
+    try {
+      await ext.calcFileHash(opt)
+      expect(1).toBe(2)
+    } catch (err) {
+      expect(err.code).toBe('InvalidHashName')
+    }
   })
 })

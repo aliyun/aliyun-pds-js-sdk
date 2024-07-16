@@ -500,18 +500,18 @@ export async function downloadLink(url, fileName) {
 }
 
 // 单个文件:  iframe 可连续下载（无法指定 fileName, 废弃）
-export function downloadLink2(url, fileName) {
-  console.debug('downloadLink:', url, fileName)
-  const iframe = document.createElement('iframe')
-  iframe.style.display = 'none' // 防止影响页面
-  iframe.style.height = '0px' // 防止影响页面
-  iframe.src = url
-  document.body.appendChild(iframe) // 这一行必须，iframe挂在到dom树上才会发请求
+// export function downloadLink2(url, fileName) {
+//   console.debug('downloadLink:', url, fileName)
+//   const iframe = document.createElement('iframe')
+//   iframe.style.display = 'none' // 防止影响页面
+//   iframe.style.height = '0px' // 防止影响页面
+//   iframe.src = url
+//   document.body.appendChild(iframe) // 这一行必须，iframe挂在到dom树上才会发请求
 
-  // 无法触发onload事件，10s 之后删除
-  setTimeout(() => {
-    iframe.remove()
-  }, 10 * 1000)
+//   // 无法触发onload事件，10s 之后删除
+//   setTimeout(() => {
+//     iframe.remove()
+//   }, 10 * 1000)
 
-  URL.revokeObjectURL(url)
-}
+//   URL.revokeObjectURL(url)
+// }
