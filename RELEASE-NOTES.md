@@ -11,6 +11,7 @@
 * refactor: 修复`uploadFile` 方法的参数: upload_to 由 `IUpCheckpoint` 改为 `Partial<IUpCheckpoint>`。
 * refactor: PDSError 增加 requestConfig 字段。
 * fix: 修复 HttpClient 的 isNetworkError 方法。
+* fix: 修复 WebDownloader 下载文件名称不正确的bug。
 
 ## 1.1.0
 

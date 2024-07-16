@@ -483,24 +483,24 @@ export async function fetchOssPart(url, reqOpt, getUrlFun) {
 }
 
 // 单个文件:  a link
-// export async function downloadLink2(url, fileName) {
-//   console.debug('downloadLink:', url, fileName)
-//   const tmp = document.createElement('a')
-//   tmp.href = url
-//   tmp.download = fileName
-//   tmp.target = '_blank'  //_blank:会打开很多个tab，然后消失掉，有点影响体验。如果没有此项，同时下载多次该方法，可能仅下载一次。
+export async function downloadLink(url, fileName) {
+  console.debug('downloadLink:', url, fileName)
+  const tmp = document.createElement('a')
+  tmp.href = url
+  tmp.download = fileName
+  tmp.target = '_blank' //_blank:会打开很多个tab，然后消失掉，有点影响体验。如果没有此项，同时下载多次该方法，可能仅下载一次。
 
-//   document.body.appendChild(tmp)
-//   tmp.click()
+  document.body.appendChild(tmp)
+  tmp.click()
 
-//   setTimeout(()=>{
-//     document.body.removeChild(tmp)
-//     URL.revokeObjectURL(url)
-//   },10)
-// }
+  setTimeout(() => {
+    document.body.removeChild(tmp)
+    URL.revokeObjectURL(url)
+  }, 10)
+}
 
-// 单个文件:  iframe 可连续下载
-export function downloadLink(url, fileName) {
+// 单个文件:  iframe 可连续下载（无法指定 fileName, 废弃）
+export function downloadLink2(url, fileName) {
   console.debug('downloadLink:', url, fileName)
   const iframe = document.createElement('iframe')
   iframe.style.display = 'none' // 防止影响页面
