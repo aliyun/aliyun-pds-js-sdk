@@ -34,6 +34,8 @@ async function load() {
     if ($route.params.driveId) drive_id = $route.params.driveId
     else drive_id = arr[0].drive_id
     onSelect()
+  } else {
+    console.log('当前用户没有云盘')
   }
 }
 

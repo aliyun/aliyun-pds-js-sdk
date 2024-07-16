@@ -22,6 +22,7 @@
   "devDependencies": {
     "@ant-design/icons-vue": "^6.1.0",
     "@vitejs/plugin-vue": "^4.2.3",
+    "@vue-macros/reactivity-transform": "^0.4.6",
     "ant-design-vue": "^4.0.0",
     "babel-eslint": "7.1.1",
     "dayjs": "^1.11.9",

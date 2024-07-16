@@ -52,5 +52,6 @@ export default defineConfig({
       name: 'chrome',
     },
     testTimeout: 1000000,
+    hookTimeout: 1000000,
   },
 })

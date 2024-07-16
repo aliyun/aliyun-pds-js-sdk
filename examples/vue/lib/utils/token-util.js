@@ -9,7 +9,7 @@ const {join, basename} = path
 const {readFileSync, writeFileSync, existsSync, promises: fsPromises} = fs
 
 async function getUserToken(user_id = 'superadmin', noCache = false) {
-  const {domain_id, api_endpoint, jwt_app_id, jwt_app_private_key} = Config
+  const {domain_id, auth_endpoint, api_endpoint, jwt_app_id, jwt_app_private_key} = Config
   const token_path = join(__dirname, '..', 'config', `tmp-token-${domain_id}-${user_id}.json`)
   let token
 
@@ -25,6 +25,7 @@ async function getUserToken(user_id = 'superadmin', noCache = false) {
   try {
     const client = new PDSClient({
       api_endpoint,
+      auth_endpoint,
     })
 
     token = await client.getUserJwtToken(params)
