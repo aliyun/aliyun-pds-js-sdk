@@ -30,7 +30,7 @@ app.use(async (ctx, next) => {
 routes(router)
 app.on('error', function (err, ctx) {
   console.log(err)
-  logger.error('server error', err, ctx)
+  console.error('server error', err, ctx)
 })
 
 module.exports = app.listen(port, () => {

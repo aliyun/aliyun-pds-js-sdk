@@ -26,6 +26,7 @@ export default defineConfig({
     ],
     // environment: 'happy-dom',
     coverage: {
+      reportOnFailure:true,
       provider: 'istanbul',
       reporter: ['html'],
       reportsDirectory: join(__dirname, './coverage/browser'),
@@ -51,5 +52,6 @@ export default defineConfig({
       name: 'chrome',
     },
     testTimeout: 1000000,
+    hookTimeout: 1000000,
   },
 })

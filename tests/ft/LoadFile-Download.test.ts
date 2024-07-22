@@ -1,15 +1,48 @@
-import {describe, expect, it} from 'vitest'
+import {describe, beforeAll, afterAll, expect, it} from 'vitest'
 
 import Config from './config/conf'
 
-import {getClient} from './util/token-util'
+import {getClient, getTestDrive, createTestFolder} from './util/token-util'
 import {generateFile, getDownloadLocalPath} from './util/file-util.js'
 
 describe('LoadFile-upload-download', function () {
   describe('Download', () => {
-    it('stop test', async () => {
-      const {domain_id, drive_id} = Config
+    let drive_id: string
+    let client
+    let test_folder
 
+    let parent_file_id
+    const {domain_id} = Config
+    beforeAll(async () => {
+      client = await getClient()
+
+      // 创建个新的
+      const newDrive = await getTestDrive(client)
+
+      drive_id = newDrive.drive_id
+
+      test_folder = await createTestFolder(client, {
+        drive_id,
+        parent_file_id: 'root',
+        name: `test-file-${Math.random().toString(36).substring(2)}`,
+      })
+      parent_file_id = test_folder.file_id
+
+      console.log('所有测试在此目录下进行：', test_folder)
+    })
+    afterAll(async () => {
+      console.log('删除测试目录')
+
+      await client.deleteFile(
+        {
+          drive_id,
+          file_id: test_folder.file_id,
+        },
+        true,
+      )
+    })
+
+    it('stop test', async () => {
       let file_name = `tmp-${domain_id}-download-60MB.txt`
       let from = await generateFile(file_name, 1024 * 60000, 'text/plain')
 
@@ -17,7 +50,6 @@ describe('LoadFile-upload-download', function () {
       let to = await getDownloadLocalPath(local_name)
 
       let task
-      var client = await getClient()
 
       console.log('---------------开始上传-----------------------')
 
@@ -26,6 +58,7 @@ describe('LoadFile-upload-download', function () {
         from,
         {
           drive_id,
+          parent_file_id,
         },
         {
           ignore_rapid: false,
@@ -50,7 +83,7 @@ describe('LoadFile-upload-download', function () {
         },
       )
       expect(['success', 'rapid_success'].includes(cp.state || '')).toBe(true)
-      expect(cp.parent_file_id).toBe('root')
+      expect(cp.parent_file_id).toBe(parent_file_id)
       expect(cp.drive_id).toBe(drive_id)
       expect(cp.loc_id).toBe(drive_id)
       expect(cp.loc_type).toBe('drive')

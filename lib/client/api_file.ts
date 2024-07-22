@@ -7,6 +7,7 @@ import {
   TMethod,
   TCheckNameMode,
   TCheckNameModeExt,
+  THashName,
 } from '../Types'
 
 import {PDSFileRevisionAPIClient} from './api_file_revision'
@@ -14,7 +15,9 @@ import {IBatchBaseReq, spArr} from './api_base'
 import {PDSError} from '../utils/PDSError'
 import {genID} from '../utils/IDUtil'
 export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
-  // 缓存目录名称
+  /**
+   * 缓存目录名称
+   */
   folderIdMap: {[id: string]: IParentFolderNameId} = {}
 
   constructor(opt: IClientParams, contextExt: IContextExt) {
@@ -39,7 +42,9 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
     return result
   }
 
-  //（标准模式） 搜索文件，或者 搜索回收站
+  /**
+   * 搜索文件，或者 搜索回收站
+   */
   async searchFiles(
     data: ISearchFileReq,
     options?: IPDSRequestConfig,
@@ -55,7 +60,9 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
     return result
   }
 
-  // (标准模式) 查询同步收藏
+  /**
+   * 查询同步收藏
+   */
   async listFilesByCustomIndexKey(data: ICustomIndexKeyReq, options?: IPDSRequestConfig): Promise<IListRes<IFileItem>> {
     const result = await this.postAPI<IListRes<IFileItem>>('/file/list_by_custom_index_key', data, options)
     result.items = result.items || []
@@ -391,7 +398,7 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
   async saveFileContent(
     fileInfo: ISaveFileContentReq | IFileItem,
     content = '',
-    config: {check_name_mode?: TCheckNameMode; ignore_rapid?: boolean} = {},
+    config: {check_name_mode?: TCheckNameMode; ignore_rapid?: boolean; hash_name?: THashName} = {},
     options?: IPDSRequestConfig,
   ) {
     let opt: ICreateFileReq = {
@@ -409,11 +416,13 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
 
     // 强制不秒传，测试用
     if (!config.ignore_rapid) {
-      const sha1 = this.contextExt.calcSha1(content)
+      let hash_name = config.hash_name || 'sha1'
+
+      const hash = this.contextExt.calcHash(hash_name, content)
 
       Object.assign(opt, {
-        content_hash_name: 'sha1',
-        content_hash: sha1,
+        content_hash_name: hash_name,
+        content_hash: hash,
       })
     }
     const info = await this.createFile(opt, options)
@@ -499,9 +508,9 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
     }
   }
 
-  // 文件 rename 和播单 rename 共用此逻辑,播单 rename 弹窗不展示后缀
-  // 遇到同名文件，默认会抛： AlreadyExist.File
-  // 标准模式可以通过 check_name_mode 修改
+  /**
+   * 文件 rename 和播单 rename 共用此逻辑,播单 rename 弹窗不展示后缀
+   */
   async renameFile(
     fileInfo: IFileKey | IFileItem,
     new_name: string,
@@ -526,7 +535,9 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
     return {...fileInfo, ...result}
   }
 
-  // 移动文件或文件夹
+  /**
+   * 移动文件或文件夹
+   */
   async moveFiles(fileInfos: IFileItemKey[], config: ICopyFilesConfig, options?: IPDSRequestConfig) {
     const {
       to_parent_file_id,
@@ -574,7 +585,9 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
 
     return results
   }
-  // 标准模式only： 批量移动文件或文件夹
+  /**
+   * 批量移动文件或文件夹
+   */
   async batchMoveFiles(fileInfos: IFileItemKey[], config: IBatchCopyFilesConfig, options?: IPDSRequestConfig) {
     const {to_parent_file_id, to_drive_id = undefined, new_name = undefined} = config
 
@@ -600,7 +613,9 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
     return await this.batchApi({batchArr: arr, num: 10}, options)
   }
 
-  // 标准模式only： 批量复制文件或文件夹
+  /**
+   * 批量复制文件或文件夹
+   */
   async batchCopyFiles(fileInfos: IFileItemKey[], config: IBatchCopyFilesConfig, options?: IPDSRequestConfig) {
     const {to_parent_file_id, to_drive_id = undefined, new_name = undefined} = config
 
@@ -641,9 +656,10 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
     )
   }
 
-  // 删除文件或文件夹
+  /**
+   * 删除文件或文件夹
+   */
   async batchDeleteFiles(rows: IFileKey[], permanently: boolean, options?: IPDSRequestConfig) {
-    // 托管模式下无回收站, 直接删除
     let _permanently = permanently
 
     const arr: IBatchBaseReq[] = []
@@ -667,14 +683,14 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
   }
 
   /**
-   * @description 清空回收站内容(包括个人空间和团队空间)
+   * 清空回收站内容(包括个人空间和团队空间)
    */
   async clearRecycleBin(options?: IPDSRequestConfig) {
     return await this.postAPI('/recyclebin/clear_all', options)
   }
 
   /**
-   * @description 从回收站中恢复文件。恢复时，若之前的父目录被删除，挂载到根目录，若之前的父目录在回收站，创建同名目录
+   * 从回收站中恢复文件。恢复时，若之前的父目录被删除，挂载到根目录，若之前的父目录在回收站，创建同名目录
    * @param {String} drive_id
    * @param {String} file_id
    */
@@ -707,11 +723,16 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
   deleteFileUserTags(data: IDeleteFileUserTagsReq, options?: IPDSRequestConfig) {
     return this.postAPI<null>('/file/delete_usertags', data, options)
   }
-  // 是否有同名文件,文件夹
+  /**
+   * 是否有同名文件,文件夹
+   */
   preCreateCheck(data: IPreCreateCheckReq, options?: IPDSRequestConfig): Promise<IPreCreateCheckRes> {
     return this.postAPI<IPreCreateCheckRes>('/file/pre_create_check', data, options)
   }
-  // 上传前，可以调用此方法判断 第一级 是否有重名的文件夹或文件
+
+  /**
+   *  上传前，可以调用此方法判断 第一级 是否有重名的文件夹或文件
+   */
   async batchCheckFilesExist(
     data: IPreCreateCheckReq[],
     options?: IPDSRequestConfig,
@@ -879,16 +900,19 @@ export interface IFileItem {
 }
 
 export interface IThumbnailProcessItem {
-  image_thumbnail_process?: string // 图片类型文件的缩略图规则，参考OSS的图片处理规则。默认为：image/resize,m_fill,h_128,w_128,limit_0
-  video_thumbnail_process?: string // 视频类型文件的缩略图规则，参考OSS的视频截帧处理规则。默认为：video/snapshot,t_1000,f_jpg,w_0,h_0,m_fast,ar_auto
-  office_thumbnail_process?: string // 文档类型文件的缩略图规则，文档类型的文件会选择文档中一页的截图作为原图，此参数是基于该截图来做处理。默认为：image/resize,m_fill,h_128,w_128,limit_0
+  /**  图片类型文件的缩略图规则，参考OSS的图片处理规则。默认为：image/resize,m_fill,h_128,w_128,limit_0 */
+  image_thumbnail_process?: string
+  /** 视频类型文件的缩略图规则，参考OSS的视频截帧处理规则。默认为：video/snapshot,t_1000,f_jpg,w_0,h_0,m_fast,ar_auto */
+  video_thumbnail_process?: string
+  /** 文档类型文件的缩略图规则，文档类型的文件会选择文档中一页的截图作为原图，此参数是基于该截图来做处理。默认为：image/resize,m_fill,h_128,w_128,limit_0  */
+  office_thumbnail_process?: string
 }
-// 按分辨率缩略图配置
+/** 按分辨率缩略图配置 */
 export interface IThumbnailProcessItemMap {
   // definition 可以为自定义string， 如 '480X480': {...}
   [definition: string]: IThumbnailProcessItem
 }
-// 列举文件或文件夹
+/** 列举文件或文件夹 */
 export interface IListFileReq {
   all?: boolean
   drive_id?: string

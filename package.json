@@ -1,6 +1,6 @@
 {
   "name": "aliyun-pds-js-sdk",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "description": "PDS SDK for javascript",
   "files": [
@@ -36,15 +36,13 @@
     "format": "prettier --write 'lib/**/*.{js,mjs,ts}' 'tests/**/*.{js,mjs,ts}' examples/**/*.{js,vue,ts}",
     "test": "vitest",
     "test2": "vitest --config vite.config.browser.js",
-    "test:node": "vitest --coverage",
-    "test:browser": "vitest --coverage --config vite.config.browser.js",
+    "test:node": "npm run token && vitest --coverage",
+    "test:browser": "npm run token && vitest --coverage --config vite.config.browser.js",
     "token": "tsx tests/ft/bin/pre-test.js",
-    "pretest:node": "npm run token",
-    "pretest:browser": "npm run token",
-    "precov:node": "npm run token",
-    "precov:browser": "npm run token",
-    "cov:node": "vitest run --coverage && open-cli coverage/node/index.html",
-    "cov:browser": "vitest run --coverage --config vite.config.browser.js && open-cli coverage/browser/index.html"
+    "cov:node": "npm run token && vitest run --coverage && open-cli coverage/node/index.html",
+    "cov:browser": "npm run token && vitest run --coverage --config vite.config.browser.js && open-cli coverage/browser/index.html",
+    "cov:node2": "npm run token && vitest run --coverage",
+    "cov:browser2": "npm run token && vitest run --coverage --config vite.config.browser.js"
   },
   "directories": {
     "test": "tests/"
@@ -58,8 +56,9 @@
     "@vitest/coverage-v8": "^0.34.3",
     "@vitest/ui": "^0.34.3",
     "axios": "^0.24.0",
-    "cross-env": "^7.0.3", 
+    "cross-env": "^7.0.3",
     "js-sha1": "^0.6.0",
+    "js-sha256": "^0.11.0",
     "open-cli": "^7.2.0",
     "prettier": "^3.0.3",
     "tsx": "^3.12.10",

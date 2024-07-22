@@ -1,25 +1,28 @@
 import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
 import {ICreateFileRes} from '../../lib/index'
-import {createTestFolder, getClient} from './util/token-util'
+import {createTestFolder, getTestDrive, getClient} from './util/token-util'
 
 import Config from './config/conf'
 import {join} from 'path'
 import {execSync} from 'child_process'
 import {existsSync} from 'fs'
-
+import {generateFile} from './util/file-util'
 describe('file user tags test', function () {
   let drive_id: string
   let client
   let test_folder: ICreateFileRes
-  let test_folder_name = 'test-user-tags-action'
 
   beforeAll(async () => {
     client = await getClient()
-    drive_id = client.token_info?.default_drive_id || ''
+    // 创建个新的
+    const newDrive = await getTestDrive(client)
+
+    drive_id = newDrive.drive_id
+
     test_folder = await createTestFolder(client, {
       drive_id,
       parent_file_id: 'root',
-      name: test_folder_name,
+      name: `test-file-${Date.now()}`,
     })
 
     console.log('所有测试在此目录下进行：', test_folder)
@@ -27,7 +30,8 @@ describe('file user tags test', function () {
 
   afterAll(async () => {
     client = await getClient()
-    drive_id = client.token_info?.default_drive_id || ''
+
+    console.log('删除测试目录')
 
     await client.deleteFile(
       {
@@ -36,8 +40,6 @@ describe('file user tags test', function () {
       },
       true,
     )
-
-    console.log('删除测试目录')
   })
 
   beforeEach(async () => {
@@ -48,13 +50,13 @@ describe('file user tags test', function () {
   })
 
   it('uploadFile with userTags', async () => {
-    const {domain_id, drive_id} = Config
+    const {domain_id} = Config
 
     let fname = `tmp-${domain_id}-upload-tags-1MB.txt`
     let from = join(__dirname, 'tmp', fname)
 
     // mock 文件
-    if (!existsSync(from)) execSync(`dd if=/dev/zero of=${from} bs=1024 count=1000`)
+    await generateFile(fname, 1 * 1024 * 1024, 'text/plain')
 
     var client = await getClient()
 

@@ -33,9 +33,19 @@ export class PDSUploadAPIClient extends PDSUserApiClient {
     super(opt, contextExt)
   }
 
+  /**
+   * 上传文件便捷方法。
+        await 会等待上传完成。
+        state 为 stopped, cancelled 和 error 时，会 throw PDSError。
+   * @param file {IFile|string} 要上传的文件。浏览器：HTML File 对象。node.js: 本地文件路径，或者本地文件信息。
+   * @param upload_to 
+   * @param upload_options 
+   * @param request_config 
+   * @returns
+   */
   uploadFile(
     file: string | IFile,
-    upload_to: IUpCheckpoint,
+    upload_to: Partial<IUpCheckpoint>,
     upload_options: IUploadOptions = {},
     request_config?: IPDSRequestConfig,
   ): Promise<IUpCheckpoint> {
@@ -50,16 +60,16 @@ export class PDSUploadAPIClient extends PDSUserApiClient {
 
     upload_to.file = this.contextExt.parseUploadIFile(file)
 
+    let upCheckpoint: IUpCheckpoint = {
+      path_type: this.path_type,
+      parent_file_id: 'root',
+      ...upload_to,
+      file: this.contextExt.parseUploadIFile(file),
+    }
+
     return new Promise<IUpCheckpoint>((resolve, reject) => {
       var task = this.createUploadTask(
-        {
-          // file: _file,
-          path_type: this.path_type,
-
-          parent_file_id: 'root',
-
-          ...upload_to,
-        },
+        upCheckpoint,
         {
           ...configs,
         },
@@ -88,6 +98,13 @@ export class PDSUploadAPIClient extends PDSUserApiClient {
     })
   }
 
+  /**
+   * 创建一个上传任务。 可以通过 on 方法监听 progress 和 state 变化。
+   * @param checkpoint
+   * @param configs
+   * @param request_config
+   * @returns
+   */
   createUploadTask(
     checkpoint: IUpCheckpoint,
     configs: IUpConfig = {parallel_upload: false},

@@ -1,6 +1,6 @@
-import {join, dirname} from 'path'
-import {mkdirSync, readFileSync, writeFileSync} from 'fs'
-import {fileURLToPath} from 'url'
+const {join, dirname} = require('path')
+const {mkdirSync, readFileSync, writeFileSync} = require('fs')
+const {fileURLToPath} = require('url')
 // es 没有 __filename 全局变量，需要模拟
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -9,7 +9,7 @@ mkdirSync(join(__dirname, '../tmp'), {recursive: true})
 // ut/tmp
 mkdirSync(join(__dirname, '../../ut/tmp'), {recursive: true})
 
-import {PDSClient} from '../../..'
+const {PDSClient} = require('../../..')
 
 // ************************
 // 动态生成 config/conf.js
@@ -37,7 +37,7 @@ async function init() {
 }
 
 async function fetchSuperToken(user_id = 'superadmin') {
-  Config = (await import(config_path)).default
+  Config = require(config_path).default
 
   const {domain_id, client_id, api_endpoint, auth_endpoint, private_key} = Config
   const token_path = join(__dirname, '..', 'tmp', `tmp-token-${domain_id}-${user_id}.json`)

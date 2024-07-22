@@ -151,7 +151,7 @@ async function createFolderTasks({
     }
   } else {
     // 文件
-    dtIns.createUploadTask({file, parent_file_id, drive_id, check_name_mode})
+    dtIns.createUploadTask({file, parent_file_id, drive_id, check_name_mode, hash_name: Global.data_hash_name})
   }
 }
 

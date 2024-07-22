@@ -31,4 +31,4 @@ pub:build
 	npm publish --tag=beta
 
 # 命令和目录名称冲突
-.PHONY:lib dist tests
+.PHONY:doc lib dist tests

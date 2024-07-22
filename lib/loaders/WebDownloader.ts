@@ -483,35 +483,35 @@ export async function fetchOssPart(url, reqOpt, getUrlFun) {
 }
 
 // 单个文件:  a link
-// export async function downloadLink2(url, fileName) {
-//   console.debug('downloadLink:', url, fileName)
-//   const tmp = document.createElement('a')
-//   tmp.href = url
-//   tmp.download = fileName
-//   tmp.target = '_blank'  //_blank:会打开很多个tab，然后消失掉，有点影响体验。如果没有此项，同时下载多次该方法，可能仅下载一次。
-
-//   document.body.appendChild(tmp)
-//   tmp.click()
-
-//   setTimeout(()=>{
-//     document.body.removeChild(tmp)
-//     URL.revokeObjectURL(url)
-//   },10)
-// }
-
-// 单个文件:  iframe 可连续下载
-export function downloadLink(url, fileName) {
+export async function downloadLink(url, fileName) {
   console.debug('downloadLink:', url, fileName)
-  const iframe = document.createElement('iframe')
-  iframe.style.display = 'none' // 防止影响页面
-  iframe.style.height = '0px' // 防止影响页面
-  iframe.src = url
-  document.body.appendChild(iframe) // 这一行必须，iframe挂在到dom树上才会发请求
+  const tmp = document.createElement('a')
+  tmp.href = url
+  tmp.download = fileName
+  tmp.target = '_blank' //_blank:会打开很多个tab，然后消失掉，有点影响体验。如果没有此项，同时下载多次该方法，可能仅下载一次。
 
-  // 无法触发onload事件，10s 之后删除
+  document.body.appendChild(tmp)
+  tmp.click()
+
   setTimeout(() => {
-    iframe.remove()
-  }, 10 * 1000)
-
-  URL.revokeObjectURL(url)
+    document.body.removeChild(tmp)
+    URL.revokeObjectURL(url)
+  }, 10)
 }
+
+// 单个文件:  iframe 可连续下载（无法指定 fileName, 废弃）
+// export function downloadLink2(url, fileName) {
+//   console.debug('downloadLink:', url, fileName)
+//   const iframe = document.createElement('iframe')
+//   iframe.style.display = 'none' // 防止影响页面
+//   iframe.style.height = '0px' // 防止影响页面
+//   iframe.src = url
+//   document.body.appendChild(iframe) // 这一行必须，iframe挂在到dom树上才会发请求
+
+//   // 无法触发onload事件，10s 之后删除
+//   setTimeout(() => {
+//     iframe.remove()
+//   }, 10 * 1000)
+
+//   URL.revokeObjectURL(url)
+// }

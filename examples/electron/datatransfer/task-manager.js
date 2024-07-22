@@ -104,13 +104,31 @@ class TaskManager {
     }
   }
 
-  createUploadTask({file, parent_file_id, drive_id, check_name_mode}) {
-    console.log('[TaskManager] createUploadTask:', {file, parent_file_id, drive_id, check_name_mode})
+  createUploadTask({
+    file,
+    parent_file_id,
+    drive_id,
+    check_name_mode,
+    ignore_rapid,
+    parallel_upload,
+    hash_name = 'sha1',
+  }) {
+    console.log('[TaskManager] createUploadTask:', {
+      file,
+      parent_file_id,
+      drive_id,
+      check_name_mode,
+      ignore_rapid,
+      parallel_upload,
+      hash_name,
+    })
     let task = this.#client.createUploadTask(
       {file, drive_id, parent_file_id},
       {
+        hash_name, // sha1, sha256
         check_name_mode, // refuse, auto_rename, overwrite, skip
-        ignore_rapid: true, // 忽略秒传，测试用
+        ignore_rapid, // 忽略秒传，测试用
+        parallel_upload,
 
         // limit_part_num: 9000,
         // max_chunk_size: 10 * 1024 * 1024, //每片10MB

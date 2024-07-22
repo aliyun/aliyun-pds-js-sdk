@@ -19,12 +19,16 @@ import {PDSDownloadApiClient} from './client/api_y_download'
 import {HttpClient as Http_Client} from './http/HttpClient'
 
 import {
+  calc_crc64,
+  calc_file_crc64,
   calc_sha1,
   calc_file_sha1, // 串行
   calc_file_parts_sha1, // 并行，按part计算中间值
-  calc_file_crc64,
+  calc_sha256,
+  calc_file_sha256, // 串行
+  calc_file_parts_sha256, // 并行，按part计算中间值
 } from './context/NodeFileUtil'
-import {init_chunks_download, init_chunks_parallel, init_chunks_sha1} from './utils/ChunkUtil'
+import {init_chunks_download, init_chunks_parallel, init_chunks_sha} from './utils/ChunkUtil'
 import {IClientParams, IContext} from './Types'
 import {PDSError} from './utils/PDSError'
 
@@ -38,15 +42,23 @@ const version = pkg.version
 console.log('aliyun-pds-js-sdk@' + version)
 
 const CalcUtil = {
+  calc_crc64,
+  calc_file_crc64,
   calc_sha1,
   calc_file_sha1, // 串行
   calc_file_parts_sha1, // 并行，按part计算中间值
-  calc_file_crc64,
+  calc_sha256,
+  calc_file_sha256, // 串行
+  calc_file_parts_sha256, // 并行，按part计算中间值
 }
 const ChunkUtil = {
   init_chunks_download,
   init_chunks_parallel,
-  init_chunks_sha1,
+  /**
+   * @deprecated please use linkAccount instead
+   */
+  init_chunks_sha1: init_chunks_sha,
+  init_chunks_sha,
 }
 class PDSClient extends PDSDownloadApiClient {
   constructor(opt: IClientParams, ctx: IContext = Context) {

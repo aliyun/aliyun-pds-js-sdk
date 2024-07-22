@@ -1,5 +1,4 @@
-import {describe, expect, it} from 'vitest'
-import {delay} from '../../lib/utils/HttpUtil'
+import {describe, beforeAll, afterAll, expect, it} from 'vitest'
 
 import Config from './config/conf'
 
@@ -7,13 +6,46 @@ import {join} from 'path'
 import {execSync} from 'child_process'
 import {existsSync, unlinkSync} from 'fs'
 
-import {getClient} from './util/token-util'
-
+import {getClient, getTestDrive, createTestFolder, delay} from './util/token-util'
+import {generateFile} from './util/file-util'
 describe('LoadFile download state change', function () {
+  let drive_id: string
+  let client
+  let test_folder
+
+  let parent_file_id
+  const {domain_id} = Config
+  beforeAll(async () => {
+    client = await getClient()
+
+    // 创建个新的
+    const newDrive = await getTestDrive(client)
+
+    drive_id = newDrive.drive_id
+
+    test_folder = await createTestFolder(client, {
+      drive_id,
+      parent_file_id: 'root',
+      name: `test-file-${Math.random().toString(36).substring(2)}`,
+    })
+    parent_file_id = test_folder.file_id
+
+    console.log('所有测试在此目录下进行：', test_folder)
+  })
+  afterAll(async () => {
+    console.log('删除测试目录')
+
+    await client.deleteFile(
+      {
+        drive_id,
+        file_id: test_folder.file_id,
+      },
+      true,
+    )
+  })
+
   describe('createTask', () => {
     it('download Task', async () => {
-      const {domain_id, drive_id} = Config
-
       const fromName = `tmp-${domain_id}-down-test-123.txt`
       const filename = `tmp-${domain_id}-down-test-123-2.txt`
       let from = join(__dirname, 'tmp', fromName)
@@ -22,9 +54,7 @@ describe('LoadFile download state change', function () {
       if (existsSync(downTo)) unlinkSync(downTo)
 
       // mock 文件
-      if (!existsSync(from)) execSync(`dd if=/dev/zero of=${from} bs=1024 count=10000`)
-
-      var client = await getClient()
+      await generateFile(fromName, 10 * 1024 * 1024, 'text/plain')
 
       // 上传
       var cp = await client.uploadFile(
@@ -104,8 +134,6 @@ describe('LoadFile download state change', function () {
     })
 
     it('download Task with new params', async () => {
-      const {domain_id, drive_id} = Config
-
       const fromName = `tmp-${domain_id}-down-test-123.txt`
       const filename = `tmp-${domain_id}-down-test-123-2.txt`
       let from = join(__dirname, 'tmp', fromName)
@@ -114,9 +142,7 @@ describe('LoadFile download state change', function () {
       if (existsSync(downTo)) unlinkSync(downTo)
 
       // mock 文件
-      if (!existsSync(from)) execSync(`dd if=/dev/zero of=${from} bs=1024 count=50000`)
-
-      var client = await getClient()
+      await generateFile(fromName, 10 * 1024 * 1024, 'text/plain')
 
       // 上传
       var cp = await client.uploadFile(

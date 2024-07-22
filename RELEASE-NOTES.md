@@ -1,6 +1,18 @@
 
 # Release Notes
 
+## 1.2.0
+
+* feat: 上传支持 sha256 计算hash方法。
+* test: 测试 case 优化。
+* refactor: token失效或者没有token的情况下，调接口应该emit error。
+* refactor: importUser, generalSearchUsers,createDrive 3个接口新增一些可选参数。
+* fix: 修复httpClient，以支持分享页面同时使用 x-share-token和access token的场景。
+* refactor: 修复`uploadFile` 方法的参数: upload_to 由 `IUpCheckpoint` 改为 `Partial<IUpCheckpoint>`。
+* refactor: PDSError 增加 requestConfig 字段。
+* fix: 修复 HttpClient 的 isNetworkError 方法。
+* fix: 修复 WebDownloader 下载文件名称不正确的bug。
+
 ## 1.1.0
 
 * feat: web端支持服务端打包下载任务。

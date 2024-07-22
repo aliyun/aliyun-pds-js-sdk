@@ -110,7 +110,8 @@ async function onUploadFiles({files, parent_file_id, drive_id}) {
       },
       {
         check_name_mode: mode, // refuse, auto_rename, overwrite, skip
-        ignore_rapid: true, // 忽略秒传，测试用
+        ignore_rapid: Global.ignore_rapid, // 忽略秒传，测试用
+        parallel_upload: Global.parallel_upload, // 并发上传
         state_changed(cp, state, err) {
           console.log('---state:', n.name, state, err)
           if (state == 'error' && err.code == 'AlreadyExists' && cp.is_skip) {

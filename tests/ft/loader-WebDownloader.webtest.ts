@@ -1,15 +1,51 @@
-import {describe, expect, it, beforeEach, afterEach} from 'vitest'
+import {describe, beforeAll, afterAll, expect, it, beforeEach, afterEach} from 'vitest'
 import Config from './config/conf'
-import {getClient} from './util/token-util'
+import {getClient, getTestDrive, createTestFolder} from './util/token-util'
 import {generateFile} from './util/file-util.js'
 import {downloadLink} from '../../lib/loaders/WebDownloader.js'
 
 describe('WebDownloader Error test', function () {
-  let file_id
-  const {domain_id, drive_id} = Config
+  let drive_id: string
   let client
+  let test_folder
+
+  let parent_file_id
+
+  let file_id
+  const {domain_id} = Config
+
   let task
   let cp
+
+  beforeAll(async () => {
+    client = await getClient()
+
+    // 创建个新的
+    const newDrive = await getTestDrive(client)
+
+    drive_id = newDrive.drive_id
+
+    test_folder = await createTestFolder(client, {
+      drive_id,
+      parent_file_id: 'root',
+      name: `test-file-${Math.random().toString(36).substring(2)}`,
+    })
+    parent_file_id = test_folder.file_id
+
+    console.log('所有测试在此目录下进行：', test_folder)
+  })
+  afterAll(async () => {
+    console.log('删除测试目录')
+
+    await client.deleteFile(
+      {
+        drive_id,
+        file_id: test_folder.file_id,
+      },
+      true,
+    )
+  })
+
   beforeEach(async () => {
     let name = `tmp-${domain_id}-std-web-up.txt`
 

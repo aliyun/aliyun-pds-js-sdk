@@ -9,7 +9,7 @@ export {
   init_chunks_web_download,
   init_chunks_download,
   init_chunks_parallel,
-  init_chunks_sha1,
+  init_chunks_sha,
   get_available_size,
   find_64x,
 }
@@ -81,14 +81,14 @@ function find_64x(chunk_size) {
 }
 
 /**
- * 分片方法 (标准模式 sha1 串行上传)
- * StandardMode 启用 sha1，必须按照顺序upload parts，并发数只能设置为1。为了保证尽量占满带宽，chunk size要够大。
+ * 分片方法 (标准模式 sha1/sha256 串行上传)
+ * StandardMode 启用 sha1/sha256，必须按照顺序upload parts，并发数只能设置为1。为了保证尽量占满带宽，chunk size要够大。
  * @param file_size        number  文件大小
  * @param parts            Array<IUpPartInfo> 从服务端已经上传的拉取的分片数组，之前上传的 parts
  * @param init_chunk_size  number 初始分块大小
  * @returns [ part_info_list, chunk_size ]
  */
-function init_chunks_sha1(
+function init_chunks_sha(
   file_size: number,
   parts: IUpPartInfo[] = [],
   init_chunk_size: number = INIT_CHUNK_SIZE,

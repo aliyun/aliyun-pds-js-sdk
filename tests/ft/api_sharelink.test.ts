@@ -1,23 +1,28 @@
 import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
 
 import {IParentFolderNameId} from '../../lib/client/api_file'
-import {getClient, PDSClient} from './util/token-util'
+import {getClient, PDSClient, getTestDrive} from './util/token-util'
 import Config from './config/conf'
 import {mockFile} from './util/file-util'
 
 const isWeb = typeof window == 'object'
 
 describe('ShareLink', function () {
-  let {api_endpoint, drive_id} = Config
+  let {api_endpoint} = Config
 
   let client
 
+  let drive_id
   let file_id
   let folder_id
   let breadArr: Omit<IParentFolderNameId, 'parent_file_id'>[] = []
 
   beforeAll(async () => {
     client = await getClient()
+    // 创建个新的
+    const newDrive = await getTestDrive(client)
+
+    drive_id = newDrive.drive_id
 
     folder_id = await client.createFolders(['aa', 'bb', 'cc'], {drive_id, parent_file_id: 'root'})
 

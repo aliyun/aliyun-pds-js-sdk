@@ -1,8 +1,6 @@
 import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
 
-import {delay} from '../../lib/utils/HttpUtil'
-
-import {getClient} from './util/token-util'
+import {getClient, getTestDrive, delay, deleteUserForce} from './util/token-util'
 
 describe('StandingShare', function () {
   let client
@@ -29,7 +27,11 @@ describe('StandingShare', function () {
   })
 
   it('createShare', async () => {
-    const drive_id = client.token_info?.default_drive_id || ''
+    // 创建个新的
+    const newDrive = await getTestDrive(client)
+
+    const drive_id = newDrive.drive_id
+
     // 个人空间下 创建个文件夹
     const folder1 = await client.createFolder({
       drive_id,
@@ -40,6 +42,15 @@ describe('StandingShare', function () {
     let folder_id = folder1.file_id || ''
     expect(!!folder_id).toBe(true)
 
+    const userInfo = await client.importUser({
+      authentication_type: 'mobile',
+      auto_create_drive: true,
+      identity: `135${Math.round(Math.random() * 100000000)}`,
+      drive_total_size: 1024 * 1024 * 1024,
+      nick_name: 'WWJ-',
+    })
+    expect(!!userInfo.user_id).toBe(true)
+
     try {
       // 共享这个文件夹
       await client.addFilePermission({
@@ -47,23 +58,23 @@ describe('StandingShare', function () {
         file_id: folder_id,
         member_list: [
           {
-            identity: {identity_type: 'IT_User', identity_id: '152fa0a9cc974ae2b26a8981847d306c'},
+            identity: {identity_type: 'IT_User', identity_id: userInfo.user_id},
             expire_time: 4775500800000,
             role_id: 'SystemFileEditor',
             disinherit_sub_group: true,
           },
-          {
-            identity: {identity_type: 'IT_User', identity_id: '4b14efc7056a4d43b08176a006f63740'},
-            expire_time: 4775500800000,
-            role_id: 'SystemFileEditorWithoutDelete',
-            disinherit_sub_group: true,
-          },
-          {
-            identity: {identity_type: 'IT_User', identity_id: 'f181ff4066084880b95897b4456a7c66'},
-            expire_time: 4775500800000,
-            role_id: 'SystemFileEditorWithoutShareLink',
-            disinherit_sub_group: true,
-          },
+          // {
+          //   identity: {identity_type: 'IT_User', identity_id: '4b14efc7056a4d43b08176a006f63740'},
+          //   expire_time: 4775500800000,
+          //   role_id: 'SystemFileEditorWithoutDelete',
+          //   disinherit_sub_group: true,
+          // },
+          // {
+          //   identity: {identity_type: 'IT_User', identity_id: 'f181ff4066084880b95897b4456a7c66'},
+          //   expire_time: 4775500800000,
+          //   role_id: 'SystemFileEditorWithoutShareLink',
+          //   disinherit_sub_group: true,
+          // },
         ],
       })
     } catch (error) {
@@ -74,7 +85,7 @@ describe('StandingShare', function () {
       drive_id,
       file_id: folder_id,
     })
-    expect(permissionArr.length).toBe(3)
+    expect(permissionArr.length).toBe(1)
 
     await delay(10000)
     const result = await client.listSharingFiles({limit: 30, marker: ''})
@@ -100,28 +111,30 @@ describe('StandingShare', function () {
 
     const UserPermission = await client.listUserPermissions({
       type: 'self',
-      user_id: 'superadmin',
+      user_id: userInfo.user_id,
+    })
+    // console.log(UserPermission, '<-------')
+
+    expect(UserPermission.items.length).toBe(1)
+
+    // 取消共享权限
+    const res3 = await client.removeFilePermission({
+      drive_id,
+      file_id: folder_id,
+      member_list: [
+        {
+          identity: {identity_type: 'IT_User', identity_id: userInfo.user_id},
+          expire_time: 4775500800000,
+          role_id: 'SystemFileEditorWithoutDelete',
+          disinherit_sub_group: true,
+        },
+      ],
     })
 
-    expect(!!UserPermission.items.length).toBe(true)
+    expect(res3).toBe('')
 
-    try {
-      // 取消共享权限
-      await client.removeFilePermission({
-        drive_id,
-        file_id: folder_id,
-        member_list: [
-          {
-            identity: {identity_type: 'IT_User', identity_id: '4b14efc7056a4d43b08176a006f63740'},
-            expire_time: 4775500800000,
-            role_id: 'SystemFileEditorWithoutDelete',
-            disinherit_sub_group: true,
-          },
-        ],
-      })
-    } catch (error) {
-      expect('remove Permission error')
-    }
-    client.batchDeleteFiles([{drive_id, file_id: folder1.file_id}], true)
+    await deleteUserForce(client, userInfo.user_id)
+    // 删除
+    await client.batchDeleteFiles([{drive_id, file_id: folder1.file_id}], true)
   })
 })

@@ -1,17 +1,18 @@
 import {describe, expect, beforeAll, beforeEach, afterAll, it} from 'vitest'
 
-import {delay} from '../../lib/utils/HttpUtil'
-
-import {getClient, createTestFolder} from './util/token-util'
+import {getClient, delay, getTestDrive, createTestFolder} from './util/token-util'
 
 describe('FileAPI', function () {
   let drive_id: string
   let client
   let test_folder
-  let test_folder_name = 'test-file-action'
+  let test_folder_name = `test-file-${Math.random().toString(36).substring(2)}`
   beforeAll(async () => {
     client = await getClient()
-    drive_id = client.token_info?.default_drive_id || ''
+    // 创建个新的
+    const newDrive = await getTestDrive(client)
+
+    drive_id = newDrive.drive_id
 
     test_folder = await createTestFolder(client, {
       drive_id,
@@ -19,12 +20,14 @@ describe('FileAPI', function () {
       name: test_folder_name,
     })
 
+    expect(!!test_folder.file_id).toBe(true)
+
     console.log('所有测试在此目录下进行：', test_folder)
   })
 
   afterAll(async () => {
     client = await getClient()
-    drive_id = client.token_info?.default_drive_id || ''
+    console.log('删除测试目录')
 
     await client.deleteFile(
       {
@@ -33,8 +36,6 @@ describe('FileAPI', function () {
       },
       true,
     )
-
-    console.log('删除测试目录')
   })
 
   beforeEach(async () => {

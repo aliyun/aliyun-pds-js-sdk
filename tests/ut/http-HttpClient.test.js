@@ -43,6 +43,80 @@ describe('src/http/HttpClient', () => {
     })
   })
 
+  describe('send', () => {
+    it('Network Error retry', async () => {
+      let count = 0
+      var mockContext = {
+        axiosSend: () => {
+          count++
+          if (count < 3) {
+            throw new Error('Network Error [test]')
+          } else
+            throw {
+              status: 401,
+              response: {
+                status: 401,
+                data: {
+                  code: 'Invalid',
+                },
+              },
+            }
+        },
+      }
+      let client = new HttpClient({api_endpoint: 'https://xxx'}, mockContext)
+
+      client.setToken({
+        access_token: 'xx',
+        expire_time: new Date(Date.now() + 1000000).toISOString(),
+      })
+
+      try {
+        await client.send('POST', 'https://xxx/v2/file/list', {}, 5)
+        expect(2).toBe(1)
+      } catch (e) {
+        expect(e.code == 'Invalid')
+        expect(count).toBe(3)
+      }
+    })
+    it('429 retry', async () => {
+      let count = 0
+      var mockContext = {
+        axiosSend: () => {
+          count++
+          if (count < 3) {
+            throw {
+              status: 429,
+              message: 'xxx',
+              response: {
+                status: 429,
+                data: {
+                  code: 'ShouldRetry',
+                },
+              },
+            }
+          } else {
+            return {
+              data: {
+                key: 'abc',
+              },
+            }
+          }
+        },
+      }
+      let client = new HttpClient({api_endpoint: 'https://xxx'}, mockContext)
+
+      client.setToken({
+        access_token: 'xx',
+        expire_time: new Date(Date.now() + 1000000).toISOString(),
+      })
+
+      let obj = await client.send('POST', 'https://xxx/v2/file/list', {}, 5)
+      expect(obj.data.key).toBe('abc')
+
+      expect(count).toBe(3)
+    })
+  })
+
   describe('request', () => {
     it('return data', async () => {
       var mockContext = {
@@ -59,6 +133,103 @@ describe('src/http/HttpClient', () => {
 
       let data = await client.request('https://xxx', 'POST', '/v2/file/list', {})
       expect(data.a).toBe(1)
+    })
+    it('no token', async () => {
+      var mockContext = {
+        axiosSend: () => {},
+      }
+      let client = new HttpClient({api_endpoint: 'https://xxx'}, mockContext)
+
+      let resolveOnError
+      client.on('error', err => {
+        resolveOnError(err)
+      })
+      let prom = new Promise(a => {
+        resolveOnError = a
+      })
+
+      try {
+        await client.request('https://xxx', 'POST', '/v2/file/list', {})
+        expect(2).toBe(1)
+      } catch (e) {
+        console.log(e)
+        expect(e.code == 'TokenExpired')
+      }
+
+      let err = await prom
+      expect(err.code).toBe('AccessTokenInvalid')
+    })
+
+    it('Network Error retry', async () => {
+      let count = 0
+      var mockContext = {
+        axiosSend: () => {
+          count++
+          if (count < 3) {
+            throw new Error('Network Error [test]')
+          } else
+            throw {
+              status: 401,
+              response: {
+                status: 401,
+                data: {
+                  code: 'Invalid',
+                },
+              },
+            }
+        },
+      }
+      let client = new HttpClient({api_endpoint: 'https://xxx'}, mockContext)
+
+      client.setToken({
+        access_token: 'xx',
+        expire_time: new Date(Date.now() + 1000000).toISOString(),
+      })
+
+      try {
+        await client.request('https://xxx', 'POST', '/v2/file/list', {})
+        expect(2).toBe(1)
+      } catch (e) {
+        expect(e.code == 'Invalid')
+        expect(count).toBe(3)
+      }
+    })
+    it('429 retry', async () => {
+      let count = 0
+      var mockContext = {
+        axiosSend: () => {
+          count++
+          if (count < 3) {
+            throw {
+              status: 429,
+              message: 'xxx',
+              response: {
+                status: 429,
+                data: {
+                  code: 'ShouldRetry',
+                },
+              },
+            }
+          } else {
+            return {
+              data: {
+                key: 'abc',
+              },
+            }
+          }
+        },
+      }
+      let client = new HttpClient({api_endpoint: 'https://xxx'}, mockContext)
+
+      client.setToken({
+        access_token: 'xx',
+        expire_time: new Date(Date.now() + 1000000).toISOString(),
+      })
+
+      let obj = await client.request('https://xxx', 'POST', '/v2/file/list', {})
+      expect(obj.key).toBe('abc')
+
+      expect(count).toBe(3)
     })
 
     it('TokenExpired', async () => {
@@ -89,6 +260,7 @@ describe('src/http/HttpClient', () => {
         expect(e.code == 'TokenExpired')
       }
     })
+
     it('TokenExpired refresh', async () => {
       let c = 0
       var mockContext = {

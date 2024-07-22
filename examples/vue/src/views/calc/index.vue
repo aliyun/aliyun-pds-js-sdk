@@ -46,6 +46,23 @@
               分片数: {{ sha1_parts.part_info_list.length }}</span
             >
           </section>
+
+          <section class="mt-10">
+            <a-button type="primary" :disabled="!btnActive" @click="sha256File()">sha256</a-button>
+            <span v-if="sha256.prog" class="mx-4"> 进度: {{ sha256.prog }}</span>
+            <span v-if="sha256.result" class="mx-4"> 结果: {{ sha256.result }}</span>
+            <span v-if="sha256.elapse" class="mx-4"> 耗时: {{ sha256.elapse }}ms</span>
+          </section>
+
+          <section class="mt-10">
+            <a-button type="primary" :disabled="!btnActive" @click="sha256PartsFile()">sha256分片</a-button>
+            <span v-if="sha256_parts.prog" class="mx-4"> 进度: {{ sha256_parts.prog }}</span>
+            <span v-if="sha256_parts.result" class="mx-4"> 结果: {{ sha256_parts.result }}</span>
+            <span v-if="sha256_parts.elapse" class="mx-4"> 耗时: {{ sha256_parts.elapse }}ms</span>
+            <span v-if="sha256_parts.part_info_list?.length > 0" class="mx-4">
+              分片数: {{ sha256_parts.part_info_list.length }}</span
+            >
+          </section>
         </a-card>
       </drop-zone>
     </a-layout-content>
@@ -85,7 +102,17 @@ let sha1_parts = reactive({
   result: '',
   part_info_list: [],
 })
-
+let sha256 = reactive({
+  prog: 0,
+  elapse: 0,
+  result: '',
+})
+let sha256_parts = reactive({
+  prog: 0,
+  elapse: 0,
+  result: '',
+  part_info_list: [],
+})
 watch(
   () => tab.value,
   v => {
@@ -101,6 +128,15 @@ watch(
     sha1_parts.elapse = 0
     sha1_parts.result = ''
     sha1_parts.part_info_list = []
+
+    sha256.prog = 0
+    sha256.elapse = 0
+    sha256.result = ''
+
+    sha256_parts.prog = 0
+    sha256_parts.elapse = 0
+    sha256_parts.result = ''
+    sha256_parts.part_info_list = []
   },
 )
 
@@ -159,7 +195,7 @@ async function sha1PartsFile() {
   let st = Date.now()
   let f = getCurrentFile()
 
-  let [part_info_list, chunk_size] = ChunkUtil.init_chunks_sha1(f.size, [], 64)
+  let [part_info_list, chunk_size] = ChunkUtil.init_chunks_sha(f.size, [], 64)
   console.log(part_info_list, chunk_size)
 
   let result = await CalcUtil.calc_file_parts_sha1(
@@ -174,5 +210,39 @@ async function sha1PartsFile() {
   console.log(sha1_parts.part_info_list)
 
   sha1_parts.elapse = Date.now() - st
+}
+
+async function sha256File() {
+  let st = Date.now()
+  let f = getCurrentFile()
+  sha256.result = await CalcUtil.calc_file_sha256(
+    f,
+    0,
+    prog => (sha256.prog = prog.toFixed(2) + '%'),
+    () => false,
+  )
+
+  sha256.elapse = Date.now() - st
+}
+
+async function sha256PartsFile() {
+  let st = Date.now()
+  let f = getCurrentFile()
+
+  let [part_info_list, chunk_size] = ChunkUtil.init_chunks_sha(f.size, [], 64)
+  console.log(part_info_list, chunk_size)
+
+  let result = await CalcUtil.calc_file_parts_sha256(
+    f,
+    part_info_list,
+    prog => (sha256_parts.prog = prog.toFixed(2) + '%'),
+    () => false,
+    isElectron ? Context : null,
+  )
+  sha256_parts.result = result.content_hash
+  sha256_parts.part_info_list = result.part_info_list
+  console.log(sha256_parts.part_info_list)
+
+  sha256_parts.elapse = Date.now() - st
 }
 </script>

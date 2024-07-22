@@ -68,6 +68,13 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     this.share_token = share_token
   }
 
+  /**
+   * 基础 API 服务调用方法。基于此方法，可以封装出调用任何 PDS API 方法。
+   * @param pathname <string> 调用 API 服务的 pathname。 比如 API 是 /v2/file/list, 此处传入 /file/list 即可。
+   * @param data     <object> 调用 pathname 对应接口的参数 JSON。
+   * @param options
+   * @returns
+   */
   async postAPI<T = any>(pathname: string, data = {}, options: IPDSRequestConfig = {}): Promise<T> {
     return await this.request(this.api_endpoint || '', 'POST', pathname, data, options)
   }
@@ -78,6 +85,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     let res = await this.send('POST', getUrl(this.api_endpoint || '', this.version, pathname), data, options)
     return res.data
   }
+  /* istanbul ignore next */
   async postAuthAnonymous<T = any>(pathname: string, data = {}, options: IPDSRequestConfig = {}): Promise<T> {
     let res = await this.send('POST', getUrl(this.auth_endpoint || '', this.version, pathname), data, options)
     return res.data
@@ -101,20 +109,42 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       data,
       ...options,
     }
-    if (this.verbose) console.debug('send:', JSON.stringify(req_opt))
+    if (this.verbose) {
+      console.log('request:', {
+        method: req_opt.method,
+        url: req_opt.url,
+        headers: req_opt?.headers,
+        params: req_opt?.params,
+        data: req_opt?.data,
+      })
+    }
     try {
       let res = await this.contextExt.axiosSend.call(this.contextExt, req_opt)
-      if (this.verbose) console.debug('response:', res.data)
+      if (this.verbose) {
+        console.log('response:', {
+          status: res.status,
+          headers: res.headers,
+          data: res.data,
+        })
+      }
       return res
     } catch (err) {
-      if (this.verbose) console.debug('send error:', err.response || err)
       let pdsErr = new PDSError(err)
+
+      if (this.verbose) console.log('error:', pdsErr)
 
       this.emitError(pdsErr, req_opt)
 
+      // 网络无法连接
+      if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
+        console.debug('[should retry] error:', pdsErr)
+        await delayRandom()
+        // 重试
+        return await this.send(method, url, data, options, retries)
+      }
       if (retries > 0) {
-        // 网络无法连接
-        if (pdsErr.status === 429 || isNetworkError(pdsErr)) {
+        // 服务端限流
+        if (pdsErr.status === 429) {
           console.debug('[should retry] error:', pdsErr)
           await delayRandom()
           // 重试
@@ -140,7 +170,15 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       ...options,
     }
 
-    if (this.verbose) console.debug('request:', JSON.stringify(req_opt))
+    if (this.verbose) {
+      console.log('request:', {
+        method: req_opt.method,
+        url: req_opt.url,
+        headers: req_opt?.headers,
+        params: req_opt?.params,
+        data: req_opt?.data,
+      })
+    }
 
     req_opt.headers = req_opt.headers || {}
 
@@ -148,21 +186,31 @@ export class HttpClient extends EventEmitter implements IHttpClient {
 
     let hasShareToken = !!req_opt.headers['x-share-token']
 
-    if (!hasShareToken) {
-      await this.checkRefreshToken(req_opt)
-      req_opt.headers['Authorization'] = 'Bearer ' + this.token_info?.access_token
-    }
-
     try {
+      // 如果没有token或token失效，统一 emitError
+      if (!hasShareToken) {
+        await this.checkRefreshToken(req_opt)
+      }
+
+      if (this.token_info?.access_token) {
+        req_opt.headers['Authorization'] = 'Bearer ' + this.token_info?.access_token
+      }
+
       // 发送请求
       let response = await this.contextExt.axiosSend.call(this.contextExt, req_opt)
-      if (this.verbose) console.debug('response:', response.data)
+      if (this.verbose) {
+        console.log('response:', {
+          status: response.status,
+          headers: response.headers,
+          data: response.data,
+        })
+      }
 
       return response.data
     } catch (e) {
-      if (this.verbose) console.debug('request error:', e.response || e)
-
       let pdsErr = new PDSError(e)
+
+      if (this.verbose) console.log('error:', pdsErr)
 
       // 不是每个 http error 都emit
       if (
@@ -172,9 +220,17 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         this.emitError(pdsErr, req_opt)
       }
 
+      // 网络无法连接
+      if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
+        console.debug('[should retry] error:', pdsErr)
+        await delayRandom()
+        // 重试
+        return await this.request(endpoint, method, pathname, data, options, retries)
+      }
+
       if (retries > 0) {
-        // 网络无法连接
-        if (pdsErr.status === 429 || isNetworkError(pdsErr)) {
+        // 服务端限流
+        if (pdsErr.status === 429) {
           console.debug('[should retry] error:', pdsErr)
           await delayRandom()
           // 重试
@@ -182,27 +238,25 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         }
       }
 
-      if (pdsErr.status == 401) {
-        // token 失效
-        if (pdsErr.code?.includes('AccessTokenInvalid')) {
-          if (this.refresh_token_fun) {
-            await this.customRefreshTokenFun()
-            await delayRandom()
-            return await this.request(endpoint, method, pathname, data, options, retries)
-          } else {
-            throw new PDSError(pdsErr.message, 'TokenExpired')
-          }
-        } else if (pdsErr.code?.includes('ShareLinkTokenInvalid')) {
-          // share_token 失效
-          // code: "ShareLinkTokenInvalid"
-          // message: "ShareLinkToken is invalid. expired"
-          if (this.refresh_share_token_fun) {
-            this.share_token = await this.refresh_share_token_fun()
-            await delayRandom()
-            return await this.request(endpoint, method, pathname, data, options, retries)
-          } else {
-            throw new PDSError(pdsErr.message, 'ShareLinkTokenInvalid')
-          }
+      // token 失效
+      if (/AccessTokenInvalid|TokenExpired/.test(pdsErr.code || '')) {
+        if (this.refresh_token_fun) {
+          await this.customRefreshTokenFun()
+          await delayRandom()
+          return await this.request(endpoint, method, pathname, data, options, retries)
+        } else {
+          throw new PDSError(pdsErr.message, 'TokenExpired')
+        }
+      } else if (pdsErr.code?.includes('ShareLinkTokenInvalid')) {
+        // share_token 失效
+        // code: "ShareLinkTokenInvalid"
+        // message: "ShareLinkToken is invalid. expired"
+        if (this.refresh_share_token_fun) {
+          this.share_token = await this.refresh_share_token_fun()
+          await delayRandom()
+          return await this.request(endpoint, method, pathname, data, options, retries)
+        } else {
+          throw new PDSError(pdsErr.message, 'ShareLinkTokenInvalid')
         }
       }
 

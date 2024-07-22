@@ -5,31 +5,41 @@ import {delay} from '../../lib/utils/HttpUtil'
 import {beforeAll, describe, expect, it} from 'vitest'
 import {
   calc_sha1,
+  calc_sha256,
   calc_crc64,
   calc_file_sha1,
+  calc_file_sha256,
   calc_file_crc64,
+  calc_file_parts_sha256,
   calc_file_parts_sha1,
   _parse_free_size_unix,
   _parse_free_size_windows,
 } from '../../lib/context/NodeFileUtil'
-import {init_chunks_sha1} from '../../lib/utils/ChunkUtil'
+import {init_chunks_sha} from '../../lib/utils/ChunkUtil'
 
 describe('src/context/NodeFileUtil', () => {
   beforeAll(async () => {
     // 等待，防止wasm未初始化 calcCrc64 报错
     await delay(500)
   })
-  describe('calc_sha1', () => {
-    describe('calc_crc64', () => {
-      it('calc_crc64', () => {
-        expect(calc_crc64('abc', '0')).toBe('3231342946509354535')
-        expect(calc_crc64('中文')).toBe('16371802884590399230')
-      })
-    })
 
+  describe('calc_crc64', () => {
+    it('calc_crc64', () => {
+      expect(calc_crc64('abc', '0')).toBe('3231342946509354535')
+      expect(calc_crc64('中文')).toBe('16371802884590399230')
+    })
+  })
+
+  describe('calc_sha1', () => {
     it('calc_sha1', () => {
       expect(calc_sha1('abc')).toBe('A9993E364706816ABA3E25717850C26C9CD0D89D')
       expect(calc_sha1('中文')).toBe('7BE2D2D20C106EEE0836C9BC2B939890A78E8FB3')
+    })
+  })
+  describe('calc_sha256', () => {
+    it('calc_sha256', () => {
+      expect(calc_sha256('abc')).toBe('BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD')
+      expect(calc_sha256('中文')).toBe('72726D8818F693066CEB69AFA364218B692E62EA92B385782363780F47529C21')
     })
   })
 
@@ -110,7 +120,7 @@ describe('src/context/NodeFileUtil', () => {
     it('empty file', async () => {
       let p1 = path.join(__dirname, 'tmp/tmp-calc_file_parts_sha1-empty.txt')
       fs.writeFileSync(p1, '')
-      let [part_info_list, chunk_size] = init_chunks_sha1(fs.statSync(p1).size, [], 64)
+      let [part_info_list, chunk_size] = init_chunks_sha(fs.statSync(p1).size, [], 64)
       console.log(part_info_list, chunk_size)
 
       expect(part_info_list.length).toBe(1)
@@ -145,7 +155,7 @@ describe('src/context/NodeFileUtil', () => {
 
       let p1 = path.join(__dirname, 'tmp/tmp-calc_file_parts_sha1.txt')
       fs.writeFileSync(p1, t.join('\n'))
-      let [part_info_list, chunk_size] = init_chunks_sha1(fs.statSync(p1).size, [], 64)
+      let [part_info_list, chunk_size] = init_chunks_sha(fs.statSync(p1).size, [], 64)
       console.log(part_info_list, chunk_size)
 
       expect(part_info_list.length).toBe(7)
@@ -184,7 +194,7 @@ describe('src/context/NodeFileUtil', () => {
 
       let p1 = path.join(__dirname, 'tmp/tmp-calc_file_parts_sha1.txt')
       fs.writeFileSync(p1, t.join('\n'))
-      let [part_info_list, chunk_size] = init_chunks_sha1(fs.statSync(p1).size, [], 64)
+      let [part_info_list, chunk_size] = init_chunks_sha(fs.statSync(p1).size, [], 64)
       console.log(part_info_list, chunk_size)
 
       expect(part_info_list.length).toBe(7)
@@ -219,6 +229,195 @@ describe('src/context/NodeFileUtil', () => {
       fs.unlinkSync(p1)
     })
   })
+
+  describe('calc_file_sha256', () => {
+    it('calc_file_sha256', async () => {
+      // 生成测试文件
+      let p1 = path.join(__dirname, 'tmp/tmp-calc_file_sha256.txt')
+      fs.writeFileSync(p1, 'abc')
+
+      let prog = 0
+      let result = await calc_file_sha256(
+        p1,
+        0,
+        p => {
+          prog = p
+          console.log(p)
+        },
+        () => false,
+        NodeContext,
+      )
+      expect(fs.statSync(p1).size).toBe(3)
+      expect(result).toBe('BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD')
+      expect(prog).toBe(100)
+
+      // 删除
+      fs.unlinkSync(p1)
+    })
+    it('calc_file_sha256 0-2', async () => {
+      // 生成测试文件
+      let p1 = path.join(__dirname, 'tmp/tmp-calc_file_sha256.txt')
+      fs.writeFileSync(p1, 'abc')
+
+      let prog = 0
+      let result = await calc_file_sha256(
+        p1,
+        2,
+        p => {
+          prog = p
+          console.log(p)
+        },
+        () => false,
+        NodeContext,
+      )
+      expect(fs.statSync(p1).size).toBe(3)
+      expect(result).toBe('FB8E20FC2E4C3F248C60C39BD652F3C1347298BB977B8B4D5903B85055620603')
+      expect(prog).toBe(100)
+
+      // 删除
+      fs.unlinkSync(p1)
+    })
+
+    it('progress throw error, still ok', async () => {
+      // 生成测试文件
+      let p1 = path.join(__dirname, 'tmp/tmp-calc_file_sha256.txt')
+      fs.writeFileSync(p1, 'abc')
+
+      let prog = 0
+      let result = await calc_file_sha256(
+        p1,
+        0,
+        p => {
+          prog = p
+          throw new Error('test err')
+        },
+        () => false,
+        NodeContext,
+      )
+      expect(fs.statSync(p1).size).toBe(3)
+      expect(result).toBe('BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD')
+      expect(prog).toBe(100)
+
+      // 删除
+      fs.unlinkSync(p1)
+    })
+  })
+
+  describe('calc_file_parts_sha256', () => {
+    it('empty file', async () => {
+      let p1 = path.join(__dirname, 'tmp/tmp-calc_file_parts_sha256-empty.txt')
+      fs.writeFileSync(p1, '')
+      let [part_info_list, chunk_size] = init_chunks_sha(fs.statSync(p1).size, [], 64)
+      console.log(part_info_list, chunk_size)
+
+      expect(part_info_list.length).toBe(1)
+      expect(part_info_list[0]).toEqual({part_number: 1, part_size: 0, from: 0, to: 0})
+
+      expect(chunk_size).toBe(64)
+
+      let prog
+      let {
+        part_info_list: arr,
+        content_hash_name,
+        content_hash,
+      } = await calc_file_parts_sha256(
+        p1,
+        part_info_list,
+        pp => {
+          prog = pp
+        },
+        () => false,
+        NodeContext,
+      )
+
+      expect(content_hash).toBe('E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855')
+      expect(content_hash_name).toBe('sha256')
+      expect(prog).toBe(100)
+
+      fs.unlinkSync(p1)
+    })
+    it('calc_file_parts_sha256', async () => {
+      let t: string[] = []
+      for (let i = 0; i < 100; i++) t.push(`test-${i}`)
+
+      let p1 = path.join(__dirname, 'tmp/tmp-calc_file_parts_sha256.txt')
+      fs.writeFileSync(p1, t.join('\n'))
+      let [part_info_list, chunk_size] = init_chunks_sha(fs.statSync(p1).size, [], 64)
+      console.log(part_info_list, chunk_size)
+
+      expect(part_info_list.length).toBe(7)
+      expect(part_info_list[6]).toEqual({part_number: 7, part_size: 21, from: 768, to: 789})
+      expect(chunk_size).toBe(128)
+
+      let prog
+      let {
+        part_info_list: arr,
+        content_hash_name,
+        content_hash,
+      } = await calc_file_parts_sha256(
+        p1,
+        part_info_list,
+        pp => {
+          prog = pp
+        },
+        () => false,
+        NodeContext,
+      )
+
+      expect(content_hash).toBe('D248EBFB21764620F802BB87A2DF6BBE0CAA6F55657B842025F5B01C0525A7ED')
+      expect(content_hash_name).toBe('sha256')
+      expect(arr[6].parallel_sha256_ctx).toEqual({
+        h: [2156254178, 2271146846, 3285757422, 4079239336, 3289954368, 3496897604, 1490423711, 2468994605],
+
+        part_offset: 768,
+      })
+
+      expect(prog).toBe(100)
+
+      fs.unlinkSync(p1)
+    })
+    it('on progress throw error, still ok', async () => {
+      let t: string[] = []
+      for (let i = 0; i < 100; i++) t.push(`test-${i}`)
+
+      let p1 = path.join(__dirname, 'tmp/tmp-calc_file_parts_sha256.txt')
+      fs.writeFileSync(p1, t.join('\n'))
+      let [part_info_list, chunk_size] = init_chunks_sha(fs.statSync(p1).size, [], 64)
+      console.log(part_info_list, chunk_size)
+
+      expect(part_info_list.length).toBe(7)
+      expect(part_info_list[6]).toEqual({part_number: 7, part_size: 21, from: 768, to: 789})
+      expect(chunk_size).toBe(128)
+
+      let prog
+      let {
+        part_info_list: arr,
+        content_hash_name,
+        content_hash,
+      } = await calc_file_parts_sha256(
+        p1,
+        part_info_list,
+        pp => {
+          prog = pp
+          throw new Error('xxxx')
+        },
+        () => false,
+        NodeContext,
+      )
+
+      expect(content_hash).toBe('D248EBFB21764620F802BB87A2DF6BBE0CAA6F55657B842025F5B01C0525A7ED')
+      expect(content_hash_name).toBe('sha256')
+      expect(arr[6].parallel_sha256_ctx).toEqual({
+        h: [2156254178, 2271146846, 3285757422, 4079239336, 3289954368, 3496897604, 1490423711, 2468994605],
+        part_offset: 768,
+      })
+
+      expect(prog).toBe(100)
+
+      fs.unlinkSync(p1)
+    })
+  })
+
   describe('calc_file_crc64', () => {
     it('file', async () => {
       let t: string[] = []
