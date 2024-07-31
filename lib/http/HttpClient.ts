@@ -138,7 +138,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       // 网络无法连接
       if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
         console.debug('[should retry] error:', pdsErr)
-        await delayRandom()
+        await delayRandom(1000,3000)
         // 重试
         return await this.send(method, url, data, options, retries)
       }
@@ -146,7 +146,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         // 服务端限流
         if (pdsErr.status === 429) {
           console.debug('[should retry] error:', pdsErr)
-          await delayRandom()
+          await delayRandom(1000, 3000)
           // 重试
           return await this.send(method, url, data, options, --retries)
         }
@@ -223,7 +223,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       // 网络无法连接
       if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
         console.debug('[should retry] error:', pdsErr)
-        await delayRandom()
+        await delayRandom(1000, 3000)
         // 重试
         return await this.request(endpoint, method, pathname, data, options, retries)
       }
@@ -232,7 +232,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         // 服务端限流
         if (pdsErr.status === 429) {
           console.debug('[should retry] error:', pdsErr)
-          await delayRandom()
+          await delayRandom(1000, 3000)
           // 重试
           return await this.request(endpoint, method, pathname, data, options, --retries)
         }
@@ -242,7 +242,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       if (/AccessTokenInvalid|TokenExpired/.test(pdsErr.code || '')) {
         if (this.refresh_token_fun) {
           await this.customRefreshTokenFun()
-          await delayRandom()
+          await delayRandom(0, 1000)
           return await this.request(endpoint, method, pathname, data, options, retries)
         } else {
           throw new PDSError(pdsErr.message, 'TokenExpired')
@@ -253,7 +253,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         // message: "ShareLinkToken is invalid. expired"
         if (this.refresh_share_token_fun) {
           this.share_token = await this.refresh_share_token_fun()
-          await delayRandom()
+          await delayRandom(0, 1000)
           return await this.request(endpoint, method, pathname, data, options, retries)
         } else {
           throw new PDSError(pdsErr.message, 'ShareLinkTokenInvalid')

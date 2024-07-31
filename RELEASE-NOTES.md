@@ -1,6 +1,10 @@
 
 # Release Notes
 
+## 1.2.1
+
+* refactor: http请求失败重试间隔优化。
+
 ## 1.2.0
 
 * feat: 上传支持 sha256 计算hash方法。

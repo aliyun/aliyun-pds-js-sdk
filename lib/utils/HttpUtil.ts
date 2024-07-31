@@ -42,8 +42,8 @@ async function callRetry(func: Function, binding: any, arr: Array<any>, opt: ICa
 function delay(ms: number): Promise<void> {
   return new Promise<void>(a => setTimeout(a, ms))
 }
-async function delayRandom(ms = 3000) {
-  return await delay(Math.ceil(Math.random() * ms))
+async function delayRandom(offset = 1000, ms = 3000) {
+  return await delay(offset + Math.ceil(Math.random() * ms))
 }
 
 // 这些错误，不需要重试，暂停，下次可以断点续传
