@@ -133,7 +133,13 @@ export class HttpClient extends EventEmitter implements IHttpClient {
 
       if (this.verbose) console.log('error:', pdsErr)
 
-      this.emitError(pdsErr, req_opt)
+      // 不是每个 http error 都emit
+      if (
+        req_opt.data?.donot_emit_error !== true &&
+        !(req_opt.data?.donot_emit_notfound === true && pdsErr.status === 404)
+      ) {
+        this.emitError(pdsErr, req_opt)
+      }
 
       // 网络无法连接
       if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
@@ -189,7 +195,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     try {
       // 如果没有token或token失效，统一 emitError
       if (!hasShareToken) {
-        await this.checkRefreshToken(req_opt)
+        await this.checkRefreshToken()
       }
 
       if (this.token_info?.access_token) {
@@ -245,7 +251,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
           await delayRandom(0, 1000)
           return await this.request(endpoint, method, pathname, data, options, --retries)
         } else {
-          this.throwError(new PDSError(pdsErr.message, 'TokenExpired'), req_opt)
+          throw new PDSError(pdsErr.message, 'TokenExpired')
         }
       } else if (pdsErr.code?.includes('ShareLinkTokenInvalid')) {
         // share_token 失效
@@ -256,7 +262,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
           await delayRandom(0, 1000)
           return await this.request(endpoint, method, pathname, data, options, --retries)
         } else {
-          this.throwError(new PDSError(pdsErr.message, 'ShareLinkTokenInvalid'), req_opt)
+          throw new PDSError(pdsErr.message, 'ShareLinkTokenInvalid')
         }
       }
 
@@ -265,16 +271,16 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   }
 
   /* istanbul ignore next */
-  async checkRefreshToken(request_config: IPDSRequestConfig) {
+  async checkRefreshToken() {
     if (!this.token_info || !this.token_info.access_token) {
-      this.throwError(new PDSError('access_token is required', 'AccessTokenInvalid'), request_config)
+      throw new PDSError('access_token is required', 'AccessTokenInvalid')
     }
     const expire_time = Date.parse(this.token_info?.expire_time || '')
     if (!isNaN(expire_time) && Date.now() > expire_time) {
       if (this.refresh_token_fun) {
         await this.customRefreshTokenFun()
       } else {
-        this.throwError(new PDSError('Invalid expire_time', 'TokenExpired'), request_config)
+        throw new PDSError('Invalid expire_time', 'TokenExpired')
       }
     }
   }
