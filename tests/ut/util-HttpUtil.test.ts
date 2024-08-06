@@ -1,5 +1,12 @@
 import Axios, {AxiosError} from 'axios'
-import {callRetry, delay, isStoppableError, isNetworkError, isOssUrlExpired, delayRandom} from '../../lib/utils/HttpUtil'
+import {
+  callRetry,
+  delay,
+  isStoppableError,
+  isNetworkError,
+  isOssUrlExpired,
+  delayRandom,
+} from '../../lib/utils/HttpUtil'
 import {describe, expect, it} from 'vitest'
 
 describe('HttpUtil', function () {
@@ -155,21 +162,21 @@ describe('HttpUtil', function () {
       }
     })
   })
-  describe('delayRandom', ()=>{
-    it('delayRandom, 1,3', async ()=>{ 
-      for(let i=0;i<10;i++){
-        let st= Date.now()
+  describe('delayRandom', () => {
+    it('delayRandom, 1,3', async () => {
+      for (let i = 0; i < 10; i++) {
+        let st = Date.now()
         await delayRandom()
         let et = Date.now()
-        expect(et-st).toBeLessThan(4000)
+        expect(et - st).toBeLessThan(4000)
       }
     })
-    it('delayRandom, 0,1', async ()=>{ 
-      for(let i=0;i<10;i++){
-        let st= Date.now()
-        await delayRandom(0,1000)
+    it('delayRandom, 0,1', async () => {
+      for (let i = 0; i < 10; i++) {
+        let st = Date.now()
+        await delayRandom(0, 1000)
         let et = Date.now()
-        expect(et-st).toBeLessThan(1000)
+        expect(et - st).toBeLessThan(1000)
       }
     })
   })
