@@ -251,15 +251,15 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
 
         return fileInfo.file_id
       } catch (e) {
-        if (e.response && e.response.status == 409) {
-          const msg = e.response.data.message
-          return msg.match(/:([-\w]+$)/)[1]
-        }
-        // 目标云盘满，特殊处理
-        const errCode = `code_${e.response?.data?.code?.replace(/\./g, '_')}`
-        if (errCode === 'code_QuotaExhausted_Drive') {
-          return 'code_QuotaExhausted_Drive'
-        }
+        // if (e.response && e.response.status == 409) {
+        //   const msg = e.response.data.message
+        //   return msg.match(/:([-\w]+$)/)[1]
+        // }
+        // // 目标云盘满，特殊处理
+        // const errCode = `code_${e.response?.data?.code?.replace(/\./g, '_')}`
+        // if (errCode === 'code_QuotaExhausted_Drive') {
+        //   return 'code_QuotaExhausted_Drive'
+        // }
 
         if (e.code !== 'AlreadyExists' && retry > 0) {
           retry--

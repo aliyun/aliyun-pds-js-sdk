@@ -1,9 +1,10 @@
 
 # Release Notes
 
-## 1.2.1
+## 1.3.0
 
 * refactor: http请求失败重试间隔优化。
+* refactor: createFolders 去掉返回字符串逻辑，统一抛出异常。
 
 ## 1.2.0
 
