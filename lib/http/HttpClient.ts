@@ -5,7 +5,7 @@ import {PDSError} from '../utils/PDSError'
 
 import {delayRandom, isNetworkError} from '../utils/HttpUtil'
 
-const MAX_RETRY = 5
+const MAX_RETRY = 10
 
 export interface IHttpClient {
   contextExt: IContextExt
@@ -138,7 +138,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       // 网络无法连接
       if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
         console.debug('[should retry] error:', pdsErr)
-        await delayRandom(1000,3000)
+        await delayRandom(1000, 3000)
         // 重试
         return await this.send(method, url, data, options, retries)
       }
@@ -243,9 +243,9 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         if (this.refresh_token_fun) {
           await this.customRefreshTokenFun()
           await delayRandom(0, 1000)
-          return await this.request(endpoint, method, pathname, data, options, retries)
+          return await this.request(endpoint, method, pathname, data, options, --retries)
         } else {
-          throw new PDSError(pdsErr.message, 'TokenExpired')
+          this.throwError(new PDSError(pdsErr.message, 'TokenExpired'), req_opt)
         }
       } else if (pdsErr.code?.includes('ShareLinkTokenInvalid')) {
         // share_token 失效
@@ -254,9 +254,9 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         if (this.refresh_share_token_fun) {
           this.share_token = await this.refresh_share_token_fun()
           await delayRandom(0, 1000)
-          return await this.request(endpoint, method, pathname, data, options, retries)
+          return await this.request(endpoint, method, pathname, data, options, --retries)
         } else {
-          throw new PDSError(pdsErr.message, 'ShareLinkTokenInvalid')
+          this.throwError(new PDSError(pdsErr.message, 'ShareLinkTokenInvalid'), req_opt)
         }
       }
 
