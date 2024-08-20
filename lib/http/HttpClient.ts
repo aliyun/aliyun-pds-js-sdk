@@ -258,7 +258,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         // code: "ShareLinkTokenInvalid"
         // message: "ShareLinkToken is invalid. expired"
         if (this.refresh_share_token_fun) {
-          this.share_token = await this.refresh_share_token_fun()
+          await this.customRefreshShareTokenFun()
           await delayRandom(0, 1000)
           return await this.request(endpoint, method, pathname, data, options, --retries)
         } else {
@@ -292,6 +292,18 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       //需要重新赋值
       this.token_info = new_token_info
       return new_token_info
+    } catch (e) {
+      throw new PDSError(e)
+    }
+  }
+  /* istanbul ignore next */
+  async customRefreshShareTokenFun(): Promise<string | undefined> {
+    try {
+      //自定义refresh_share_token_fun方法
+      var new_share_token = await this.refresh_share_token_fun?.()
+      //需要重新赋值
+      this.share_token = new_share_token
+      return new_share_token
     } catch (e) {
       throw new PDSError(e)
     }

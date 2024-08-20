@@ -1,6 +1,6 @@
 {
   "name": "aliyun-pds-js-sdk",
-  "version": "1.2.1-beta.2",
+  "version": "1.2.1-beta.3",
   "type": "module",
   "description": "PDS SDK for javascript",
   "files": [
