@@ -4,10 +4,17 @@ import {
   removeItem,
   calcUploadMaxConcurrency,
   calcDownloadMaxConcurrency,
+  getIfVpcUrl,
 } from '../../lib/utils/LoadUtil'
 import {describe, expect, it} from 'vitest'
 
 describe('LoadUtil', function () {
+  it('getIfVpcUrl', () => {
+    expect(getIfVpcUrl(true, 'https://url', 'https://vpc-url')).toBe('https://vpc-url')
+    expect(getIfVpcUrl(true, 'https://url', '')).toBe('https://url')
+    expect(getIfVpcUrl(false, 'https://url', '')).toBe('https://url')
+    expect(getIfVpcUrl(false, 'https://url', 'https://vpc-url')).toBe('https://url')
+  })
   it('getArchiveTaskResult', () => {
     let data = getArchiveTaskResult({
       archive_file_result: {crc64_hash: '123', url: 'http://x', size: 1},

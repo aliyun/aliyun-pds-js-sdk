@@ -5,6 +5,7 @@
 
 * refactor: http请求失败重试间隔优化。TokenExpired 和 ShareLinkTokenInvalid 不再无限重试，改成递减。
 * refactor: createFolders 去掉返回字符串逻辑，统一抛出异常。
+* feature: 支持use_vpc参数，强制使用vpc。
 
 ## 1.2.0
 
