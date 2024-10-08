@@ -406,7 +406,7 @@ export class WebDownloader extends BaseDownloader {
     }
   }
 
-  handlePush(partInfo, last_opt, controller, res, push) {
+  async handlePush(partInfo, last_opt, controller, res, push) {
     const {done, value} = res
 
     if (done) {
@@ -424,7 +424,7 @@ export class WebDownloader extends BaseDownloader {
 
     // 再计算
     if (this.checking_crc) {
-      this.last_crc64 = this.context_ext.calcCrc64.call(this.context_ext, value, this.last_crc64)
+      this.last_crc64 = await this.context_ext.calcCrc64.call(this.context_ext, value, this.last_crc64)
     }
 
     // 在这里根据 value 统计进度

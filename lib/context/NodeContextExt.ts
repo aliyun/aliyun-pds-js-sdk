@@ -14,15 +14,12 @@ import {
 } from '../Types'
 import {fix_filename_4_windows} from '../utils/FileNameUtil'
 import {
-  calc_file_parts_sha1,
-  calc_file_sha1,
+  calc_hash,
+  calc_file_parts_hash,
+  calc_file_hash,
   calc_file_crc64,
   get_free_disk_size,
   calc_crc64,
-  calc_sha1,
-  calc_sha256,
-  calc_file_parts_sha256,
-  calc_file_sha256,
 } from './NodeFileUtil'
 import pkg from '../pkg'
 import {sign as sign_jwt} from '../utils/JWTUtil'
@@ -132,25 +129,16 @@ export class NodeContextExt implements IContextExt {
       new Error('A requested file or directory could not be found')
     }
   }
-  calcCrc64(str: string | Uint8Array, last: string = '0') {
+  async calcCrc64(str: string | Uint8Array, last: string = '0') {
     if (str === undefined || str === null) return last
-    return calc_crc64(this.textEncode(str), last)
-  }
-  /**
-   * @deprecated Please use calcHash() instead
-   */
-  calcSha1(str: string | Uint8Array) {
-    return this.calcHash('sha1', str)
+    return await calc_crc64(this.textEncode(str), last)
   }
 
-  calcHash(hashName: THashName, str: string | Uint8Array) {
-    switch (hashName) {
-      case 'sha1':
-        return calc_sha1(this.textEncode(str))
-      case 'sha256':
-        return calc_sha256(this.textEncode(str))
-      default:
-        throw new PDSError('Invalid hash_name', 'InvalidHashName')
+  async calcHash(hashName: THashName, str: string | Uint8Array) {
+    if (['sha1', 'sha256'].includes(hashName)) {
+      return await calc_hash(hashName, this.textEncode(str))
+    } else {
+      throw new PDSError('Invalid hash_name', 'InvalidHashName')
     }
   }
   textEncode(str: string | Uint8Array): Uint8Array {
@@ -172,19 +160,9 @@ export class NodeContextExt implements IContextExt {
     hash_name = hash_name || 'sha1'
     pre_size = pre_size || 0
 
-    // let {fs} = this.context
-
-    // let size = fs.statSync(file_path).size
-    // if (size > process_calc_sha1_size) {
-    //   if (verbose) console.log(`使用 node 子进程计算 sha1`)
-    //   return await calc_file_sha1_process(file_path, pre_size, onProgress, getStopFlag, this.context)
-    // } else {
-
-    // }
-
-    if (hash_name == 'sha1') return await calc_file_sha1(file_path, pre_size, onProgress, getStopFlag)
-    else if (hash_name == 'sha256') return await calc_file_sha256(file_path, pre_size, onProgress, getStopFlag)
-    else throw new PDSError('Invalid hash_name', 'InvalidHashName')
+    if (['sha1', 'sha256'].includes(hash_name)) {
+      return await calc_file_hash(hash_name, file_path, pre_size, onProgress, getStopFlag)
+    } else throw new PDSError('Invalid hash_name', 'InvalidHashName')
   }
   async calcFilePartsHash(
     params: ICalcFileParams & {
@@ -198,31 +176,15 @@ export class NodeContextExt implements IContextExt {
     hash_name = params.hash_name || 'sha1'
     part_info_list = part_info_list || []
 
-    // 桌面端
-    // let size = this.context.fs.statSync(file_path).size
-    // if (size > process_calc_sha1_size) {
-    //   if (verbose) console.log(`使用 node 子进程计算 sha1 (分片)`)
-    //   return await calc_file_parts_sha1_process(file_path, part_info_list, onProgress, getStopFlag, this.context)
-    // } else {
-    // return await calc_file_parts_sha1(file_path, part_info_list, onProgress, getStopFlag, this.context)
-    // }
-
-    if (hash_name == 'sha1') return await calc_file_parts_sha1(file_path, part_info_list, onProgress, getStopFlag)
-    else if (hash_name == 'sha256')
-      return await calc_file_parts_sha256(file_path, part_info_list, onProgress, getStopFlag)
-    else throw new PDSError('Invalid hash_name', 'InvalidHashName')
+    if (['sha1', 'sha256'].includes(hash_name)) {
+      return await calc_file_parts_hash(hash_name, file_path, part_info_list, onProgress, getStopFlag)
+    } else throw new PDSError('Invalid hash_name', 'InvalidHashName')
   }
   async calcFileCrc64(params: ICalcFileParams & {process_calc_crc64_size?: number}) {
     let {file, file_path, verbose, process_calc_crc64_size, onProgress, getStopFlag} = params
     file_path = file_path || file?.path || ''
 
-    // let size = this.context.fs.statSync(file_path).size
-    // if (size > process_calc_crc64_size) {
-    //   if (verbose) console.log(`使用 node 子进程计算 crc64`)
-    //   return await calc_file_crc64_process(file_path, onProgress, getStopFlag, this.context)
-    // } else {
     return await calc_file_crc64(file_path, onProgress, getStopFlag, this.context)
-    // }
   }
 
   /*************************************** */

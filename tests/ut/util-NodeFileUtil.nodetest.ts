@@ -24,22 +24,22 @@ describe('src/context/NodeFileUtil', () => {
   })
 
   describe('calc_crc64', () => {
-    it('calc_crc64', () => {
-      expect(calc_crc64('abc', '0')).toBe('3231342946509354535')
-      expect(calc_crc64('中文')).toBe('16371802884590399230')
+    it('calc_crc64', async () => {
+      expect(await calc_crc64('abc', '0')).toBe('3231342946509354535')
+      expect(await calc_crc64('中文')).toBe('16371802884590399230')
     })
   })
 
   describe('calc_sha1', () => {
-    it('calc_sha1', () => {
-      expect(calc_sha1('abc')).toBe('A9993E364706816ABA3E25717850C26C9CD0D89D')
-      expect(calc_sha1('中文')).toBe('7BE2D2D20C106EEE0836C9BC2B939890A78E8FB3')
+    it('calc_sha1', async () => {
+      expect(await calc_sha1('abc')).toBe('A9993E364706816ABA3E25717850C26C9CD0D89D')
+      expect(await calc_sha1('中文')).toBe('7BE2D2D20C106EEE0836C9BC2B939890A78E8FB3')
     })
   })
   describe('calc_sha256', () => {
-    it('calc_sha256', () => {
-      expect(calc_sha256('abc')).toBe('BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD')
-      expect(calc_sha256('中文')).toBe('72726D8818F693066CEB69AFA364218B692E62EA92B385782363780F47529C21')
+    it('calc_sha256', async () => {
+      expect(await calc_sha256('abc')).toBe('BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD')
+      expect(await calc_sha256('中文')).toBe('72726D8818F693066CEB69AFA364218B692E62EA92B385782363780F47529C21')
     })
   })
 

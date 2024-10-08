@@ -9,8 +9,8 @@ require('./datatransfer/index').createDataTransfer()
 function createWindow() {
   // 创建浏览器窗口
   const mainWindow = new BrowserWindow({
-    width: 860,
-    height: 600,
+    width: 1200,
+    height: 800,
     webPreferences: {
       enableRemoteModule: true,
       contextIsolation: false,

@@ -85,7 +85,11 @@
                 </a-button>
 
                 <CloseCircleOutlined class="error-text mx-6" v-if="['cancelled'].includes(item.state)" />
-                <CheckCircleOutlined class="success-text mx-6" v-if="SUCCESS_STATES.includes(item.state)" />
+                <CheckCircleOutlined class="success-text mx-6" v-if="['success'].includes(item.state)" />
+                <a-tooltip color="green" v-if="['rapid_success'].includes(item.state)"  placement="left" :overlayStyle="{zIndex: 9999}">
+                  <CheckOutlined class="success-text mx-6" />
+                  <template #title>秒传成功</template>
+                </a-tooltip>
               </div>
             </template>
             <!-- 进度 -->
@@ -99,7 +103,13 @@
 
 <script setup>
 import {formatSize} from '../../../../services/format'
-import {PlayCircleOutlined, PauseCircleOutlined, CheckCircleOutlined, CloseCircleOutlined} from '@ant-design/icons-vue'
+import {
+  PlayCircleOutlined,
+  PauseCircleOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  CheckOutlined,
+} from '@ant-design/icons-vue'
 import {IconFile, IconFolder} from '../../_/icons'
 
 const SUCCESS_STATES = ['success', 'rapid_success']

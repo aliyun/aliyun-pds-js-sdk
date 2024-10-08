@@ -418,7 +418,7 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
     if (!config.ignore_rapid) {
       let hash_name = config.hash_name || 'sha1'
 
-      const hash = this.contextExt.calcHash(hash_name, content)
+      const hash = await this.contextExt.calcHash(hash_name, content)
 
       Object.assign(opt, {
         content_hash_name: hash_name,

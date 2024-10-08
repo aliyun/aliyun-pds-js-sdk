@@ -181,7 +181,8 @@ async function crc64File() {
 async function sha1File() {
   let st = Date.now()
   let f = getCurrentFile()
-  sha1.result = await CalcUtil.calc_file_sha1(
+  sha1.result = await CalcUtil.calc_file_hash(
+    'sha1',
     f,
     0,
     prog => (sha1.prog = prog.toFixed(2) + '%'),
@@ -195,10 +196,11 @@ async function sha1PartsFile() {
   let st = Date.now()
   let f = getCurrentFile()
 
-  let [part_info_list, chunk_size] = ChunkUtil.init_chunks_sha(f.size, [], 64)
+  let [part_info_list, chunk_size] = ChunkUtil.init_chunks_sha(f.size, [], 1024 * 1024)
   console.log(part_info_list, chunk_size)
 
-  let result = await CalcUtil.calc_file_parts_sha1(
+  let result = await CalcUtil.calc_file_parts_hash(
+    'sha1',
     f,
     part_info_list,
     prog => (sha1_parts.prog = prog.toFixed(2) + '%'),
@@ -215,7 +217,8 @@ async function sha1PartsFile() {
 async function sha256File() {
   let st = Date.now()
   let f = getCurrentFile()
-  sha256.result = await CalcUtil.calc_file_sha256(
+  sha256.result = await CalcUtil.calc_file_hash(
+    'sha256',
     f,
     0,
     prog => (sha256.prog = prog.toFixed(2) + '%'),
@@ -229,10 +232,11 @@ async function sha256PartsFile() {
   let st = Date.now()
   let f = getCurrentFile()
 
-  let [part_info_list, chunk_size] = ChunkUtil.init_chunks_sha(f.size, [], 64)
+  let [part_info_list, chunk_size] = ChunkUtil.init_chunks_sha(f.size, [], 1024 * 1024)
   console.log(part_info_list, chunk_size)
 
-  let result = await CalcUtil.calc_file_parts_sha256(
+  let result = await CalcUtil.calc_file_parts_hash(
+    'sha256',
     f,
     part_info_list,
     prog => (sha256_parts.prog = prog.toFixed(2) + '%'),
