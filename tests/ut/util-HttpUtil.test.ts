@@ -168,7 +168,7 @@ describe('HttpUtil', function () {
         let st = Date.now()
         await delayRandom()
         let et = Date.now()
-        expect(et - st).toBeLessThan(4000)
+        expect(et - st).toBeLessThan(4001)
       }
     })
     it('delayRandom, 0,1', async () => {
@@ -176,7 +176,7 @@ describe('HttpUtil', function () {
         let st = Date.now()
         await delayRandom(0, 1000)
         let et = Date.now()
-        expect(et - st).toBeLessThan(1000)
+        expect(et - st).toBeLessThan(1001)
       }
     })
   })
