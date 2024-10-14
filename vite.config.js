@@ -57,7 +57,8 @@ export default defineConfig({
       reportsDirectory: join(__dirname, './coverage/node'),
       include: ['lib/**/*.ts', 'lib/**/*.js'],
       exclude: [
-        '**/*-wasm.js',
+        'lib/utils/crc64/wasm/crc64-wasm.js',
+        'lib/utils/sha-hash/wasm/wasm.js',
         'tests',
         'lib/utils/crc64/wasm/index-browser.js',
         'lib/utils/axios-node-adapter/*',

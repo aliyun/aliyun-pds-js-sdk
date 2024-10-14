@@ -86,7 +86,12 @@
 
                 <CloseCircleOutlined class="error-text mx-6" v-if="['cancelled'].includes(item.state)" />
                 <CheckCircleOutlined class="success-text mx-6" v-if="['success'].includes(item.state)" />
-                <a-tooltip color="green" v-if="['rapid_success'].includes(item.state)"  placement="left" :overlayStyle="{zIndex: 9999}">
+                <a-tooltip
+                  color="green"
+                  v-if="['rapid_success'].includes(item.state)"
+                  placement="left"
+                  :overlayStyle="{zIndex: 9999}"
+                >
                   <CheckOutlined class="success-text mx-6" />
                   <template #title>秒传成功</template>
                 </a-tooltip>

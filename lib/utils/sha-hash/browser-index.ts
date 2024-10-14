@@ -1,10 +1,10 @@
-import {js_calc_file_hash, js_calc_file_hash_parts, js_calc_hash} from './browser-js-hash'
+// import {js_calc_file_hash, js_calc_file_hash_parts, js_calc_hash} from './browser-js-hash'
 import {wasm_calc_file_hash, wasm_calc_file_hash_parts, wasm_calc_hash} from './browser-wasm-hash'
 import {worker_calc_file_hash, worker_calc_file_parts_hash} from './browser-worker-hash'
 import {PDSError} from '../PDSError'
 
 function getCalcType() {
-  return (window as any).PDS_CALC_HASH_TYPE || 'worker' //  'worker' | 'js' | 'wasm'
+  return (window as any).PDS_CALC_HASH_TYPE || 'worker' //  'worker' | 'wasm'
 }
 type TAlgorithm = 'sha1' | 'sha256'
 
@@ -32,16 +32,17 @@ async function calc_file_hash(algorithm: TAlgorithm, file, pre_size, onProgress,
       console.debug('[wasm_calc_file_hash]:', algorithm)
       return await wasm_calc_file_hash(algorithm, file, pre_size, onProgress, getStopFlag)
     }
-  } else if (calc_type == 'wasm') {
+  } else {
     // wasm
     console.debug('[wasm_calc_file_hash]:', algorithm)
 
     return await wasm_calc_file_hash(algorithm, file, pre_size, onProgress, getStopFlag)
-  } else if (calc_type == 'js') {
-    // js
-    console.debug('[js_calc_file_hash]:', algorithm)
-    return await js_calc_file_hash(algorithm, file, pre_size, onProgress, getStopFlag)
   }
+  // else if (calc_type == 'js') {
+  //   // js
+  //   console.debug('[js_calc_file_hash]:', algorithm)
+  //   return await js_calc_file_hash(algorithm, file, pre_size, onProgress, getStopFlag)
+  // }
 }
 
 async function calc_file_parts_hash(algorithm: TAlgorithm, file, parts, onProgress, getStopFlag) {
@@ -57,17 +58,18 @@ async function calc_file_parts_hash(algorithm: TAlgorithm, file, parts, onProgre
       // wasm
       console.debug('[wasm_calc_file_hash_parts]:', algorithm)
 
-      return await wasm_calc_file_hash_parts(algorithm, file, onProgress, getStopFlag)
+      return await wasm_calc_file_hash_parts(algorithm, file, parts, onProgress, getStopFlag)
     }
-  } else if (calc_type == 'wasm') {
+  } else {
     // wasm
     console.debug('[wasm_calc_file_hash_parts]:', algorithm)
 
     return await wasm_calc_file_hash_parts(algorithm, file, parts, onProgress, getStopFlag)
-  } else if (calc_type == 'js') {
-    // js
-    console.debug('[js_calc_file_hash_parts]:', algorithm)
-
-    return await js_calc_file_hash_parts(algorithm, file, parts, onProgress, getStopFlag)
   }
+  //  else if (calc_type == 'js') {
+  //   // js
+  //   console.debug('[js_calc_file_hash_parts]:', algorithm)
+
+  //   return await js_calc_file_hash_parts(algorithm, file, parts, onProgress, getStopFlag)
+  // }
 }

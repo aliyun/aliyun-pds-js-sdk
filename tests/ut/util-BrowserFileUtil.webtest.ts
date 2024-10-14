@@ -12,7 +12,7 @@ import {
 import {init_chunks_sha} from '../../lib/utils/ChunkUtil'
 
 let ind = 0
-const type_arr = ['worker', 'wasm', 'js']
+const type_arr = ['worker', 'wasm']
 
 for (let TYPE of type_arr) {
   describe(`src/context/BrowserFileUtil [${TYPE}]`, () => {
