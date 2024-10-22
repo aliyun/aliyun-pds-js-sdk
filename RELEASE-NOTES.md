@@ -1,6 +1,10 @@
 
 # Release Notes
 
+## 1.3.1
+
+* feat: getUser和updateUser增加 msg_setting 字段。
+
 ## 1.3.0
 
 * refactor: http请求失败重试间隔优化。TokenExpired 和 ShareLinkTokenInvalid 不再无限重试，改成递减。
