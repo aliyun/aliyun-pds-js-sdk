@@ -1,24 +1,18 @@
 import {IContext, IFile, ICalcFileParams, IUpPartInfo, IContextExt, IDownCheckpoint, THashName} from '../Types'
 import {PDSError} from '../utils/PDSError'
 import {
+  // sha1, sha256
+  calc_hash,
+  calc_file_parts_hash,
+  calc_file_hash,
+  // crc64
   calc_crc64,
-  calc_sha1,
-  calc_file_parts_sha1,
-  calc_file_sha1,
-  calc_sha256,
-  calc_file_parts_sha256,
-  calc_file_sha256,
   calc_file_crc64,
-  slice_file,
-  does_file_exist,
 } from './BrowserFileUtil'
 
+import {slice_file, does_file_exist} from '../utils/FileReaderUtil'
+
 import {basename} from '../utils/PathUtil'
-
-// import pkg from '../pkg'
-
-// import {sign as sign_jwt} from 'jsonwebtoken'
-// import {TextEncoder} from 'util'
 
 export class BrowserContextExt implements IContextExt {
   context: IContext
@@ -63,25 +57,16 @@ export class BrowserContextExt implements IContextExt {
     }
     return file
   }
-  calcCrc64(str: string | Uint8Array, last: string = '0') {
+  async calcCrc64(str: string | Uint8Array, last: string = '0') {
     if (str === undefined || str === null) return last
-    return calc_crc64(this.textEncode(str), last)
-  }
-  /**
-   * @deprecated Please use calcHash() instead
-   */
-  calcSha1(str: string | Uint8Array) {
-    return this.calcHash('sha1', str)
+    return await calc_crc64(this.textEncode(str), last)
   }
 
-  calcHash(hashName: THashName, str: string | Uint8Array) {
-    switch (hashName) {
-      case 'sha1':
-        return calc_sha1(this.textEncode(str))
-      case 'sha256':
-        return calc_sha256(this.textEncode(str))
-      default:
-        throw new PDSError('Invalid hash_name', 'InvalidHashName')
+  async calcHash(hashName: THashName, str: string | Uint8Array) {
+    if (['sha1', 'sha256'].includes(hashName)) {
+      return await calc_hash(hashName, this.textEncode(str))
+    } else {
+      throw new PDSError('Invalid hash_name', 'InvalidHashName')
     }
   }
   textEncode(str: string | Uint8Array): Uint8Array {
@@ -101,9 +86,9 @@ export class BrowserContextExt implements IContextExt {
     hash_name = params.hash_name || 'sha1'
     pre_size = pre_size || 0
 
-    if (hash_name == 'sha1') return await calc_file_sha1(file, pre_size, onProgress, getStopFlag)
-    else if (hash_name == 'sha256') return await calc_file_sha256(file, pre_size, onProgress, getStopFlag)
-    else throw new PDSError('Invalid hash_name', 'InvalidHashName')
+    if (['sha1', 'sha256'].includes(hash_name)) {
+      return await calc_file_hash(hash_name, file, pre_size, onProgress, getStopFlag)
+    } else throw new PDSError('Invalid hash_name', 'InvalidHashName')
   }
   async calcFilePartsHash(
     params: ICalcFileParams & {
@@ -116,9 +101,9 @@ export class BrowserContextExt implements IContextExt {
     hash_name = params.hash_name || 'sha1'
     part_info_list = part_info_list || []
 
-    if (hash_name == 'sha1') return await calc_file_parts_sha1(file, part_info_list, onProgress, getStopFlag)
-    else if (hash_name == 'sha256') return await calc_file_parts_sha256(file, part_info_list, onProgress, getStopFlag)
-    else throw new PDSError('Invalid hash_name', 'InvalidHashName')
+    if (['sha1', 'sha256'].includes(hash_name)) {
+      return await calc_file_parts_hash(hash_name, file, part_info_list, onProgress, getStopFlag)
+    } else throw new PDSError('Invalid hash_name', 'InvalidHashName')
   }
 
   async calcFileCrc64(params: ICalcFileParams) {

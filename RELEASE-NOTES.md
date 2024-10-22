@@ -1,6 +1,15 @@
 
 # Release Notes
 
+## 1.3.0
+
+* refactor: http请求失败重试间隔优化。TokenExpired 和 ShareLinkTokenInvalid 不再无限重试，改成递减。
+* refactor: createFolders 去掉返回字符串逻辑，统一抛出异常。
+* feature: 支持use_vpc参数，强制使用vpc。
+* refactor: (*) calc_crc64，calc_hash 由同步方法改为返回 Promise。
+* refactor: 将废弃 CalcUtil 的这些方法： calc_sha1, calc_sha256, calc_file_sha1, calc_file_sha256, calc_file_parts_sha1, calc_file_parts_sha256。
+* refactor: 增加 web worker 计算文件 hash（sha1和sha256）的功能。可以通过 window.PDS_CALC_HASH_TYPE = 'wasm' 切换计算方式，可选值: 'worker', 'wasm'。
+
 ## 1.2.0
 
 * feat: 上传支持 sha256 计算hash方法。

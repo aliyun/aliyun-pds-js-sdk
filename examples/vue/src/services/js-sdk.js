@@ -44,6 +44,7 @@ SDK.on('error', async (e, req_opt = {}) => {
 
   if (/AccessTokenInvalid/.test(code)) {
     window.console.error('token过期被删除，或者没有token')
+    tokenStore.remove()
     await getTokenThrottle()
     location.reload()
     return
@@ -56,13 +57,13 @@ SDK.on('error', async (e, req_opt = {}) => {
   }
   if (status === 403 && /UserRoleChanged/.test(message)) {
     window.Toast.error('用户角色切换')
+    tokenStore.remove()
     await getTokenThrottle()
     location.reload()
     return
   }
   if (code === 'Forbidden') {
     window.Toast.error('用户被禁用2')
-
     return
   }
 

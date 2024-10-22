@@ -5,7 +5,7 @@ import {PDSError} from '../utils/PDSError'
 
 import {delayRandom, isNetworkError} from '../utils/HttpUtil'
 
-const MAX_RETRY = 5
+const MAX_RETRY = 10
 
 export interface IHttpClient {
   contextExt: IContextExt
@@ -133,12 +133,18 @@ export class HttpClient extends EventEmitter implements IHttpClient {
 
       if (this.verbose) console.log('error:', pdsErr)
 
-      this.emitError(pdsErr, req_opt)
+      // 不是每个 http error 都emit
+      if (
+        req_opt.data?.donot_emit_error !== true &&
+        !(req_opt.data?.donot_emit_notfound === true && pdsErr.status === 404)
+      ) {
+        this.emitError(pdsErr, req_opt)
+      }
 
       // 网络无法连接
       if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
         console.debug('[should retry] error:', pdsErr)
-        await delayRandom()
+        await delayRandom(1000, 3000)
         // 重试
         return await this.send(method, url, data, options, retries)
       }
@@ -146,7 +152,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         // 服务端限流
         if (pdsErr.status === 429) {
           console.debug('[should retry] error:', pdsErr)
-          await delayRandom()
+          await delayRandom(1000, 3000)
           // 重试
           return await this.send(method, url, data, options, --retries)
         }
@@ -189,7 +195,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     try {
       // 如果没有token或token失效，统一 emitError
       if (!hasShareToken) {
-        await this.checkRefreshToken(req_opt)
+        await this.checkRefreshToken()
       }
 
       if (this.token_info?.access_token) {
@@ -223,7 +229,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       // 网络无法连接
       if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
         console.debug('[should retry] error:', pdsErr)
-        await delayRandom()
+        await delayRandom(1000, 3000)
         // 重试
         return await this.request(endpoint, method, pathname, data, options, retries)
       }
@@ -232,7 +238,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         // 服务端限流
         if (pdsErr.status === 429) {
           console.debug('[should retry] error:', pdsErr)
-          await delayRandom()
+          await delayRandom(1000, 3000)
           // 重试
           return await this.request(endpoint, method, pathname, data, options, --retries)
         }
@@ -242,8 +248,8 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       if (/AccessTokenInvalid|TokenExpired/.test(pdsErr.code || '')) {
         if (this.refresh_token_fun) {
           await this.customRefreshTokenFun()
-          await delayRandom()
-          return await this.request(endpoint, method, pathname, data, options, retries)
+          await delayRandom(0, 1000)
+          return await this.request(endpoint, method, pathname, data, options, --retries)
         } else {
           throw new PDSError(pdsErr.message, 'TokenExpired')
         }
@@ -252,9 +258,9 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         // code: "ShareLinkTokenInvalid"
         // message: "ShareLinkToken is invalid. expired"
         if (this.refresh_share_token_fun) {
-          this.share_token = await this.refresh_share_token_fun()
-          await delayRandom()
-          return await this.request(endpoint, method, pathname, data, options, retries)
+          await this.customRefreshShareTokenFun()
+          await delayRandom(0, 1000)
+          return await this.request(endpoint, method, pathname, data, options, --retries)
         } else {
           throw new PDSError(pdsErr.message, 'ShareLinkTokenInvalid')
         }
@@ -265,16 +271,16 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   }
 
   /* istanbul ignore next */
-  async checkRefreshToken(request_config: IPDSRequestConfig) {
+  async checkRefreshToken() {
     if (!this.token_info || !this.token_info.access_token) {
-      this.throwError(new PDSError('access_token is required', 'AccessTokenInvalid'), request_config)
+      throw new PDSError('access_token is required', 'AccessTokenInvalid')
     }
     const expire_time = Date.parse(this.token_info?.expire_time || '')
     if (!isNaN(expire_time) && Date.now() > expire_time) {
       if (this.refresh_token_fun) {
         await this.customRefreshTokenFun()
       } else {
-        this.throwError(new PDSError('Invalid expire_time', 'TokenExpired'), request_config)
+        throw new PDSError('Invalid expire_time', 'TokenExpired')
       }
     }
   }
@@ -286,6 +292,18 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       //需要重新赋值
       this.token_info = new_token_info
       return new_token_info
+    } catch (e) {
+      throw new PDSError(e)
+    }
+  }
+  /* istanbul ignore next */
+  async customRefreshShareTokenFun(): Promise<string | undefined> {
+    try {
+      //自定义refresh_share_token_fun方法
+      var new_share_token = await this.refresh_share_token_fun?.()
+      //需要重新赋值
+      this.share_token = new_share_token
+      return new_share_token
     } catch (e) {
       throw new PDSError(e)
     }

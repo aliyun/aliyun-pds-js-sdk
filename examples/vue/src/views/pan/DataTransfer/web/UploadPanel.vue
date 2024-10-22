@@ -109,6 +109,7 @@ async function onUploadFiles({files, parent_file_id, drive_id}) {
         drive_id,
       },
       {
+        verbose: true,
         check_name_mode: mode, // refuse, auto_rename, overwrite, skip
         ignore_rapid: Global.ignore_rapid, // 忽略秒传，测试用
         parallel_upload: Global.parallel_upload, // 并发上传

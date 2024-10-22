@@ -22,12 +22,15 @@ import {HttpClient as Http_Client} from './http/HttpClient'
 import {
   calc_crc64,
   calc_file_crc64,
+  calc_hash,
+  calc_file_hash,
+  calc_file_parts_hash,
   calc_sha1,
-  calc_file_sha1,
-  calc_file_parts_sha1,
   calc_sha256,
-  calc_file_sha256, // 串行
-  calc_file_parts_sha256, // 并行，按part计算中间值
+  calc_file_sha1,
+  calc_file_sha256,
+  calc_file_parts_sha1,
+  calc_file_parts_sha256,
 } from './context/BrowserFileUtil'
 import {init_chunks_download, init_chunks_parallel, init_chunks_sha} from './utils/ChunkUtil'
 import {IClientParams, IContext} from './Types'
@@ -41,18 +44,23 @@ console.log('%caliyun-pds-js-sdk@' + version, `${version.includes('-') ? 'color:
 const CalcUtil = {
   calc_crc64,
   calc_file_crc64,
+
+  calc_hash,
+  calc_file_hash,
+  calc_file_parts_hash,
+
   calc_sha1,
-  calc_file_sha1, // 串行
-  calc_file_parts_sha1, // 并行，按part计算中间值
   calc_sha256,
-  calc_file_sha256, // 串行
-  calc_file_parts_sha256, // 并行，按part计算中间值
+  calc_file_sha1,
+  calc_file_sha256,
+  calc_file_parts_sha1,
+  calc_file_parts_sha256,
 }
 const ChunkUtil = {
   init_chunks_download,
   init_chunks_parallel,
   /**
-   * @deprecated please use linkAccount instead
+   * @deprecated please use init_chunks_sha instead
    */
   init_chunks_sha1: init_chunks_sha,
   init_chunks_sha,

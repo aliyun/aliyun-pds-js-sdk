@@ -472,11 +472,8 @@ interface IContextExt {
   fileMustExists(file: IFile)
 
   textEncode(str: string | Uint8Array): Uint8Array
-  /**
-   * @deprecated Please use calcHash() instead
-   */
-  calcSha1(str: string): string
-  calcHash(hash_name: THashName, str: string): string
+
+  calcHash(hash_name: THashName, str: string): Promise<string>
   calcFileHash(
     params: ICalcFileParams & {
       hash_name?: THashName

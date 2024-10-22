@@ -251,15 +251,15 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
 
         return fileInfo.file_id
       } catch (e) {
-        if (e.response && e.response.status == 409) {
-          const msg = e.response.data.message
-          return msg.match(/:([-\w]+$)/)[1]
-        }
-        // 目标云盘满，特殊处理
-        const errCode = `code_${e.response?.data?.code?.replace(/\./g, '_')}`
-        if (errCode === 'code_QuotaExhausted_Drive') {
-          return 'code_QuotaExhausted_Drive'
-        }
+        // if (e.response && e.response.status == 409) {
+        //   const msg = e.response.data.message
+        //   return msg.match(/:([-\w]+$)/)[1]
+        // }
+        // // 目标云盘满，特殊处理
+        // const errCode = `code_${e.response?.data?.code?.replace(/\./g, '_')}`
+        // if (errCode === 'code_QuotaExhausted_Drive') {
+        //   return 'code_QuotaExhausted_Drive'
+        // }
 
         if (e.code !== 'AlreadyExists' && retry > 0) {
           retry--
@@ -418,7 +418,7 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
     if (!config.ignore_rapid) {
       let hash_name = config.hash_name || 'sha1'
 
-      const hash = this.contextExt.calcHash(hash_name, content)
+      const hash = await this.contextExt.calcHash(hash_name, content)
 
       Object.assign(opt, {
         content_hash_name: hash_name,

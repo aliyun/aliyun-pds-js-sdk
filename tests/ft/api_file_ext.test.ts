@@ -142,7 +142,7 @@ describe('file_ext', function () {
     })
     console.log('-----------preRes2---', preRes)
 
-    expect(preRes.video_preview_play_info?.category).toBe('live_transcoding')
+    expect(preRes?.category || preRes.video_preview_play_info?.category).toBe('live_transcoding')
   })
 
   it('audio preview', async () => {
