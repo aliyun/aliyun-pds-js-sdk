@@ -4,6 +4,7 @@
 ## 1.3.1
 
 * feat: getUser和updateUser增加 msg_setting 字段。
+* fix: 修复 parallel_upload:true 上传时 worker 计算文件 hash 报错。
 
 ## 1.3.0
 

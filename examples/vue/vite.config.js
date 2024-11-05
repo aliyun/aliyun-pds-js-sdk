@@ -29,8 +29,8 @@ export default defineConfig({
       domain_id,
       api_endpoint,
       data_hash_name,
-      ignore_rapid: false,
-      parallel_upload: false,
+      ignore_rapid: true,
+      parallel_upload: true,
     },
   },
   server: {

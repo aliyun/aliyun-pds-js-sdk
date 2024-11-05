@@ -146,7 +146,7 @@ describe('LoadFile download state change', function () {
         },
         {
           ignore_rapid: true,
-          parallel_upload: false,
+          parallel_upload: true,
         },
       )
 
