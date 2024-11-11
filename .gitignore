@@ -41,3 +41,5 @@ conf.js
 conf.json
 .env
 up.sh
+
+tsconfig-dts.tsbuildinfo

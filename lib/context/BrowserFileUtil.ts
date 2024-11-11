@@ -1,5 +1,10 @@
-import {calc_hash, calc_file_hash, calc_file_parts_hash} from '../utils/sha-hash/browser-index'
-import {calc_crc64, calc_file_crc64} from '../utils/crc64/browser-index'
+import {
+  calc_hash,
+  calc_file_hash,
+  calc_file_parts_hash,
+  calc_crc64,
+  calc_file_crc64,
+} from '../utils/checksum/browser-index.ts'
 
 export {
   // crc64

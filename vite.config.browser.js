@@ -33,7 +33,7 @@ export default defineConfig({
       include: ['lib/**/*.ts', 'lib/**/*.js'],
       exclude: [
         'lib/utils/crc64/wasm/crc64-wasm.js',
-        'lib/utils/sha-hash/wasm/wasm.js',
+        'lib/utils/checksum/wasm/wasm.js',
         'tests',
         'lib/utils/crc64/wasm/index.js',
         'lib/utils/axios-node-adapter/*',
