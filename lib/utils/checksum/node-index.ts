@@ -3,7 +3,7 @@ import {
   createSha256 as wasmCreateSha256,
   crc64,
   createCrc64 as wasmCreateCrc64,
-} from './wasm/index.js'
+} from './wasm/index-node.js'
 // import {ready as crc64Ready, crc64} from '../utils/crc64/wasm/index'
 // import {parseSize} from '../Formatter'
 // import * as NodeContext from './NodeContext'

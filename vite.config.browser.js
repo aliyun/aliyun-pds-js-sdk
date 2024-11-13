@@ -1,5 +1,5 @@
-import {defineConfig} from 'vite'
-import {join} from 'path'
+import { defineConfig } from 'vite'
+import { join } from 'path'
 
 export default defineConfig({
   build: {
@@ -26,23 +26,27 @@ export default defineConfig({
     ],
     // environment: 'happy-dom',
     coverage: {
-      reportOnFailure:true,
+      reportOnFailure: true,
       provider: 'istanbul',
       reporter: ['html'],
       reportsDirectory: join(__dirname, './coverage/browser'),
       include: ['lib/**/*.ts', 'lib/**/*.js'],
       exclude: [
-        'lib/utils/crc64/wasm/crc64-wasm.js',
-        'lib/utils/checksum/wasm/wasm.js',
         'tests',
-        'lib/utils/crc64/wasm/index.js',
+        'lib/utils/checksum/wasm/index-node.js',
+        'lib/utils/checksum/wasm/wasm.js',
+        'lib/utils/checksum/node-index.ts',
         'lib/utils/axios-node-adapter/*',
+        'lib/utils/Node*',
         'lib/loaders/BaseDownloader.js',
         'lib/loaders/NodeDownloader.ts',
         'lib/tasks/NodeDownloadTask.ts',
+        'lib/context/Node*',
+        'lib/index.ts'
       ],
     },
     browser: {
+      provider: 'webdriverio',
       providerOptions: {
         launch: {
           devtools: true,

@@ -10,7 +10,7 @@ import {
   calc_file_crc64,
 } from './BrowserFileUtil'
 
-import {slice_file, does_file_exist} from '../utils/FileReaderUtil'
+import {slice_file, does_file_exist} from '../utils/BrowserFileReaderUtil'
 
 import {basename} from '../utils/PathUtil'
 
