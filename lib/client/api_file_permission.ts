@@ -38,7 +38,7 @@ export class PDSFilePermissionAPIClient extends PDSFileExtAPIClient {
   /**
    * 移除文件权限 (删除共享)
    */
-  removeFilePermission(data: IAddFilePermissionReq, options?: IPDSRequestConfig) {
+  removeFilePermission(data: IRemoveFilePermissionReq, options?: IPDSRequestConfig) {
     return this.postAPI<void>('/file/remove_permission', data, options)
   }
   /**
@@ -66,6 +66,12 @@ export class PDSFilePermissionAPIClient extends PDSFileExtAPIClient {
   async listManageSharingFiles(data: IListReq = {}, options?: IPDSRequestConfig) {
     return await this.postAPI<IListRes<IFileItem>>('/file/list_manage_sharing_file', data, options)
   }
+}
+
+export interface IRemoveFilePermissionReq {
+  drive_id: string
+  file_id: string
+  member_list: {identity: IIdentityRes; role_id: string}[]
 }
 
 export interface IAddFilePermissionReq {
