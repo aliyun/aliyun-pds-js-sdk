@@ -26,7 +26,15 @@
                       <span v-else>({{ formatSize(item.loaded) }}/{{ formatSize(item.file.size) }})</span>
                     </small>
 
-                    <small v-if="item.state == 'running'" class="grey-text">({{ formatSize(item.speed) }}/s)</small>
+                    <small v-if="item.state == 'computing_hash'" class="grey-text"
+                      >准备中 {{ item.hash_progress }}%</small
+                    >
+                    <small v-if="item.state == 'checking'" class="grey-text"
+                      >校验中 {{ item.checking_progress }}%</small
+                    >
+                    <small v-else-if="item.state == 'running'" class="grey-text"
+                      >({{ formatSize(item.speed) }}/s)</small
+                    >
                     <small v-else-if="SUCCESS_STATES.includes(item.state)" class="grey-text"
                       >({{ formatSize(item.avg_speed) }}/s)</small
                     >

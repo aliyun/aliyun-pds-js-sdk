@@ -24,8 +24,18 @@ describe('ShareLink', function () {
 
     drive_id = newDrive.drive_id
 
+    try {
+      let legacyInfo = await client.getFileByPath({drive_id, file_path: '/aa'})
+      // 删除 /aa
+      await client.deleteFile({drive_id, file_id: legacyInfo.file_id})
+    } catch (err) {
+      // pass
+    }
+
+    // create folder /aa/bb/cc/
     folder_id = await client.createFolders(['aa', 'bb', 'cc'], {drive_id, parent_file_id: 'root'})
 
+    // create file: /aa/bb/cc/xxoxo
     let fileInfo = await client.saveFileContent(
       {
         drive_id,
@@ -40,9 +50,10 @@ describe('ShareLink', function () {
 
     breadArr = await client.getBreadcrumbFolderList({drive_id, file_id: folder_id})
     // [{file_id, name }]
-    // console.log('breadArr:', breadArr)
+    console.log('breadArr:', breadArr)
   })
   afterAll(async () => {
+    // 删除 /aa
     await client.deleteFile({drive_id, file_id: breadArr[0].file_id || ''}, true)
   })
 
@@ -232,6 +243,10 @@ describe('ShareLink', function () {
     })
 
     let {items = []} = await newClient.listFiles({share_id, parent_file_id: folder_id})
+    console.log(
+      '------items',
+      items.map(n => n.name),
+    ) // [ 'tmp-sharelink-upfile.txt', 'xxoxo' ]
     expect(items.length).toBe(2)
     expect(items[0].file_id).toBe(up_file_id)
     expect(items[0].share_id).toBe(share_id)

@@ -136,7 +136,7 @@ export class NodeContextExt implements IContextExt {
 
   async calcHash(hashName: THashName, str: string | Uint8Array) {
     if (['sha1', 'sha256'].includes(hashName)) {
-      return await calc_hash(hashName, this.textEncode(str))
+      return await calc_hash(hashName, this.textEncode(str), this.context)
     } else {
       throw new PDSError('Invalid hash_name', 'InvalidHashName')
     }
@@ -161,7 +161,7 @@ export class NodeContextExt implements IContextExt {
     pre_size = pre_size || 0
 
     if (['sha1', 'sha256'].includes(hash_name)) {
-      return await calc_file_hash(hash_name, file_path, pre_size, onProgress, getStopFlag)
+      return await calc_file_hash(hash_name, file_path, pre_size, onProgress, getStopFlag, this.context)
     } else throw new PDSError('Invalid hash_name', 'InvalidHashName')
   }
   async calcFilePartsHash(
@@ -177,7 +177,7 @@ export class NodeContextExt implements IContextExt {
     part_info_list = part_info_list || []
 
     if (['sha1', 'sha256'].includes(hash_name)) {
-      return await calc_file_parts_hash(hash_name, file_path, part_info_list, onProgress, getStopFlag)
+      return await calc_file_parts_hash(hash_name, file_path, part_info_list, onProgress, getStopFlag, this.context)
     } else throw new PDSError('Invalid hash_name', 'InvalidHashName')
   }
   async calcFileCrc64(params: ICalcFileParams & {process_calc_crc64_size?: number}) {

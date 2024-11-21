@@ -1,6 +1,13 @@
 
 # Release Notes
 
+## 1.3.1
+
+* refactor: crc64 改用 web worker 计算。
+* feat: getUser和updateUser增加 msg_setting 字段。
+* fix: 修复 parallel_upload:true 上传时 worker 计算文件 hash 报错。
+
+
 ## 1.3.0
 
 * refactor: http请求失败重试间隔优化。TokenExpired 和 ShareLinkTokenInvalid 不再无限重试，改成递减。

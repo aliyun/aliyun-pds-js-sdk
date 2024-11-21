@@ -59,6 +59,8 @@ function upload(type) {
           }
         })
         emit('upload4Electron', t)
+      } else {
+        console.warn('没有选择文件', res.filePaths)
       }
     })
   } else {

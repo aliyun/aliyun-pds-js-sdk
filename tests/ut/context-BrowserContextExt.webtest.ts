@@ -1,7 +1,6 @@
 import {beforeAll, describe, expect, it} from 'vitest'
 import * as BrowserContext from '../../lib/context/BrowserContext'
 import {BrowserContextExt} from '../../lib/context/BrowserContextExt'
-import {delay} from '../../lib/utils/HttpUtil'
 
 describe('src/context/BrowserContextExt', () => {
   let ext

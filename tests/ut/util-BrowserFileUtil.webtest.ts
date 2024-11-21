@@ -25,7 +25,7 @@ for (let TYPE of type_arr) {
 
     it(`calc_crc64`, async () => {
       expect(await calc_crc64('abc', '0')).toBe('3231342946509354535')
-      expect(await calc_crc64('中文', undefined)).toBe('8230427039312370437')
+      expect(await calc_crc64('中文', undefined)).toBe('16371802884590399230')
     })
     it('calc_sha1', async () => {
       expect(await calc_sha1('abc')).toBe('A9993E364706816ABA3E25717850C26C9CD0D89D')

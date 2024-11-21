@@ -1,5 +1,5 @@
-import {defineConfig} from 'vite'
-import {join} from 'path'
+import { defineConfig } from 'vite'
+import { join } from 'path'
 import commonjsExt from 'vite-plugin-commonjs-externals'
 
 export default defineConfig({
@@ -51,19 +51,24 @@ export default defineConfig({
       'tests/ft/*.nodetest.js',
     ],
     coverage: {
-      reportOnFailure:true,
+      reportOnFailure: true,
       provider: 'istanbul',
       reporter: ['html'],
       reportsDirectory: join(__dirname, './coverage/node'),
       include: ['lib/**/*.ts', 'lib/**/*.js'],
       exclude: [
-        'lib/utils/crc64/wasm/crc64-wasm.js',
-        'lib/utils/sha-hash/wasm/wasm.js',
         'tests',
-        'lib/utils/crc64/wasm/index-browser.js',
+        'lib/utils/checksum/worker/*',
+        'lib/utils/checksum/browser-*',
+        'lib/utils/checksum/wasm/wasm.js',
+        'lib/utils/checksum/wasm/index-browser.js',
         'lib/utils/axios-node-adapter/*',
+        'lib/utils/Browser*',
         'lib/loaders/WebDownloader.ts',
         'lib/tasks/WebDownloadTask.ts',
+        'lib/context/Browser*',
+        'lib/index.browser.ts',
+        'lib/fix-browser-env.ts',
       ],
     },
     testTimeout: 1000000,

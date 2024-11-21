@@ -113,6 +113,18 @@ export interface IUpdateUserReq {
   email?: string
   user_data?: any
   group_info_list?: {group_id: string}[]
+  msg_setting?: {send_settings?: ISendSetting[]}
+}
+export interface ISendSetting {
+  category: 'system' | 'coop' | string
+  sub_category:
+    | 'change_permission'
+    | 'hand_over'
+    | 'add_collaboration_admin'
+    | 'change_user_setting'
+    | 'renew_alarm'
+    | string
+  enable: boolean
 }
 
 export interface IUserItem {
@@ -145,6 +157,7 @@ export interface IUserItem {
   need_change_password_next_login?: boolean // false
 
   creator?: string
+  msg_setting?: {send_settings?: ISendSetting[]}
   [key: string]: any
 }
 
