@@ -57,7 +57,7 @@ async function onUploadFiles({files, parent_file_id, drive_id}) {
   }
 
   // 2. 检查同名文件，策略
-  let {select_mode: mode, exist_files = []} = await checkNameBeforeUpload({files, parent_file_id, drive_id})
+  let {select_mode: mode, exist_files = [], fileList} = await checkNameBeforeUpload({files, parent_file_id, drive_id})
 
   // mode 范围: 'cancel', 'skip', 'overwrite', 'auto_rename'
   console.log('User choose mode:', mode)
@@ -67,7 +67,7 @@ async function onUploadFiles({files, parent_file_id, drive_id}) {
   const exist_names = exist_files.map(n => n.name)
 
   // 3. 上传（如果有多级目录，先创建目录，再上传）
-  for (let n of files) {
+  for (let n of fileList) {
     // 如果有多级目录，先创建目录。
     let folder_id = parent_file_id
     let relativePath = n._webkitRelativePath || n.webkitRelativePath
@@ -165,7 +165,9 @@ async function checkNameBeforeUpload({files, parent_file_id, drive_id}) {
   let t = []
   // 去重
   let m = {}
+  let fileList = []
   for (let n of files) {
+    fileList.push(n)
     let relativePath = n._webkitRelativePath || n.webkitRelativePath
     let pathArr = relativePath.split('/')
     if (pathArr.length > 1) {
@@ -196,6 +198,6 @@ async function checkNameBeforeUpload({files, parent_file_id, drive_id}) {
     select_mode = await sameNameModeDialogRef.show()
   }
   // 'cancel', 'skip', 'overwrite', 'auto_rename'
-  return {select_mode, exist_files}
+  return {select_mode, exist_files, fileList}
 }
 </script>

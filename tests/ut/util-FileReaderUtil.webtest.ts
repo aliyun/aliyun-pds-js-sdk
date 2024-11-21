@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {slice_file, does_file_exist} from '../../lib/utils/FileReaderUtil'
+import {slice_file, does_file_exist} from '../../lib/utils/BrowserFileReaderUtil'
 
 describe('src/context/BrowserFileUtil', () => {
   describe('slice_file', () => {

@@ -3,7 +3,9 @@ import Config from '../config/conf'
 const isWeb = typeof window == 'object'
 
 // 兼容 browser 和 node.js
-const {PDSClient, HttpClient} = await import(isWeb ? '../../../lib/index.browser' : '../../../lib/index')
+const {PDSClient, HttpClient} = await import(
+  /* @vite-ignore */ isWeb ? '../../../lib/index.browser' : '../../../lib/index'
+)
 var domainInfo
 
 async function getSuperToken(user_id = 'superadmin') {

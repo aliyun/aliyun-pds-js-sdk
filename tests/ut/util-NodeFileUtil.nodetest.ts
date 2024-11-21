@@ -26,7 +26,7 @@ describe('src/context/NodeFileUtil', () => {
   describe('calc_crc64', () => {
     it('calc_crc64', async () => {
       expect(await calc_crc64('abc', '0')).toBe('3231342946509354535')
-      expect(await calc_crc64('中文')).toBe('16371802884590399230')
+      expect(await calc_crc64('中文', undefined)).toBe('16371802884590399230')
     })
   })
 
