@@ -1,6 +1,11 @@
 
 # Release Notes
 
+## 1.3.2
+
+* fix: 修复 removeFilePermission 的参数定义 IRemoveFilePermissionReq。
+* refactor: IPermissionStandard 将废弃，请用IFilePermissionMember替代。
+
 ## 1.3.1
 
 * refactor: crc64 改用 web worker 计算。
