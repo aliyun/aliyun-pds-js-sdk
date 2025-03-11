@@ -101,11 +101,8 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
       })
     })
     const {successItems: result, errorItems} = await this.batchApi({batchArr: t, num: 10}, options)
-    changeArr.forEach((fileInfo, index) => {
-      fileInfo.starred = result[index].starred
-    })
 
-    return {type: starred ? 'star' : 'unStar', changeItems: changeArr, successItems: result, errorItems}
+    return {type: starred ? 'star' : 'unStar', changeItems: result, successItems: result, errorItems}
   }
 
   async copyFiles(fileKeys: IFileItemKey[], config: ICopyFilesConfig, options?: IPDSRequestConfig) {

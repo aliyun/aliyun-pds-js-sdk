@@ -45,7 +45,7 @@ export class PDSFilePermissionAPIClient extends PDSFileExtAPIClient {
    * 获取文件的授权成员
    */
   listFilePermissions(data: IListPermissionReq, options?: IPDSRequestConfig) {
-    return this.postAPI<IFilePermissionMember|IPermissionStandard[]>('/file/list_permission', data, options)
+    return this.postAPI<IFilePermissionMember | IPermissionStandard[]>('/file/list_permission', data, options)
   }
 
   /**
@@ -77,7 +77,7 @@ export interface IRemoveFilePermissionReq {
 export interface IAddFilePermissionReq {
   drive_id: string
   file_id: string
-  member_list: (IFilePermissionMember|IPermissionStandard)[]
+  member_list: (IFilePermissionMember | IPermissionStandard)[]
 }
 
 /**
