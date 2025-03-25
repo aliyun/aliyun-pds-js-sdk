@@ -3,6 +3,7 @@
 
 ## 1.3.2
 
+* fix: 修复 web worker 计算报错透出。
 * fix: 修复 batchToggleFilesStar 的 changeItems 返回字段。
 * fix: 修复 removeFilePermission 的参数定义 IRemoveFilePermissionReq。
 * refactor: IPermissionStandard 将废弃，请用IFilePermissionMember替代。
