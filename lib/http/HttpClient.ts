@@ -113,9 +113,9 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       console.log('request:', {
         method: req_opt.method,
         url: req_opt.url,
-        headers: req_opt?.headers,
-        params: req_opt?.params,
-        data: req_opt?.data,
+        headers: JSON.stringify(req_opt?.headers),
+        params: JSON.stringify(req_opt?.params),
+        data: JSON.stringify(req_opt?.data),
       })
     }
     try {
@@ -123,8 +123,8 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       if (this.verbose) {
         console.log('response:', {
           status: res.status,
-          headers: res.headers,
-          data: res.data,
+          headers: JSON.stringify(res.headers),
+          data: JSON.stringify(res.data),
         })
       }
       return res
@@ -180,9 +180,9 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       console.log('request:', {
         method: req_opt.method,
         url: req_opt.url,
-        headers: req_opt?.headers,
-        params: req_opt?.params,
-        data: req_opt?.data,
+        headers: JSON.stringify(req_opt?.headers),
+        params: JSON.stringify(req_opt?.params),
+        data: JSON.stringify(req_opt?.data),
       })
     }
 
@@ -207,8 +207,8 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       if (this.verbose) {
         console.log('response:', {
           status: response.status,
-          headers: response.headers,
-          data: response.data,
+          headers: JSON.stringify(response.headers),
+          data: JSON.stringify(response.data),
         })
       }
 
