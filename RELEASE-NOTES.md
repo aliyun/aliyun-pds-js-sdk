@@ -7,6 +7,7 @@
 * fix: 修复 batchToggleFilesStar 的 changeItems 返回字段。
 * fix: 修复 removeFilePermission 的参数定义 IRemoveFilePermissionReq。
 * refactor: IPermissionStandard 将废弃，请用IFilePermissionMember替代。
+* fix: 修复 createFolders 重试次数。
 
 ## 1.3.1
 
