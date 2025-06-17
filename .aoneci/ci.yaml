@@ -1,0 +1,35 @@
+# 语法参考： https://aliyuque.antfin.com/aoneci/gncflv/zn9dhevbwby6715s
+name: Nodejs单元测试
+
+triggers:
+  push:
+    branches:
+      - 'daily/**'
+  merge_request:
+    target-branches:
+      - '**'
+
+jobs:
+  test-job:
+    image: alios-8u
+    steps:
+      - uses: checkout
+      - uses: setup-env
+        inputs:
+          node-version: 20
+          tnpm-version: 9
+          tnpm-cache: false
+      - run: |
+          tnpm i
+          tnpm ls
+          IT_CONFIG=${{vars.IT_CONFIG}} npm run cov:node
+      - uses: nodejs-coverage
+      # - uses: test-report-upload
+      #   inputs:
+      #     testcase_file: 'coverage/junit.xml'
+      #     coverage_file: 'coverage/cobertura-coverage.xml'
+      # 可以配合 coverage-threshold 组件设置覆盖率卡点
+      # - uses: coverage-threshold
+      #   inputs:
+      #     line: 50 # 行覆盖率不低于50%
+      #     line_incremental: 80 # 行增量覆盖率不低于80%
