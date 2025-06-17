@@ -25,6 +25,7 @@ jobs:
           npm run build
           npm run format
           IT_CONFIG=${{vars.IT_CONFIG}} npm run cov:node
+          cp -rf coverage/node/* coverage/
       - uses: nodejs-coverage
       # - uses: test-report-upload
       #   inputs:
