@@ -22,6 +22,8 @@ jobs:
       - run: |
           tnpm i
           tnpm ls
+          tnmp run build
+          tnpm run format
           IT_CONFIG=${{vars.IT_CONFIG}} npm run cov:node
       - uses: nodejs-coverage
       # - uses: test-report-upload
