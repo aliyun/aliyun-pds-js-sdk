@@ -3,7 +3,7 @@ import {IClientParams, IContextExt, ITokenInfo, IPDSRequestConfig, TMethod, Path
 
 import {PDSError} from '../utils/PDSError'
 
-import {delayRandom, isNetworkError} from '../utils/HttpUtil'
+import {delayRandom, exponentialBackoff, isNetworkError} from '../utils/HttpUtil'
 
 const MAX_RETRY = 10
 
@@ -141,14 +141,19 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         this.emitError(pdsErr, req_opt)
       }
 
-      // 网络无法连接
-      if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
-        console.debug('[should retry] error:', pdsErr)
-        await delayRandom(1000, 3000)
-        // 重试
-        return await this.send(method, url, data, options, retries)
-      }
       if (retries > 0) {
+        // 网络无法连接
+        if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
+          console.debug('[should retry] error:', pdsErr)
+          try {
+            await exponentialBackoff(MAX_RETRY - retries, 1000, 30000, MAX_RETRY)
+            // 重试
+            return await this.send(method, url, data, options, --retries)
+          } catch (err) {
+            console.error(err)
+          }
+        }
+
         // 服务端限流
         if (pdsErr.status === 429) {
           console.debug('[should retry] error:', pdsErr)
@@ -226,15 +231,19 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         this.emitError(pdsErr, req_opt)
       }
 
-      // 网络无法连接
-      if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
-        console.debug('[should retry] error:', pdsErr)
-        await delayRandom(1000, 3000)
-        // 重试
-        return await this.request(endpoint, method, pathname, data, options, retries)
-      }
-
       if (retries > 0) {
+        // 网络无法连接
+        if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
+          console.debug('[should retry] error:', pdsErr)
+          try {
+            await exponentialBackoff(MAX_RETRY - retries, 1000, 30000, MAX_RETRY)
+            // 重试
+            return await this.request(endpoint, method, pathname, data, options, --retries)
+          } catch (err) {
+            console.error(err)
+          }
+        }
+
         // 服务端限流
         if (pdsErr.status === 429) {
           console.debug('[should retry] error:', pdsErr)

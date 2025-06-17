@@ -6,6 +6,7 @@ import {
   isNetworkError,
   isOssUrlExpired,
   delayRandom,
+  exponentialBackoff,
 } from '../../lib/utils/HttpUtil'
 import {describe, expect, it} from 'vitest'
 
@@ -178,6 +179,77 @@ describe('HttpUtil', function () {
         let et = Date.now()
         expect(et - st).toBeLessThan(1001)
       }
+    })
+  })
+
+  describe('exponentialBackoff', () => {
+    it('should delay with exponential growth', async () => {
+      const baseDelay = 1000
+      const maxDelay = 30000
+      const retryCount = 3
+
+      const startTime = Date.now()
+      await exponentialBackoff(retryCount, baseDelay, maxDelay)
+      const elapsed = Date.now() - startTime
+
+      // 计算预期的延迟时间: baseDelay * 2^retryCount
+      const expectedDelay = Math.min(baseDelay * Math.pow(2, retryCount), maxDelay)
+
+      // 允许10ms误差范围
+      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay - 10)
+      expect(elapsed).toBeLessThanOrEqual(expectedDelay + 10)
+    })
+
+    it('should not exceed max delay', async () => {
+      const baseDelay = 1000
+      const maxDelay = 3000
+      const retryCount = 9 // 足够大的重试次数，确保会触发最大延迟限制
+
+      const startTime = Date.now()
+      await exponentialBackoff(retryCount, baseDelay, maxDelay, 10)
+      const elapsed = Date.now() - startTime
+
+      expect(elapsed).toBeGreaterThanOrEqual(maxDelay - 10)
+      expect(elapsed).toBeLessThanOrEqual(maxDelay + 10)
+    })
+
+    it('should handle zero retry count', async () => {
+      const baseDelay = 1000
+      const retryCount = 0
+
+      const startTime = Date.now()
+      await exponentialBackoff(retryCount, baseDelay)
+      const elapsed = Date.now() - startTime
+
+      const expectedDelay = baseDelay * Math.pow(2, retryCount)
+      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay - 10)
+      expect(elapsed).toBeLessThanOrEqual(expectedDelay + 10)
+    })
+
+    it('should work with custom base delay', async () => {
+      const baseDelay = 500
+      const retryCount = 2
+
+      const startTime = Date.now()
+      await exponentialBackoff(retryCount, baseDelay)
+      const elapsed = Date.now() - startTime
+
+      const expectedDelay = baseDelay * Math.pow(2, retryCount)
+      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay - 10)
+      expect(elapsed).toBeLessThanOrEqual(expectedDelay + 10)
+    })
+
+    it('should work with very small base delay', async () => {
+      const baseDelay = 10
+      const retryCount = 3
+
+      const startTime = Date.now()
+      await exponentialBackoff(retryCount, baseDelay)
+      const elapsed = Date.now() - startTime
+
+      const expectedDelay = baseDelay * Math.pow(2, retryCount)
+      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay - 10)
+      expect(elapsed).toBeLessThanOrEqual(expectedDelay + 10)
     })
   })
 })
