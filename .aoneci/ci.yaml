@@ -21,15 +21,9 @@ jobs:
           tnpm-cache: false
       - run: |
           tnpm i
-          tnpm ls
+          npm ls
+          npm run build
+          npm run format
           IT_CONFIG=${{vars.IT_CONFIG}} npm run cov:node
+          cp -rf coverage/node/* coverage/
       - uses: nodejs-coverage
-      # - uses: test-report-upload
-      #   inputs:
-      #     testcase_file: 'coverage/junit.xml'
-      #     coverage_file: 'coverage/cobertura-coverage.xml'
-      # 可以配合 coverage-threshold 组件设置覆盖率卡点
-      # - uses: coverage-threshold
-      #   inputs:
-      #     line: 50 # 行覆盖率不低于50%
-      #     line_incremental: 80 # 行增量覆盖率不低于80%

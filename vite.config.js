@@ -53,7 +53,7 @@ export default defineConfig({
     coverage: {
       reportOnFailure: true,
       provider: 'istanbul',
-      reporter: ['html'],
+      reporter: ['html','json'],
       reportsDirectory: join(__dirname, './coverage/node'),
       include: ['lib/**/*.ts', 'lib/**/*.js'],
       exclude: [

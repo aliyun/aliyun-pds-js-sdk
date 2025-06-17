@@ -10,6 +10,7 @@
 * fix: 修复 createFolders 重试次数。
 * refactor: networkError 重试退避策略优化。
 
+
 ## 1.3.1
 
 * refactor: crc64 改用 web worker 计算。
