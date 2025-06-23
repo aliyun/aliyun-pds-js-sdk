@@ -30,6 +30,8 @@ publish:build
 pub:build
 	npm publish --tag=beta
 
+build2:
+	PKG_NAME=@ali/pds-js-sdk npm run build
 pub2:
 	PKG_NAME=@ali/pds-js-sdk npm run build
 	tnpm publish --tag=beta

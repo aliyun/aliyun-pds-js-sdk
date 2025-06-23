@@ -2,6 +2,7 @@ import {AxiosRequestConfig, AxiosResponse} from 'axios'
 import {PDSError} from './utils/PDSError'
 
 interface IPDSRequestConfig extends AxiosRequestConfig {
+  retryCount?: number
   [propName: string]: any
 }
 interface IPDSResponse extends AxiosResponse {
@@ -426,6 +427,7 @@ interface IClientParams {
   path_type?: PathType
   version?: string
   verbose?: boolean
+  retryCount?: number
   refresh_token_fun?: () => Promise<ITokenInfo>
   refresh_share_token_fun?: () => Promise<string>
 }
