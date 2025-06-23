@@ -8,8 +8,8 @@
 * fix: 修复 removeFilePermission 的参数定义 IRemoveFilePermissionReq。
 * refactor: IPermissionStandard 将废弃，请用IFilePermissionMember替代。
 * fix: 修复 createFolders 重试次数。
-* refactor: networkError 重试退避策略优化。
-
+* refactor: networkError 重试退避策略优化。 
+* feature: Client 构造函数和请求的 IPDSRequestConfig 增加 retryCount 参数。
 
 ## 1.3.1
 

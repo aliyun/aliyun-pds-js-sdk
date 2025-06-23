@@ -25,6 +25,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   path_type: PathType = 'StandardMode'
   version: string = ''
   contextExt: IContextExt
+  retryCount: number = 10
   verbose: boolean
 
   constructor(params: IClientParams, contextExt: IContextExt) {
@@ -42,6 +43,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       path_type = 'StandardMode',
       version = 'v2',
       verbose = false,
+      retryCount,
     } = params
 
     Object.assign(this, {
@@ -54,6 +56,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       path_type,
       version,
       verbose,
+      retryCount,
       contextExt,
     })
   }
@@ -109,6 +112,9 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       data,
       ...options,
     }
+
+    retries = req_opt.retryCount ?? this.retryCount ?? retries
+
     if (this.verbose) {
       console.log('request:', {
         method: req_opt.method,
@@ -116,6 +122,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         headers: JSON.stringify(req_opt?.headers),
         params: JSON.stringify(req_opt?.params),
         data: JSON.stringify(req_opt?.data),
+        retries,
       })
     }
     try {
@@ -181,6 +188,8 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       ...options,
     }
 
+    retries = req_opt.retryCount ?? this.retryCount ?? retries
+
     if (this.verbose) {
       console.log('request:', {
         method: req_opt.method,
@@ -188,6 +197,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         headers: JSON.stringify(req_opt?.headers),
         params: JSON.stringify(req_opt?.params),
         data: JSON.stringify(req_opt?.data),
+        retries,
       })
     }
 
