@@ -10,6 +10,7 @@
 * fix: 修复 createFolders 重试次数。
 * refactor: networkError 重试退避策略优化。 
 * feature: Client 构造函数和请求的 IPDSRequestConfig 增加 retryCount 参数。
+* fix: 修复小文件秒传成功后立即调用stop(), state为 stopped 的 bug。
 
 ## 1.3.1
 
