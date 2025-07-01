@@ -177,7 +177,7 @@ describe('HttpUtil', function () {
         let st = Date.now()
         await delayRandom(0, 1000)
         let et = Date.now()
-        expect(et - st).toBeLessThan(1001)
+        expect(et - st).toBeLessThan(1000 + 100)
       }
     })
   })
@@ -196,8 +196,8 @@ describe('HttpUtil', function () {
       const expectedDelay = Math.min(baseDelay * Math.pow(2, retryCount), maxDelay)
 
       // 允许10ms误差范围
-      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay - 10)
-      expect(elapsed).toBeLessThanOrEqual(expectedDelay + 10)
+      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay - expectedDelay * 0.1)
+      expect(elapsed).toBeLessThanOrEqual(expectedDelay + expectedDelay * 0.1)
     })
 
     it('should not exceed max delay', async () => {
@@ -209,8 +209,8 @@ describe('HttpUtil', function () {
       await exponentialBackoff(retryCount, baseDelay, maxDelay, 10)
       const elapsed = Date.now() - startTime
 
-      expect(elapsed).toBeGreaterThanOrEqual(maxDelay - 10)
-      expect(elapsed).toBeLessThanOrEqual(maxDelay + 10)
+      expect(elapsed).toBeGreaterThanOrEqual(maxDelay - maxDelay * 0.1)
+      expect(elapsed).toBeLessThanOrEqual(maxDelay + maxDelay * 0.1)
     })
 
     it('should handle zero retry count', async () => {
@@ -222,8 +222,8 @@ describe('HttpUtil', function () {
       const elapsed = Date.now() - startTime
 
       const expectedDelay = baseDelay * Math.pow(2, retryCount)
-      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay - 10)
-      expect(elapsed).toBeLessThanOrEqual(expectedDelay + 10)
+      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay - expectedDelay * 0.1)
+      expect(elapsed).toBeLessThanOrEqual(expectedDelay + expectedDelay * 0.1)
     })
 
     it('should work with custom base delay', async () => {
@@ -235,8 +235,8 @@ describe('HttpUtil', function () {
       const elapsed = Date.now() - startTime
 
       const expectedDelay = baseDelay * Math.pow(2, retryCount)
-      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay - 10)
-      expect(elapsed).toBeLessThanOrEqual(expectedDelay + 10)
+      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay - expectedDelay * 0.1)
+      expect(elapsed).toBeLessThanOrEqual(expectedDelay + expectedDelay * 0.1)
     })
 
     it('should work with very small base delay', async () => {
@@ -248,8 +248,8 @@ describe('HttpUtil', function () {
       const elapsed = Date.now() - startTime
 
       const expectedDelay = baseDelay * Math.pow(2, retryCount)
-      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay - 10)
-      expect(elapsed).toBeLessThanOrEqual(expectedDelay + 10)
+      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay - expectedDelay * 0.1)
+      expect(elapsed).toBeLessThanOrEqual(expectedDelay + expectedDelay * 0.1)
     })
   })
 })

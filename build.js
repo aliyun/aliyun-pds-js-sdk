@@ -1,5 +1,5 @@
 // node.js>=16.15.0 以上支持 assert 语法
-import pkg from './package.json' assert {type: 'json'}
+import pkg from './package.json' with {type: 'json'}
 import {writeFileSync} from 'fs'
 
 const name = process.env.PKG_NAME || 'aliyun-pds-js-sdk'

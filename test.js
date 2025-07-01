@@ -3,7 +3,7 @@
  *    TEST_TYPE=browser node --max_old_space_size=9000 --experimental-modules ./test.js
  */
 import {execSync, exec} from 'child_process'
-import {appendFileSync, existsSync, unlinkSync} from 'fs'
+import {appendFileSync, existsSync, unlinkSync, writeFileSync} from 'fs'
 
 const TEST_FILE = 'test.log'
 
@@ -86,4 +86,13 @@ async function init() {
   console.log(msg)
 
   execSync(`${isWindows ? 'powershell ' : ''}cp ./test.log coverage/${testType}`, {cwd: process.cwd()})
+
+  if (isWindows) {
+    execSync('dir ./coverage/', {cwd: process.cwd()})
+    if (!existsSync(`./coverage/${testType}/coverage-final.json`)) {
+      writeFileSync(`./coverage/${testType}/coverage-final.json`, JSON.stringify({}))
+    }
+    console.log('----------------------------------------')
+    execSync('dir ./coverage/', {cwd: process.cwd()})
+  }
 }

@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
-import { join } from 'path'
 import commonjsExt from 'vite-plugin-commonjs-externals'
+import { join } from 'path' 
 
 export default defineConfig({
   plugins: [
@@ -26,7 +26,6 @@ export default defineConfig({
       ],
     }),
   ],
-
   build: {
     outDir: 'dist/node',
     lib: {
@@ -35,8 +34,7 @@ export default defineConfig({
       formats: ['es', 'umd'],
       fileName: `node-pds`,
     },
-  },
-
+  }, 
   test: {
     include: [
       // ts
@@ -53,7 +51,7 @@ export default defineConfig({
     coverage: {
       reportOnFailure: true,
       provider: 'istanbul',
-      reporter: ['html','json'],
+      reporter: ['html','json','text','text-summary'],
       reportsDirectory: join(__dirname, './coverage/node'),
       include: ['lib/**/*.ts', 'lib/**/*.js'],
       exclude: [

@@ -357,7 +357,11 @@ export class WebDownloader extends BaseDownloader {
               promFun.reject(new PDSError('stopped', 'stopped'))
               return
             }
-            this.pushStream(promFun, partInfo, last_opt)
+            if (!partInfo.done) {
+              this.pushStream(promFun, partInfo, last_opt)
+            } else {
+              promFun.resolve()
+            }
           }, 1000)
         } else if (err.message.includes(`Failed to execute 'enqueue' on 'ReadableStreamDefaultController'`)) {
           // 浏览器缓存空间不足 引起的
