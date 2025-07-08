@@ -49,10 +49,10 @@ export default defineConfig({
     },
     browser: {
       // https://vitest.dev/guide/browser/#headless
-      provider: 'webdriverio',
-      headless: true,
+      provider: 'playwright',
+      headless: false,
       enabled: true,
-      name: 'chrome',
+      name: 'chromium',
     },
     testTimeout: 3000000, // 增加到 50 分钟
     hookTimeout: 3000000,

@@ -165,7 +165,7 @@ describe('WebDownloader Error test', function () {
       }
     })
 
-    it.only('Network Error, retry', async () => {
+    it('Network Error, retry', async () => {
       console.log('---------------开始下载 -----------------------')
 
       // 下载
@@ -179,15 +179,17 @@ describe('WebDownloader Error test', function () {
           async onReady(t) {
             task = t
 
+            let c = 0
             // mock error
-            task.mockResponseError = () => {
-              let err = new Error('Network Error')
-              throw err
+            task.mockResponseError = r => {
+              if (c < 5) {
+                c++
+                let err = new Error('Network Error')
+                throw err
+              } else {
+                return r
+              }
             }
-            // await new Promise(a => setTimeout(a, 1000))
-
-            // restore
-            // task.mockResponseError = a => a
           },
           onProgress(state, progress) {
             console.log(state, progress, task.speed / 1024 / 1024 + 'MB/s')
@@ -256,15 +258,17 @@ describe('WebDownloader Error test', function () {
         async onReady(t) {
           task = t
 
+          let c = 0
           // mock error
-          task.mockPushStreamError = () => {
-            let err = new Error('Network Error')
-            throw err
+          task.mockPushStreamError = r => {
+            if (c < 5) {
+              c++
+              let err = new Error('Network Error')
+              throw err
+            } else {
+              return r
+            }
           }
-          await new Promise(a => setTimeout(a, 1000))
-
-          // restore
-          task.mockPushStreamError = a => a
         },
         onProgress(state, progress) {
           console.log(state, progress, task.speed / 1024 / 1024 + 'MB/s')
