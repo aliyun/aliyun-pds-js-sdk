@@ -327,7 +327,7 @@ export class WebDownloader extends BaseDownloader {
       partInfo.done = true
       this.timeLogEnd('part-' + partInfo.part_number, et)
     } catch (err) {
-      await this.handleDownloadError(err, partInfo)
+      await this.handleDownloadError(err)
     }
   }
   initialVars() {
@@ -368,7 +368,7 @@ export class WebDownloader extends BaseDownloader {
         }
       })
   }
-  async handleDownloadError(err, partInfo) {
+  async handleDownloadError(err) {
     const errorName = (err as Error)?.name
     console.debug('handleDownloadError', err, ', Error name:', errorName)
     console.debug('stream is locked:', this.stream?.locked, ', reader:', this._reader)
