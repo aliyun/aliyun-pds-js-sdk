@@ -17,6 +17,7 @@ import {basename} from '../utils/PathUtil'
 export class BrowserContextExt implements IContextExt {
   context: IContext
   constructor(context: IContext) {
+    if (context.isNode) throw new Error('BrowserContextExt should not be used in node')
     this.context = context
   }
   /* istanbul ignore next */

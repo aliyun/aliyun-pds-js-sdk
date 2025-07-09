@@ -87,8 +87,8 @@ interface IContext {
   http?: any
 
   AxiosNodeAdapter?: any
-  CRC64?: any
 }
+
 interface IFileKey {
   /** 分享id。 如果此视频通过分享访问，那么设置 shareId、不设置 driveId 且传递 shareToken，否则需要设置 drive_id */
   share_id?: string
