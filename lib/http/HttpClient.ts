@@ -61,14 +61,18 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     })
   }
 
-  /* istanbul ignore next */
   setToken(tokenInfo: ITokenInfo) {
     validateTokenInfo(tokenInfo)
     this.token_info = tokenInfo
   }
-  /* istanbul ignore next */
   setShareToken(share_token: string) {
     this.share_token = share_token
+  }
+  removeToken() {
+    this.token_info = undefined
+  }
+  removeShareToken() {
+    this.share_token = undefined
   }
 
   /**

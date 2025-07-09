@@ -390,5 +390,29 @@ describe('src/http/HttpClient', () => {
 
       expect(c == 2)
     })
+
+    it('remove token', () => {
+      var mockContext = {
+        axiosSend: () => {
+          return {data: {a: 1}}
+        },
+      }
+      let client = new HttpClient({api_endpoint: 'https://xxx'}, mockContext)
+
+      client.setToken({
+        access_token: 'xx',
+        expire_time: new Date(Date.now() + 1000000).toISOString(),
+      })
+
+      expect(client.token_info.access_token).toBe('xx')
+      client.removeToken()
+      expect(client.token_info).toBeUndefined()
+
+      client.setShareToken('str')
+
+      expect(client.share_token).toBe('str')
+      client.removeShareToken()
+      expect(client.share_token).toBeUndefined()
+    })
   })
 })
