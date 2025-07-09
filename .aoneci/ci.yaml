@@ -19,7 +19,7 @@ jobs:
           tnpm-version: 9
           tnpm-cache: false
       - run: |
-          tnpm i
+          npm i --registry=https://registry.npmmirror.com
           npm ls
           npm run build
           npm run format
@@ -29,8 +29,8 @@ jobs:
   win-browser-job:
     name: 'Windows 浏览器执行'
     envs:
-        remote_home: "C:\\Users\\Administrator\\auto-test\\pds-js-sdk\\${{pipeline.id}}\\${{pipeline.inst.number}}"
-        remote_test_dir: "C:\\Users\\Administrator\\auto-test\\pds-js-sdk\\${{pipeline.id}}\\${{pipeline.inst.number}}\\${{git.repoName}}"
+        remote_home: "${{vars.TEST_DIR}}\\${{pipeline.id}}\\${{pipeline.inst.number}}"
+        remote_test_dir: "${{vars.TEST_DIR}}\\${{pipeline.id}}\\${{pipeline.inst.number}}\\${{git.repoName}}"
     steps:
       - uses: setup-env
         inputs:
@@ -48,10 +48,11 @@ jobs:
           echo "set IT_CONFIG=${{vars.IT_CONFIG}}" 
           echo "set GECKODRIVER_CDNURL=${{vars.GECKODRIVER_CDNURL}}"
           echo "set TEST_TYPE=browser"
-          echo "npm i --registry=https://registry.npmmirror.com && npm run build && node test.js"
+          echo "npm i --registry=https://registry.npmmirror.com && npx playwright install && npm run build && node test.js"
           ) > run.bat
           ssh -o StrictHostKeyChecking=no ${{vars.REMOTE}} 'dir .'
           echo '------------- clone code -------------'
+          echo "md ${{envs.remote_home}} && cd ${{envs.remote_home}} && git clone ${{git.url}} --depth 1 && cd ${{git.repoName}} && git fetch origin merge-requests/${{git.merge_request.id}}/head:${{git.merge_request.sourceBranch}} && git checkout ${{git.merge_request.sourceBranch}}"
           ssh ${{vars.REMOTE}} "md ${{envs.remote_home}} && cd ${{envs.remote_home}} && git clone ${{git.url}} --depth 1 && cd ${{git.repoName}} && git fetch origin merge-requests/${{git.merge_request.id}}/head:${{git.merge_request.sourceBranch}} && git checkout ${{git.merge_request.sourceBranch}}"
           echo '------------- run ----------------'
           scp run.bat "${{vars.REMOTE}}:${{envs.remote_test_dir}}/"
