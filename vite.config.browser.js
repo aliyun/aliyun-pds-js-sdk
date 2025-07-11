@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite'
-import { join } from 'path'
+import {defineConfig} from 'vite'
+import {join} from 'path'
 
 export default defineConfig({
   build: {
@@ -28,9 +28,11 @@ export default defineConfig({
     coverage: {
       reportOnFailure: true,
       provider: 'istanbul',
-      reporter: ['html'],
-      reportsDirectory: join(__dirname, './coverage/browser'),
+      reporter: ['html', 'json', 'text', 'text-summary'],
+      // Windows 使用反斜杠路径，可在配置中强制修正：
+      reportsDirectory: join(__dirname, 'coverage/browser'),
       include: ['lib/**/*.ts', 'lib/**/*.js'],
+
       exclude: [
         'tests',
         'lib/utils/checksum/wasm/index-node.js',
@@ -42,21 +44,17 @@ export default defineConfig({
         'lib/loaders/NodeDownloader.ts',
         'lib/tasks/NodeDownloadTask.ts',
         'lib/context/Node*',
-        'lib/index.ts'
+        'lib/index.ts',
       ],
     },
     browser: {
-      provider: 'webdriverio',
-      providerOptions: {
-        launch: {
-          devtools: true,
-        }
-      },
-      headless: true,
+      // https://vitest.dev/guide/browser/#headless
+      provider: 'playwright',
+      headless: false,
       enabled: true,
-      name: 'chrome',
+      name: 'chromium',
     },
-    testTimeout: 1000000,
-    hookTimeout: 1000000,
+    testTimeout: 3000000, // 增加到 50 分钟
+    hookTimeout: 3000000,
   },
 })

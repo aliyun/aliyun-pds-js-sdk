@@ -30,6 +30,7 @@ function init() {
 let SDK = new PDSClient({
   api_endpoint: new URL(window.Global.api_endpoint).origin,
   refresh_token_fun: getTokenThrottle,
+  verbose: true,
 })
 
 window.SDK = SDK

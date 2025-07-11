@@ -38,14 +38,14 @@ export class PDSFilePermissionAPIClient extends PDSFileExtAPIClient {
   /**
    * 移除文件权限 (删除共享)
    */
-  removeFilePermission(data: IAddFilePermissionReq, options?: IPDSRequestConfig) {
+  removeFilePermission(data: IRemoveFilePermissionReq, options?: IPDSRequestConfig) {
     return this.postAPI<void>('/file/remove_permission', data, options)
   }
   /**
    * 获取文件的授权成员
    */
   listFilePermissions(data: IListPermissionReq, options?: IPDSRequestConfig) {
-    return this.postAPI<IPermissionStandard[]>('/file/list_permission', data, options)
+    return this.postAPI<IFilePermissionMember | IPermissionStandard[]>('/file/list_permission', data, options)
   }
 
   /**
@@ -68,13 +68,29 @@ export class PDSFilePermissionAPIClient extends PDSFileExtAPIClient {
   }
 }
 
+export interface IRemoveFilePermissionReq {
+  drive_id: string
+  file_id: string
+  member_list: {identity: IIdentityRes; role_id: string}[]
+}
+
 export interface IAddFilePermissionReq {
   drive_id: string
   file_id: string
-  member_list: IPermissionStandard[]
+  member_list: (IFilePermissionMember | IPermissionStandard)[]
 }
 
+/**
+ *  @deprecated 将要移除, 请用 IFilePermissionMember 替代
+ */
 export interface IPermissionStandard {
+  identity: IIdentityRes
+  expire_time: number // 时间戳
+  role_id: string
+  disinherit_sub_group?: boolean
+  action_list?: string[]
+}
+export interface IFilePermissionMember {
   identity: IIdentityRes
   expire_time: number // 时间戳
   role_id: string

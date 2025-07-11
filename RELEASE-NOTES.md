@@ -1,6 +1,19 @@
 
 # Release Notes
 
+## 1.3.2
+
+* fix: 修复 web worker 计算报错透出。
+* fix: 修复 batchToggleFilesStar 的 changeItems 返回字段。
+* fix: 修复 removeFilePermission 的参数定义 IRemoveFilePermissionReq。
+* refactor: IPermissionStandard 将废弃，请用IFilePermissionMember替代。
+* fix: 修复 createFolders 重试次数。
+* refactor: networkError 重试退避策略优化。 
+* feature: Client 构造函数和请求的 IPDSRequestConfig 增加 retryCount 参数。
+* fix: 修复小文件秒传成功后立即调用stop(), state为 stopped 的 bug。
+* fix: 修复 WebDownloader 网络错误重试机制。
+* feature: 增加 removeToken 和 removeShareToken 方法。
+
 ## 1.3.1
 
 * refactor: crc64 改用 web worker 计算。

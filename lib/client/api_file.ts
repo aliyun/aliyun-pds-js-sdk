@@ -101,11 +101,8 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
       })
     })
     const {successItems: result, errorItems} = await this.batchApi({batchArr: t, num: 10}, options)
-    changeArr.forEach((fileInfo, index) => {
-      fileInfo.starred = result[index].starred
-    })
 
-    return {type: starred ? 'star' : 'unStar', changeItems: changeArr, successItems: result, errorItems}
+    return {type: starred ? 'star' : 'unStar', changeItems: result, successItems: result, errorItems}
   }
 
   async copyFiles(fileKeys: IFileItemKey[], config: ICopyFilesConfig, options?: IPDSRequestConfig) {
@@ -191,12 +188,12 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
       const key = `${opt.drive_id || opt.share_id}/${opt.parent_file_id}/${opt.name}`
       if (!folderPathMap[key]) {
         // cache
-        folderPathMap[key] = await _createFolder(opt, 3, options)
+        folderPathMap[key] = await _createFolder(opt, options)
       }
       return folderPathMap[key]
     }
 
-    async function _createFolder(opt: ICreateFileReq, retry = 3, options?: IPDSRequestConfig): Promise<string> {
+    async function _createFolder(opt: ICreateFileReq, options?: IPDSRequestConfig): Promise<string> {
       let mode = opt.check_name_mode || 'refuse'
       let isSkipMode = ['overwrite', 'skip'].includes(mode)
       try {
@@ -216,31 +213,12 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
           if (typeof onFolderRepeat === 'function') {
             const b = await onFolderRepeat(fileInfo)
             if (!b) {
-              retry = -1
               that.throwError(new PDSError('A folder with the same name already exists', 'AlreadyExists'))
             }
           }
           // 只问一次
           folderPathMap['yes'] = 'on'
         }
-
-        // if (fileInfo.exist) {
-        //   // 已经存在
-        //   if (!folderPathMap['yes']) {
-        //     if (typeof onFolderRepeat === 'function') {
-        //       const b = await onFolderRepeat(fileInfo)
-        //       if (!b) {
-        //         that.throwError(new PDSError('A folder with the same name already exists', 'AlreadyExists'))
-        //       }
-        //     } else {
-        //       that.throwError(new PDSError('A folder with the same name already exists', 'AlreadyExists'))
-        //     }
-        //     // 只问一次
-        //     folderPathMap['yes'] = 'on'
-        //   } else {
-        //     that.throwError(new PDSError('A folder with the same name already exists', 'AlreadyExists'))
-        //   }
-        // }
 
         // 通知刷新
         try {
@@ -251,20 +229,7 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
 
         return fileInfo.file_id
       } catch (e) {
-        // if (e.response && e.response.status == 409) {
-        //   const msg = e.response.data.message
-        //   return msg.match(/:([-\w]+$)/)[1]
-        // }
-        // // 目标云盘满，特殊处理
-        // const errCode = `code_${e.response?.data?.code?.replace(/\./g, '_')}`
-        // if (errCode === 'code_QuotaExhausted_Drive') {
-        //   return 'code_QuotaExhausted_Drive'
-        // }
-
-        if (e.code !== 'AlreadyExists' && retry > 0) {
-          retry--
-          return await _createFolder(opt, retry)
-        } else if (e.code === 'AlreadyExists' && isSkipMode) {
+        if (e.code === 'AlreadyExists' && isSkipMode) {
           console.log(`${opt.name} 发现同名文件夹（check_name_mode==${mode}, 忽略。`)
           throw e
         } else {

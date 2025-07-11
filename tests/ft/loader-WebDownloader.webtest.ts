@@ -47,7 +47,7 @@ describe('WebDownloader Error test', function () {
   })
 
   beforeEach(async () => {
-    let name = `tmp-${domain_id}-std-web-up.txt`
+    let name = `tmp-${domain_id}-std-web-up-${Math.random().toString(36).substring(2, 8)}.txt`
 
     let file = await generateFile(name, 50 * 1024 * 1024, 'text/plain')
 
@@ -172,36 +172,38 @@ describe('WebDownloader Error test', function () {
       let fileInfo = await client.postAPI('/file/get', {drive_id, file_id})
       console.log(fileInfo)
 
-      var cp2 = await client.downloadFile(fileInfo, '', {
-        max_chunk_size: 3 * 1024 * 1024,
-        verbose: true, //显示详细日志
-        async onReady(t) {
-          task = t
+      try {
+        await client.downloadFile(fileInfo, '', {
+          max_chunk_size: 3 * 1024 * 1024,
+          verbose: true, //显示详细日志
+          async onReady(t) {
+            task = t
 
-          // mock error
-          task.mockPushStreamError = () => {
-            let err = new Error('Network Error')
-            throw err
-          }
-          await new Promise(a => setTimeout(a, 3000))
+            let c = 0
+            // mock error
+            task.mockResponseError = r => {
+              if (c < 5) {
+                c++
+                let err = new Error('Network Error')
+                throw err
+              } else {
+                return r
+              }
+            }
+          },
+          onProgress(state, progress) {
+            console.log(state, progress, task.speed / 1024 / 1024 + 'MB/s')
+          },
+          onPartComplete(cp, partInfo) {
+            console.log('onPartComplete:', partInfo.part_number, '---done-------')
+          },
+        })
+        expect('should throw').toBe(false)
+      } catch (err) {
+        expect(err.message).toMatch('stopped')
+      }
 
-          // restore
-          task.mockResponseError = a => a
-        },
-        onProgress(state, progress) {
-          console.log(state, progress, task.speed / 1024 / 1024 + 'MB/s')
-        },
-        onPartComplete(cp, partInfo) {
-          console.log('onPartComplete:', partInfo.part_number, '---done-------')
-        },
-      })
-
-      expect(cp2.state).toBe('success')
-      expect(cp2.file_key).toBe(cp.file_key)
-      expect(cp2.file_id).toBe(cp.file_id)
-      expect(cp2.drive_id).toBe(drive_id)
-      expect(cp2.loc_id).toBe(drive_id)
-      expect(cp2.loc_type).toBe('drive')
+      expect(task.state).toBe('stopped')
     })
   })
 
@@ -240,7 +242,7 @@ describe('WebDownloader Error test', function () {
         expect(er.code).toBe('InsufficientBrowserCacheSpace')
       } finally {
         // restore
-        task.mockResponseError = a => a
+        task.mockPushStreamError = a => a
       }
     })
     it('Network Error, retry', async () => {
@@ -256,15 +258,17 @@ describe('WebDownloader Error test', function () {
         async onReady(t) {
           task = t
 
+          let c = 0
           // mock error
-          task.mockPushStreamError = () => {
-            let err = new Error('Network Error')
-            throw err
+          task.mockPushStreamError = r => {
+            if (c < 5) {
+              c++
+              let err = new Error('Network Error')
+              throw err
+            } else {
+              return r
+            }
           }
-          await new Promise(a => setTimeout(a, 3000))
-
-          // restore
-          task.mockResponseError = a => a
         },
         onProgress(state, progress) {
           console.log(state, progress, task.speed / 1024 / 1024 + 'MB/s')
@@ -287,7 +291,7 @@ describe('WebDownloader Error test', function () {
       // 下载
       let info = await client.postAPI('/file/get_download_url', {drive_id, file_id})
       for (var i = 0; i < 10; i++) {
-        await downloadLink(info.url, 'test' + i)
+        await downloadLink(info.url, `test-${i}-${Math.random().toString(36).substring(2, 8)}.txt`)
       }
       expect(i).toBe(10)
     })

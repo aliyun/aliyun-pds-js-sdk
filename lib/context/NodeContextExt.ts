@@ -1,5 +1,6 @@
 import {IncomingMessage} from 'http'
 import {ReadStream} from 'fs'
+import {platform, os, fs, path, cp, http, https, crypto, AxiosNodeAdapter} from './NodeContext'
 
 import {PDSError} from '../utils/PDSError'
 import {
@@ -30,6 +31,19 @@ const STREAM_HIGH_WATER_MARK = 512 * 1024 // 512KB
 export class NodeContextExt implements IContextExt {
   context: IContext
   constructor(context: IContext) {
+    if (!context.isNode) throw new Error('NodeContextExt should not be used in browser')
+    context = {
+      AxiosNodeAdapter,
+      platform,
+      fs,
+      os,
+      path,
+      cp,
+      crypto,
+      https,
+      http,
+      ...context,
+    }
     this.context = context
   }
   signJWT(params, privateKey: string, algorithm: string = 'RS256'): string {

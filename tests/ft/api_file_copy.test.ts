@@ -70,7 +70,7 @@ describe('FileAPI:gen file 429 & copy', function () {
       // 在 folder1 下创 200 个文件
       for (let i = 0; i < LEN; i++) {
         if (i % PER == 0) {
-          await delay(1000)
+          await delay(100)
         }
         ;(async function () {
           let name = 'copy-test文档' + i + '.txt'

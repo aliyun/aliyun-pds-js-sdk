@@ -270,17 +270,15 @@ export class WebDownloader extends BaseDownloader {
 
           partInfo.start_time = st
           partInfo.to = this.file.size
-          partInfo.loaded = 0
-          partInfo.crc64_st = st
-          this.timeLogStart('part-' + partInfo.part_number, st)
+          this.initialVars()
 
-          this.last_crc64 = '0'
+          this.timeLogStart('part-' + partInfo.part_number, st)
 
           this.stream = new ReadableStream({
             // start 方法不要用 async/await (会造成内存泄露)
             start(ctrl) {
               that.controller = ctrl
-              that.pushStream(promFun, partInfo, last_opt)
+              return that.pushStream(promFun, partInfo, last_opt)
             },
           })
         } else {
@@ -303,7 +301,6 @@ export class WebDownloader extends BaseDownloader {
               this.waitUntilSuccess?.(url)
               promFun.resolve(url)
             })
-
             .catch(err => {
               console.debug('------blob error', err)
               if (err.name == 'TypeError' && err.message.includes('Failed to fetch')) {
@@ -333,6 +330,13 @@ export class WebDownloader extends BaseDownloader {
       await this.handleDownloadError(err)
     }
   }
+  initialVars() {
+    this.last_crc64 = '0'
+    this.loaded = 0
+    let partInfo = this.part_info_list[0]
+    partInfo.loaded = 0
+    partInfo.crc64_st = Date.now()
+  }
   protected mockResponseError(r) {
     return r
   }
@@ -343,22 +347,19 @@ export class WebDownloader extends BaseDownloader {
     return this._reader
       ?.read()
       .then(res => {
-        this.handlePush(partInfo, last_opt, this.controller, res, () => {
-          this.pushStream(promFun, partInfo, last_opt)
+        return this.handlePush(partInfo, last_opt, this.controller, res, () => {
+          return this.pushStream(promFun, partInfo, last_opt)
         })
       })
       .then(r => this.mockPushStreamError(r))
       .catch(err => {
         console.debug('=======stream catch error', err)
         if (isNetworkError(err)) {
-          // 无网络, 重试 push
-          setTimeout(() => {
-            if (this.stopFlag || this.cancelFlag) {
-              promFun.reject(new PDSError('stopped', 'stopped'))
-              return
-            }
-            this.pushStream(promFun, partInfo, last_opt)
-          }, 1000)
+          // 无网络
+          if (this.stopFlag || this.cancelFlag) {
+            promFun.reject(new PDSError('stopped', 'stopped'))
+            return
+          }
         } else if (err.message.includes(`Failed to execute 'enqueue' on 'ReadableStreamDefaultController'`)) {
           // 浏览器缓存空间不足 引起的
           promFun.reject(new PDSError('The browser cache space is insufficient', 'InsufficientBrowserCacheSpace'))
