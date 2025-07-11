@@ -3,7 +3,7 @@ import {IClientParams, IContextExt, ITokenInfo, IPDSRequestConfig, TMethod, Path
 
 import {PDSError} from '../utils/PDSError'
 
-import {delayRandom, isNetworkError} from '../utils/HttpUtil'
+import {delayRandom, exponentialBackoff, isNetworkError} from '../utils/HttpUtil'
 
 const MAX_RETRY = 10
 
@@ -25,6 +25,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   path_type: PathType = 'StandardMode'
   version: string = ''
   contextExt: IContextExt
+  retryCount: number = 10
   verbose: boolean
 
   constructor(params: IClientParams, contextExt: IContextExt) {
@@ -42,6 +43,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       path_type = 'StandardMode',
       version = 'v2',
       verbose = false,
+      retryCount,
     } = params
 
     Object.assign(this, {
@@ -54,18 +56,23 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       path_type,
       version,
       verbose,
+      retryCount,
       contextExt,
     })
   }
 
-  /* istanbul ignore next */
   setToken(tokenInfo: ITokenInfo) {
     validateTokenInfo(tokenInfo)
     this.token_info = tokenInfo
   }
-  /* istanbul ignore next */
   setShareToken(share_token: string) {
     this.share_token = share_token
+  }
+  removeToken() {
+    this.token_info = undefined
+  }
+  removeShareToken() {
+    this.share_token = undefined
   }
 
   /**
@@ -109,13 +116,17 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       data,
       ...options,
     }
+
+    retries = req_opt.retryCount ?? this.retryCount ?? retries
+
     if (this.verbose) {
       console.log('request:', {
         method: req_opt.method,
         url: req_opt.url,
-        headers: req_opt?.headers,
-        params: req_opt?.params,
-        data: req_opt?.data,
+        headers: JSON.stringify(req_opt?.headers),
+        params: JSON.stringify(req_opt?.params),
+        data: JSON.stringify(req_opt?.data),
+        retries,
       })
     }
     try {
@@ -123,8 +134,8 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       if (this.verbose) {
         console.log('response:', {
           status: res.status,
-          headers: res.headers,
-          data: res.data,
+          headers: JSON.stringify(res.headers),
+          data: JSON.stringify(res.data),
         })
       }
       return res
@@ -141,14 +152,19 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         this.emitError(pdsErr, req_opt)
       }
 
-      // 网络无法连接
-      if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
-        console.debug('[should retry] error:', pdsErr)
-        await delayRandom(1000, 3000)
-        // 重试
-        return await this.send(method, url, data, options, retries)
-      }
       if (retries > 0) {
+        // 网络无法连接
+        if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
+          console.debug('[should retry] error:', pdsErr)
+          try {
+            await exponentialBackoff(MAX_RETRY - retries, 1000, 30000, MAX_RETRY)
+            // 重试
+            return await this.send(method, url, data, options, --retries)
+          } catch (err) {
+            console.error(err)
+          }
+        }
+
         // 服务端限流
         if (pdsErr.status === 429) {
           console.debug('[should retry] error:', pdsErr)
@@ -176,13 +192,16 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       ...options,
     }
 
+    retries = req_opt.retryCount ?? this.retryCount ?? retries
+
     if (this.verbose) {
       console.log('request:', {
         method: req_opt.method,
         url: req_opt.url,
-        headers: req_opt?.headers,
-        params: req_opt?.params,
-        data: req_opt?.data,
+        headers: JSON.stringify(req_opt?.headers),
+        params: JSON.stringify(req_opt?.params),
+        data: JSON.stringify(req_opt?.data),
+        retries,
       })
     }
 
@@ -207,8 +226,8 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       if (this.verbose) {
         console.log('response:', {
           status: response.status,
-          headers: response.headers,
-          data: response.data,
+          headers: JSON.stringify(response.headers),
+          data: JSON.stringify(response.data),
         })
       }
 
@@ -226,15 +245,19 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         this.emitError(pdsErr, req_opt)
       }
 
-      // 网络无法连接
-      if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
-        console.debug('[should retry] error:', pdsErr)
-        await delayRandom(1000, 3000)
-        // 重试
-        return await this.request(endpoint, method, pathname, data, options, retries)
-      }
-
       if (retries > 0) {
+        // 网络无法连接
+        if (pdsErr.type == 'ClientError' && isNetworkError(pdsErr)) {
+          console.debug('[should retry] error:', pdsErr)
+          try {
+            await exponentialBackoff(MAX_RETRY - retries, 1000, 30000, MAX_RETRY)
+            // 重试
+            return await this.request(endpoint, method, pathname, data, options, --retries)
+          } catch (err) {
+            console.error(err)
+          }
+        }
+
         // 服务端限流
         if (pdsErr.status === 429) {
           console.debug('[should retry] error:', pdsErr)

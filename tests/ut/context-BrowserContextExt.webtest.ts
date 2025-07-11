@@ -7,6 +7,14 @@ describe('src/context/BrowserContextExt', () => {
   beforeAll(() => {
     ext = new BrowserContextExt(BrowserContext)
   })
+  it('constructor', () => {
+    try {
+      new BrowserContextExt({isNode: true, Axios: {}})
+      expect('should throw').toBe(false)
+    } catch (e) {
+      expect(e.message).toBe('BrowserContextExt should not be used in node')
+    }
+  })
   it('calcCrc64', async () => {
     expect(await ext.calcCrc64(null, '123')).toBe('123')
     expect(await ext.calcCrc64('abc', '0')).toBe('3231342946509354535')

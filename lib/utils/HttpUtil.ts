@@ -66,4 +66,17 @@ function isOssUrlExpired(e: AxiosError): boolean {
   )
 }
 
-export {callRetry, delay, delayRandom, isStoppableError, isNetworkError, isOssUrlExpired}
+async function exponentialBackoff(
+  retryCount: number,
+  baseDelay: number = 1000,
+  maxDelay: number = 30000,
+  maxRetry: number = 10,
+): Promise<void> {
+  if (retryCount >= maxRetry) {
+    throw new Error('Max retries reached')
+  }
+  const delay = Math.min(baseDelay * Math.pow(2, retryCount), maxDelay)
+  await new Promise(resolve => setTimeout(resolve, delay))
+}
+
+export {callRetry, delay, delayRandom, isStoppableError, isNetworkError, isOssUrlExpired, exponentialBackoff}

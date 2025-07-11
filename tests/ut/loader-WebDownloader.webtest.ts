@@ -109,7 +109,7 @@ describe('WebDownloader', function () {
       for (let i = 0; i < 10; i++) {
         let f = new File(['abc' + i], `a-${i}.txt`)
         let url = URL.createObjectURL(f.slice(0))
-        downloadLink(url, `a-${i}.txt`)
+        downloadLink(url, `a-${i}-${Math.random().toString(36).substring(2, 8)}.txt`)
       }
       await new Promise(a => setTimeout(a, 3000))
     })
