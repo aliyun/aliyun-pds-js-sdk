@@ -54,7 +54,8 @@ async function init() {
   try {
     const str = execSync(isWindows ? 'powershell gc -tail 500 -encoding utf8 test.log' : `tail -n 500 ./test.log`, {
       cwd: process.cwd(),
-    }).toString()
+    }).toString() 
+
     str.split('\n').forEach(line => {
       if (/failed/.test(line)) {
         failed = line.match(/.*\s(\d+)\sfailed.*/)[1] || 0
@@ -82,6 +83,8 @@ async function init() {
     console.log('Failed to parse stdout.', e)
   }
 
+  if(isNaN(passed) || isNaN(failed) || isNaN(skipped) ) throw new Error('Failed to parse stdout.')
+    
   const msg = `TEST_CASE_AMOUNT:{"passed": ${passed},"failed": ${failed},"skipped":${skipped} }`
   console.log(msg)
 

@@ -4,7 +4,7 @@ i:
 
 build:b f
 b:
-	npm run build
+	PKG_NAME=aliyun-pds-js-sdk npm run build
 doc:
 	npm run doc:node
 doc2:
@@ -29,6 +29,13 @@ publish:build
 	npm publish
 pub:build
 	npm publish --tag=beta
+
+build2:
+	PKG_NAME=@ali/pds-js-sdk npm run build
+pub2:
+	PKG_NAME=@ali/pds-js-sdk npm run build
+	tnpm publish --tag=beta
+
 
 # 命令和目录名称冲突
 .PHONY:doc lib dist tests

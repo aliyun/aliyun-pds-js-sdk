@@ -7,6 +7,14 @@ describe('src/context/NodeContextExt', () => {
   beforeAll(async () => {
     ext = new NodeContextExt(NodeContext)
   })
+  it('constructor', () => {
+    try {
+      new NodeContextExt({isNode: false, Axios: {}})
+      expect('should throw').toBe(false)
+    } catch (e) {
+      expect(e.message).toBe('NodeContextExt should not be used in browser')
+    }
+  })
   it('calcCrc64', async () => {
     expect(await ext.calcCrc64(undefined, '123')).toBe('123')
     expect(await ext.calcCrc64('abc', '0')).toBe('3231342946509354535')
