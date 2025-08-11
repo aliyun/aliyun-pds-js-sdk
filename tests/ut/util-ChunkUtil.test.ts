@@ -146,6 +146,12 @@ describe('ChunkUtil', function () {
 
       expect(part_info_list2[part_info_list2.length - 1]).toEqual({part_number: 7, part_size: 21, from: 768, to: 789})
     })
+    it('big size', () => {
+      let [part_info_list, chunk_size] = init_chunks_parallel(15 * 1024 * 1024 * 1024, [], 200 * 1024 * 1024)
+      expect(part_info_list.length).toBe(77)
+      expect(chunk_size).toBe(209715264)
+      expect(part_info_list[part_info_list.length - 1].part_size).toBe(167767296)
+    })
   })
 
   describe('init_chunks_parallel', () => {

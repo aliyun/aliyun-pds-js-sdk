@@ -89,13 +89,11 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     return await this.request(this.auth_endpoint || '', 'POST', pathname, data, options)
   }
   async postAPIAnonymous<T = any>(pathname: string, data = {}, options: IPDSRequestConfig = {}): Promise<T> {
-    let res = await this.send('POST', getUrl(this.api_endpoint || '', this.version, pathname), data, options)
-    return res.data
+    return await this.send('POST', getUrl(this.api_endpoint || '', this.version, pathname), data, options)
   }
   /* istanbul ignore next */
   async postAuthAnonymous<T = any>(pathname: string, data = {}, options: IPDSRequestConfig = {}): Promise<T> {
-    let res = await this.send('POST', getUrl(this.auth_endpoint || '', this.version, pathname), data, options)
-    return res.data
+    return await this.send('POST', getUrl(this.auth_endpoint || '', this.version, pathname), data, options)
   }
 
   /* istanbul ignore next */
@@ -103,7 +101,10 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     return this.contextExt.sendOSS.call(this.contextExt, options)
   }
 
-  async send(
+  /**
+   * @deprecated use postAPIAnonymous instead
+   */
+  protected async send(
     method: TMethod,
     url: string,
     data = {},
@@ -138,7 +139,8 @@ export class HttpClient extends EventEmitter implements IHttpClient {
           data: JSON.stringify(res.data),
         })
       }
-      return res
+      if (req_opt?.returnResponse) return res
+      else return res.data
     } catch (err) {
       let pdsErr = new PDSError(err)
 
@@ -176,8 +178,10 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       throw pdsErr
     }
   }
-
-  async request(
+  /**
+   * @deprecated use postAPI instead
+   */
+  protected async request(
     endpoint: string,
     method: TMethod,
     pathname: string,
@@ -230,8 +234,10 @@ export class HttpClient extends EventEmitter implements IHttpClient {
           data: JSON.stringify(response.data),
         })
       }
+      console.log('resp---------------------onse:', req_opt?.returnResponse)
 
-      return response.data
+      if (req_opt?.returnResponse) return response
+      else return response.data
     } catch (e) {
       let pdsErr = new PDSError(e)
 

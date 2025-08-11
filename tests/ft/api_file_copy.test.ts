@@ -85,7 +85,7 @@ describe('FileAPI:gen file 429 & copy', function () {
             {ignore_rapid: true},
           )
 
-          console.log('-----generate copy file' + i)
+          console.log('-----generate copy file' + i, arr.length, LEN)
           arr.push({file_id: cp.file_id, name, drive_id, parent_file_id: folder1.file_id})
           if (arr.length == LEN) a(arr)
         })()

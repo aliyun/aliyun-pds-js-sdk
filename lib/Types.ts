@@ -3,6 +3,7 @@ import {PDSError} from './utils/PDSError'
 
 interface IPDSRequestConfig extends AxiosRequestConfig {
   retryCount?: number
+  returnResponse?: boolean
   [propName: string]: any
 }
 interface IPDSResponse extends AxiosResponse {

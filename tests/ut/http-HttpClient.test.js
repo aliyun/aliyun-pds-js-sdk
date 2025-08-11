@@ -110,9 +110,8 @@ describe('src/http/HttpClient', () => {
         expire_time: new Date(Date.now() + 1000000).toISOString(),
       })
 
-      let obj = await client.send('POST', 'https://xxx/v2/file/list', {}, 5)
-      expect(obj.data.key).toBe('abc')
-
+      let res = await client.send('POST', 'https://xxx/v2/file/list', {}, {returnResponse: true}, 5)
+      expect(res.data.key).toBe('abc')
       expect(count).toBe(3)
     })
   })

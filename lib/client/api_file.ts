@@ -415,6 +415,7 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
         headers: {
           'content-type': partInfo['content_type'] || '',
         },
+        returnResponse: true,
       },
       1,
     )
@@ -444,6 +445,7 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
       headers: {'content-type': ''},
       maxContentLength: Infinity,
       responseType,
+      returnResponse: true,
     }
 
     let _url = info.url
