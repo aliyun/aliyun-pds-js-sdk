@@ -1,6 +1,10 @@
 
 # Release Notes
 
+## 1.4.0
+
+* refactor: request 接口增加 returnResponse 字段, 支持返回请求的 response 而不仅是 response 的 body。
+
 ## 1.3.2
 
 * fix: 修复 web worker 计算报错透出。

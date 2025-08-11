@@ -13,5 +13,11 @@ const content = `export default ${JSON.stringify(info, ' ', 2)}`
 writeFileSync('./lib/pkg.ts', content)
 
 pkg.name = name
-if (name === 'aliyun-pds-js-sdk') pkg.publishConfig.registry = 'https://registry.npmjs.org/'
+if (name === 'aliyun-pds-js-sdk') {
+  pkg.publishConfig.registry = 'https://registry.npmjs.org'
+  pkg.repository = 'git@github.com:aliyun/aliyun-pds-js-sdk.git'
+}else{
+  pkg.publishConfig.registry = 'https://registry.anpm.alibaba-inc.com'
+  pkg.repository = 'git@gitlab.alibaba-inc.com:pds-next/pds-js-sdk.git'
+}
 writeFileSync('./package.json', JSON.stringify(pkg, ' ', 2))

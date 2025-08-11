@@ -14,14 +14,14 @@ async function getSuperToken(user_id = 'superadmin') {
   return await import(token_path)
 }
 
-async function getClient() {
+async function getClient(verbose = true) {
   let tokenInfo = await getSuperToken()
   let {api_endpoint, auth_endpoint} = Config
   return new PDSClient({
     token_info: tokenInfo,
     api_endpoint,
     auth_endpoint,
-    verbose: true,
+    verbose,
   })
 }
 async function getHttpClient() {
