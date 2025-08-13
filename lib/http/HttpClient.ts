@@ -234,7 +234,6 @@ export class HttpClient extends EventEmitter implements IHttpClient {
           data: JSON.stringify(response.data),
         })
       }
-      console.log('resp---------------------onse:', req_opt?.returnResponse)
 
       if (req_opt?.returnResponse) return response
       else return response.data
