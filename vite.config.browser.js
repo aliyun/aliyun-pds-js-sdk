@@ -26,7 +26,7 @@ export default defineConfig({
     ],
     // environment: 'happy-dom',
     coverage: {
-      reportOnFailure: true,
+      // reportOnFailure: true,
       provider: 'istanbul',
       reporter: ['html', 'json', 'text', 'text-summary'],
       // Windows 使用反斜杠路径，可在配置中强制修正：

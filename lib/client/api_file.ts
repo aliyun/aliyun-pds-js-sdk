@@ -441,12 +441,6 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
   async getFileContent(fileInfo: IGetFileReq, options: IPDSRequestConfig = {}) {
     const {responseType = 'arraybuffer', ...opt} = options
     const info = await this.getFile(fileInfo, opt)
-    let req_opt: IPDSRequestConfig = {
-      headers: {'content-type': ''},
-      maxContentLength: Infinity,
-      responseType,
-      returnResponse: true,
-    }
 
     let _url = info.url
     if (!_url) {
@@ -463,11 +457,12 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
     }
     if (!_url) throw new PDSError('No permission to get url', 'NoPermission')
 
-    const result = await this.send('GET', _url, {}, req_opt, 1)
+    const result = await fetch(_url)
+    const text = await result.text()
 
     return {
       headers: result.headers || {},
-      content: result.data || '', // 浏览器中：arraybuffer2text()=> String.fromCharCode.apply(null, new Uint8Array(result.data))
+      content: text, // 浏览器中：arraybuffer2text()=> String.fromCharCode.apply(null, new Uint8Array(result.data))
       size: info.size || result.headers['content-length'],
       type: result.headers['content-type'],
       updated_at: result.headers['last-modified'],
