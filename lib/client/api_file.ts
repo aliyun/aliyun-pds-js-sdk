@@ -458,14 +458,21 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
     if (!_url) throw new PDSError('No permission to get url', 'NoPermission')
 
     const result = await fetch(_url)
-    const text = await result.text()
+    const content = await result.text()
+    const headers = [...result.headers.keys()].reduce(
+      (acc, key) => {
+        acc[key] = result.headers.get(key)
+        return acc
+      },
+      {} as Record<string, string | null>,
+    )
 
     return {
-      headers: result.headers || {},
-      content: text, // 浏览器中：arraybuffer2text()=> String.fromCharCode.apply(null, new Uint8Array(result.data))
-      size: info.size || result.headers['content-length'],
-      type: result.headers['content-type'],
-      updated_at: result.headers['last-modified'],
+      headers,
+      content, // 浏览器中：arraybuffer2text()=> String.fromCharCode.apply(null, new Uint8Array(result.data))
+      size: info.size || headers['content-length'],
+      type: headers['content-type'],
+      updated_at: headers['last-modified'],
       status: result.status,
     }
   }
