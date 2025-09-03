@@ -4,6 +4,7 @@
 ## 1.4.0
 
 * refactor: request 接口增加 returnResponse 字段, 支持返回请求的 response 而不仅是 response 的 body。
+* fix: 修复 getFileContent 接口， 支持 OSS v4 签名。
 
 ## 1.3.2
 
