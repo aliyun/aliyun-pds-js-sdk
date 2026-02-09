@@ -520,12 +520,7 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
     const len = fileInfos.length
     if (len < 1) return []
     const results: ICopyFileRes[] = []
-    const [f] = fileInfos
-    // 如果是移动到当前文件夹，则不发请求
-    if (to_drive_id === f.drive_id && to_parent_file_id === f.parent_file_id) {
-      return []
-    }
-
+  
     for (const fileInfo of fileInfos) {
       if (getStopFlag()) break
       const res = await this.postAPI<ICopyFileRes>(
