@@ -15,7 +15,7 @@ describe('src/context/NodeContextExt', () => {
       expect(e.message).toBe('NodeContextExt should not be used in browser')
     }
   })
-  it.only('calcCrc64', async () => {
+  it('calcCrc64', async () => {
     expect(await ext.calcCrc64(undefined, '123')).toBe('123')
     expect(await ext.calcCrc64('abc', '0')).toBe('3231342946509354535')
     expect(await ext.calcCrc64('中文')).toBe('16371802884590399230')
