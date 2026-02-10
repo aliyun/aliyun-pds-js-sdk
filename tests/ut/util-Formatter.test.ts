@@ -85,4 +85,52 @@ describe('src/utils/Formatter', () => {
       expect(v.length).toBe(10)
     }
   })
+
+  describe('Additional formatting coverage', () => {
+    it('should handle formatSize edge cases', () => {
+      expect(formatSize(1)).toBe('1B')
+      expect(formatSize(512)).toBe('512B')
+      expect(formatSize(1023)).toBe('1023B')
+      expect(formatSize(1536)).toBe('1.50KB')
+      expect(formatSize(1024 * 1024)).toBe('1.00MB')
+      expect(formatSize(1024 * 1024 * 1024)).toBe('1.00GB')
+      expect(formatSize(1024 * 1024, true)).toBe('1MB')
+    })
+
+    it('should handle parseSize with decimals', () => {
+      expect(parseSize('1.5KB')).toBe(1536)
+      expect(parseSize('2.5MB')).toBe(2.5 * 1024 * 1024)
+      expect(parseSize('0.5GB')).toBe(0.5 * 1024 * 1024 * 1024)
+    })
+
+    it('should handle formatUsedSpace boundary cases', () => {
+      expect(formatUsedSpace(0, 1024, true)).toBe('0.00%')
+      expect(formatUsedSpace(1024, 1024, true)).toBe('100.00%')
+      expect(formatUsedSpace(512, 1024, false)).toBe('0.50')
+      expect(formatUsedSpace(256, 1024, true)).toBe('25.00%')
+    })
+
+    it('should handle elapse with various durations', () => {
+      expect(elapse(1)).toBe('1ms')
+      expect(elapse(999)).toBe('999ms')
+      expect(elapse(60 * 1000)).toBe('00:01:00')
+      expect(elapse(60 * 60 * 1000)).toBe('01:00:00')
+      expect(elapse(24 * 60 * 60 * 1000)).toBe('1天00:00:00')
+      expect(elapse(30 * 24 * 60 * 60 * 1000)).toBe('30天00:00:00')
+    })
+
+    it('should handle formatPercents with integer values', () => {
+      expect(formatPercents(0)).toBe(0)
+      expect(formatPercents(99)).toBe(99)
+      expect(formatPercents(100)).toBe(100)
+    })
+
+    it('should handle randomHex uniqueness', () => {
+      const hex1 = randomHex()
+      const hex2 = randomHex()
+      expect(hex1).not.toBe(hex2)
+      expect(hex1.length).toBe(10)
+      expect(hex2.length).toBe(10)
+    })
+  })
 })

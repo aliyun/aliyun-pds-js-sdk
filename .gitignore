@@ -43,3 +43,4 @@ conf.json
 up.sh
 
 tsconfig-dts.tsbuildinfo
+gen.md

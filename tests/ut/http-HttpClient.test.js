@@ -414,4 +414,34 @@ describe('src/http/HttpClient', () => {
       expect(client.share_token).toBeUndefined()
     })
   })
+
+  describe('Additional coverage', () => {
+    it('should handle validateParams with auth_endpoint', () => {
+      try {
+        validateParams({auth_endpoint: 'https://xxx'}, {})
+        expect(true).toBe(true)
+      } catch (e) {
+        expect(false).toBe(true)
+      }
+    })
+
+    it('should handle refresh_token_fun as function', () => {
+      // Valid function should not throw
+      let didNotThrow = false
+      try {
+        validateParams(
+          {
+            api_endpoint: 'https://xxx',
+            token_info: {access_token: 'xx', expire_time: new Date(Date.now() + 1000000).toISOString()},
+            refresh_token_fun: async () => ({}),
+          },
+          {},
+        )
+        didNotThrow = true
+      } catch (e) {
+        didNotThrow = false
+      }
+      expect(didNotThrow).toBe(true)
+    })
+  })
 })

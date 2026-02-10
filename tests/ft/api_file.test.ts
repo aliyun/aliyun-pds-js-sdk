@@ -218,8 +218,13 @@ describe('FileAPI', function () {
       drive_id,
     })
     // console.log('查询收藏:', customRes.items)
-    expect(customRes.items.length).toBe(4)
-    expect(customRes.items.filter(n => n.starred).length).toBe(4)
+    // 由于其他测试也可能标星文件，这里只验证至少包含我们标星的4个文件
+    expect(customRes.items.length).toBeGreaterThanOrEqual(4)
+    // 验证我们创建的4个文件都在标星列表中
+    const ourFileIds = items.map(item => item.file_id)
+    const starredOurFiles = customRes.items.filter(n => ourFileIds.includes(n.file_id))
+    expect(starredOurFiles.length).toBe(4)
+    expect(starredOurFiles.filter(n => n.starred).length).toBe(4)
 
     // 取消收藏
     const hiddenRes = await client.batchToggleFilesStar(starRes.successItems, false)
@@ -230,8 +235,10 @@ describe('FileAPI', function () {
       drive_id,
     })
 
-    expect(customRes2.items.length).toBe(0)
-    expect(customRes2.items.filter(n => n.starred).length).toBe(0)
+    // 验证我们创建的4个文件已经不在标星列表中
+    const starredOurFiles2 = customRes2.items.filter(n => ourFileIds.includes(n.file_id))
+    expect(starredOurFiles2.length).toBe(0)
+    expect(starredOurFiles2.filter(n => n.starred).length).toBe(0)
 
     // 删除
     await client.batchDeleteFiles(items, false)

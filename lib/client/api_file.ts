@@ -520,7 +520,7 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
     const len = fileInfos.length
     if (len < 1) return []
     const results: ICopyFileRes[] = []
-  
+
     for (const fileInfo of fileInfos) {
       if (getStopFlag()) break
       const res = await this.postAPI<ICopyFileRes>(

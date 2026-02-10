@@ -1,40 +1,8 @@
-import { defineConfig } from 'vite'
+import {defineConfig} from 'vite'
 import commonjsExt from 'vite-plugin-commonjs-externals'
-import { join } from 'path' 
+import {join} from 'path'
 
 export default defineConfig({
-  plugins: [
-    commonjsExt({
-      externals: [
-        'fs',
-        'url',
-        'zlib',
-        'worker_threads',
-        'crypto',
-        'stream',
-        'os',
-        'net',
-        'process',
-        'path',
-        'util',
-        'http',
-        'https',
-        'process',
-        'events',
-        'assert',
-        'child_process',
-      ],
-    }),
-  ],
-  build: {
-    outDir: 'dist/node',
-    lib: {
-      entry: './lib/index.ts',
-      name: 'PDS_SDK',
-      formats: ['es', 'umd'],
-      fileName: `node-pds`,
-    },
-  }, 
   test: {
     include: [
       // ts
@@ -51,7 +19,7 @@ export default defineConfig({
     coverage: {
       // reportOnFailure: true,
       provider: 'istanbul',
-      reporter: ['html','json','text','text-summary'],
+      reporter: ['html', 'json', 'text', 'text-summary'],
       reportsDirectory: join(__dirname, './coverage/node'),
       include: ['lib/**/*.ts', 'lib/**/*.js'],
       exclude: [
