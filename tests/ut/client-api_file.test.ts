@@ -1,4 +1,4 @@
-import {describe, expect, it, vi, beforeEach} from 'vitest'
+import {describe, expect, it, vi, beforeEach, afterAll} from 'vitest'
 import {PDSFileAPIClient} from '../../lib/client/api_file'
 
 describe('PDSFileAPIClient', () => {
@@ -1508,6 +1508,22 @@ describe('PDSFileAPIClient', () => {
   })
 
   describe('getFileContent', () => {
+    beforeEach(() => {
+      // 清理可能存在的 fetch mock
+      if ('fetch' in globalThis) {
+        delete (globalThis as any).fetch
+      }
+    })
+    
+    afterAll(()=>{
+      vi.restoreAllMocks()
+      vi.resetAllMocks()
+      // 确保清理 fetch
+      if ('fetch' in globalThis) {
+        delete (globalThis as any).fetch
+      }
+    })
+    
     it('should get file content with url', async () => {
       const mockResponse = {
         text: vi.fn().mockResolvedValue('file content'),
@@ -1518,7 +1534,8 @@ describe('PDSFileAPIClient', () => {
         ]),
       }
 
-      globalThis.fetch = vi.fn().mockResolvedValue(mockResponse)
+      // 使用 vi.stubGlobal 来安全地 mock 全局 fetch
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse))
 
       mockPostAPI.mockResolvedValueOnce({
         file_id: 'f1',
@@ -1547,7 +1564,8 @@ describe('PDSFileAPIClient', () => {
         ]),
       }
 
-      globalThis.fetch = vi.fn().mockResolvedValue(mockResponse)
+      // 使用 vi.stubGlobal 来安全地 mock 全局 fetch
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse))
 
       mockPostAPI
         .mockResolvedValueOnce({
@@ -1596,6 +1614,42 @@ describe('PDSFileAPIClient', () => {
           file_id: 'f1',
         }),
       ).rejects.toThrow('NoPermission')
+    })
+    
+    it('should handle fetch returning undefined', async () => {
+      // Mock fetch to return undefined
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(undefined))
+
+      mockPostAPI.mockResolvedValueOnce({
+        file_id: 'f1',
+        name: 'test.txt',
+        url: 'https://oss.example.com/download',
+      })
+
+      await expect(
+        client.getFileContent({
+          drive_id: 'd1',
+          file_id: 'f1',
+        })
+      ).rejects.toThrow('Fetch returned undefined')
+    })
+    
+    it('should throw error when fetch is not available', async () => {
+      // 删除 fetch 使其不可用
+      delete (globalThis as any).fetch
+      
+      mockPostAPI.mockResolvedValueOnce({
+        file_id: 'f1',
+        name: 'test.txt',
+        url: 'https://oss.example.com/download',
+      })
+
+      await expect(
+        client.getFileContent({
+          drive_id: 'd1',
+          file_id: 'f1',
+        })
+      ).rejects.toThrow('fetch is not available in this environment')
     })
   })
 })

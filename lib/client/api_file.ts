@@ -457,7 +457,23 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
     }
     if (!_url) throw new PDSError('No permission to get url', 'NoPermission')
 
-    const result = await fetch(_url)
+    // 检查 fetch 是否可用
+    if (typeof fetch === 'undefined') {
+      throw new PDSError('fetch is not available in this environment', 'EnvironmentError')
+    }
+
+    // 使用 fetch API
+    let result
+    try {
+      result = await fetch(_url)
+      if (!result) {
+        throw new PDSError('Fetch returned undefined', 'NetworkError')
+      }
+    } catch (error) {
+      if (error instanceof PDSError) throw error
+      throw new PDSError('Failed to fetch file content: ' + (error as Error)?.message || String(error), 'NetworkError')
+    }
+    
     const content = await result.text()
     const headers = [...result.headers.keys()].reduce(
       (acc, key) => {

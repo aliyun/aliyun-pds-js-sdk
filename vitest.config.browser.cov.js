@@ -3,10 +3,7 @@ import {join} from 'path'
 
 export default defineConfig({
   test: {
-    // 增加 birpc 调用超时（单位：毫秒）
-    rpcOptions: {
-      timeout: 60000, // 默认 5000ms，改为 60 秒
-    },
+    threads: false, // 所有测试在主进程运行 
     include: [
       // ts
       'tests/ut/*.test.ts',
