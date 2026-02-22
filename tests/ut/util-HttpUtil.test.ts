@@ -8,7 +8,7 @@ import {
   delayRandom,
   exponentialBackoff,
 } from '../../lib/utils/HttpUtil'
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it, vi, beforeEach, afterEach} from 'vitest'
 
 describe('HttpUtil', function () {
   it('delay', async () => {
@@ -18,6 +18,14 @@ describe('HttpUtil', function () {
   })
 
   describe('retryCall', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
     it('http error', async () => {
       let url = `https://statics.aliyunpds.com/a`
 
@@ -46,16 +54,25 @@ describe('HttpUtil', function () {
       }
 
       let opt = {retryTimes: 3, dur: 1000, verbose: true}
-      let st = Date.now()
-      try {
-        await callRetry(Test.post, Test, ['http://sssss.xxx', {a: 1}], opt)
-        expect.not
-      } catch (e2) {
-        let e = e2 as Error
+      // 预期总延迟 = (retryTimes - 1) * dur = 2000ms
+      const expectedTotalDelay = (opt.retryTimes - 1) * opt.dur
+
+      let caughtError = false
+      const promise = callRetry(Test.post, Test, ['http://sssss.xxx', {a: 1}], opt).catch((e: Error) => {
+        caughtError = true
         expect(e.message).toBe('Network Error')
-      }
+      })
+
+      // 推进时间到刚好比预期总延迟少 1ms，应该还没完成
+      await vi.advanceTimersByTimeAsync(expectedTotalDelay - 1)
+      expect(count).toBeLessThan(3)
+
+      // 再推进 1ms，应该完成所有重试
+      await vi.advanceTimersByTimeAsync(1)
       expect(count).toBe(3)
-      expect(Date.now() - st > (opt.retryTimes - 1) * opt.dur).toBe(true)
+      expect(caughtError).toBe(true)
+
+      await promise
     })
 
     it('throw others', async () => {
@@ -331,21 +348,36 @@ describe('HttpUtil', function () {
   })
 
   describe('exponentialBackoff', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
     it('should delay with exponential growth', async () => {
-      const baseDelay = 10 // 缩短基础延迟
-      const maxDelay = 1000 // 缩短最大延迟
-      const retryCount = 2 // 减少重试次数
+      const baseDelay = 10
+      const maxDelay = 1000
+      const retryCount = 2
 
-      const startTime = Date.now()
-      await exponentialBackoff(retryCount, baseDelay, maxDelay)
-      const elapsed = Date.now() - startTime
-
-      // 计算预期的延迟时间: baseDelay * 2^retryCount
+      // 计算预期的延迟时间: baseDelay * 2^retryCount = 40
       const expectedDelay = Math.min(baseDelay * Math.pow(2, retryCount), maxDelay)
 
-      // 允许20%误差范围（时间更短，相对误差可以放宽）
-      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay * 0.8)
-      expect(elapsed).toBeLessThanOrEqual(expectedDelay * 1.2)
+      let resolved = false
+      const promise = exponentialBackoff(retryCount, baseDelay, maxDelay).then(() => {
+        resolved = true
+      })
+
+      // 推进时间到刚好比预期少 1ms，Promise 应该还没 resolve
+      await vi.advanceTimersByTimeAsync(expectedDelay - 1)
+      expect(resolved).toBe(false)
+
+      // 再推进 1ms，Promise 应该 resolve 了
+      await vi.advanceTimersByTimeAsync(1)
+      expect(resolved).toBe(true)
+
+      await promise
     })
 
     it('should not exceed max delay', async () => {
@@ -353,51 +385,92 @@ describe('HttpUtil', function () {
       const maxDelay = 3000
       const retryCount = 9 // 足够大的重试次数，确保会触发最大延迟限制
 
-      const startTime = Date.now()
-      await exponentialBackoff(retryCount, baseDelay, maxDelay, 10)
-      const elapsed = Date.now() - startTime
+      // 预期延迟被限制在 maxDelay
+      const expectedDelay = maxDelay
 
-      expect(elapsed).toBeGreaterThanOrEqual(maxDelay - maxDelay * 0.1)
-      expect(elapsed).toBeLessThanOrEqual(maxDelay + maxDelay * 0.1)
+      let resolved = false
+      const promise = exponentialBackoff(retryCount, baseDelay, maxDelay, 10).then(() => {
+        resolved = true
+      })
+
+      // 推进时间到刚好比 maxDelay 少 1ms
+      await vi.advanceTimersByTimeAsync(expectedDelay - 1)
+      expect(resolved).toBe(false)
+
+      // 再推进 1ms，应该 resolve
+      await vi.advanceTimersByTimeAsync(1)
+      expect(resolved).toBe(true)
+
+      await promise
     })
 
     it('should handle zero retry count', async () => {
       const baseDelay = 1000
       const retryCount = 0
 
-      const startTime = Date.now()
-      await exponentialBackoff(retryCount, baseDelay)
-      const elapsed = Date.now() - startTime
-
+      // retryCount=0 时，delay = baseDelay * 2^0 = baseDelay
       const expectedDelay = baseDelay * Math.pow(2, retryCount)
-      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay - expectedDelay * 0.1)
-      expect(elapsed).toBeLessThanOrEqual(expectedDelay + expectedDelay * 0.1)
+
+      let resolved = false
+      const promise = exponentialBackoff(retryCount, baseDelay).then(() => {
+        resolved = true
+      })
+
+      // 推进时间到刚好比预期少 1ms
+      await vi.advanceTimersByTimeAsync(expectedDelay - 1)
+      expect(resolved).toBe(false)
+
+      // 再推进 1ms，应该 resolve
+      await vi.advanceTimersByTimeAsync(1)
+      expect(resolved).toBe(true)
+
+      await promise
     })
 
     it('should work with custom base delay', async () => {
       const baseDelay = 500
       const retryCount = 2
 
-      const startTime = Date.now()
-      await exponentialBackoff(retryCount, baseDelay)
-      const elapsed = Date.now() - startTime
-
+      // delay = 500 * 2^2 = 2000
       const expectedDelay = baseDelay * Math.pow(2, retryCount)
-      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay - expectedDelay * 0.1)
-      expect(elapsed).toBeLessThanOrEqual(expectedDelay + expectedDelay * 0.1)
+
+      let resolved = false
+      const promise = exponentialBackoff(retryCount, baseDelay).then(() => {
+        resolved = true
+      })
+
+      // 推进时间到刚好比预期少 1ms
+      await vi.advanceTimersByTimeAsync(expectedDelay - 1)
+      expect(resolved).toBe(false)
+
+      // 再推进 1ms，应该 resolve
+      await vi.advanceTimersByTimeAsync(1)
+      expect(resolved).toBe(true)
+
+      await promise
     })
 
     it('should work with very small base delay', async () => {
       const baseDelay = 10
       const retryCount = 3
 
-      const startTime = Date.now()
-      await exponentialBackoff(retryCount, baseDelay)
-      const elapsed = Date.now() - startTime
-
+      // delay = 10 * 2^3 = 80
       const expectedDelay = baseDelay * Math.pow(2, retryCount)
-      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay - expectedDelay * 0.1)
-      expect(elapsed).toBeLessThanOrEqual(expectedDelay + expectedDelay * 0.1)
+
+      let resolved = false
+      const promise = exponentialBackoff(retryCount, baseDelay).then(() => {
+        resolved = true
+      })
+
+      // 推进时间到刚好比预期少 1ms
+      await vi.advanceTimersByTimeAsync(expectedDelay - 1)
+      expect(resolved).toBe(false)
+
+      // 再推进 1ms，应该 resolve
+      await vi.advanceTimersByTimeAsync(1)
+      expect(resolved).toBe(true)
+
+      await promise
     })
   })
 

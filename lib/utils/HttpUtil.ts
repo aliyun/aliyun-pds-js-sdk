@@ -66,6 +66,7 @@ function isOssUrlExpired(e: AxiosError): boolean {
   )
 }
 
+// 指数退避逻辑
 async function exponentialBackoff(
   retryCount: number,
   baseDelay: number = 1000,
