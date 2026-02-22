@@ -1,7 +1,7 @@
 import Config from '../config/conf'
 
 const isWeb = typeof window == 'object'
-
+const verbose = true
 // 兼容 browser 和 node.js
 const {PDSClient, HttpClient} = await import(
   /* @vite-ignore */ isWeb ? '../../../lib/index.browser' : '../../../lib/index'
@@ -14,7 +14,7 @@ async function getSuperToken(user_id = 'superadmin') {
   return await import(token_path)
 }
 
-async function getClient(verbose = true) {
+async function getClient() {
   let tokenInfo = await getSuperToken()
   let {api_endpoint, auth_endpoint} = Config
   return new PDSClient({
@@ -32,7 +32,7 @@ async function getHttpClient() {
     token_info: tokenInfo,
     api_endpoint,
     auth_endpoint,
-    verbose: false,
+    verbose,
   })
 }
 

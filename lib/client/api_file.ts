@@ -457,15 +457,33 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
     }
     if (!_url) throw new PDSError('No permission to get url', 'NoPermission')
 
-    const result = await fetch(_url)
-    const text = await result.text()
+    // 使用 fetch API
+    let result
+    try {
+      result = await fetch(_url)
+      if (!result) {
+        throw new PDSError('Fetch returned undefined', 'NetworkError')
+      }
+    } catch (error) {
+      if (error instanceof PDSError) throw error
+      throw new PDSError('Failed to fetch file content: ' + (error as Error)?.message || String(error), 'NetworkError')
+    }
+
+    const content = await result.text()
+    const headers = [...result.headers.keys()].reduce(
+      (acc, key) => {
+        acc[key] = result.headers.get(key)
+        return acc
+      },
+      {} as Record<string, string | null>,
+    )
 
     return {
-      headers: result.headers || {},
-      content: text, // 浏览器中：arraybuffer2text()=> String.fromCharCode.apply(null, new Uint8Array(result.data))
-      size: info.size || result.headers['content-length'],
-      type: result.headers['content-type'],
-      updated_at: result.headers['last-modified'],
+      headers,
+      content, // 浏览器中：arraybuffer2text()=> String.fromCharCode.apply(null, new Uint8Array(result.data))
+      size: info.size || headers['content-length'],
+      type: headers['content-type'],
+      updated_at: headers['last-modified'],
       status: result.status,
     }
   }
@@ -513,11 +531,6 @@ export class PDSFileAPIClient extends PDSFileRevisionAPIClient {
     const len = fileInfos.length
     if (len < 1) return []
     const results: ICopyFileRes[] = []
-    const [f] = fileInfos
-    // 如果是移动到当前文件夹，则不发请求
-    if (to_drive_id === f.drive_id && to_parent_file_id === f.parent_file_id) {
-      return []
-    }
 
     for (const fileInfo of fileInfos) {
       if (getStopFlag()) break

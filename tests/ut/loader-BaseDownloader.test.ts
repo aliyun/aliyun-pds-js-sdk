@@ -11,6 +11,17 @@ function mockFile() {
   }
 }
 
+class TestBaseDownloader extends BaseDownloader {
+  constructor(...argv) {
+    super(...argv)
+  }
+  async prepareAndCreate() {}
+  async initChunks() {
+    this.part_info_list = []
+  }
+  async upload() {}
+}
+
 describe('BaseDownloader', function () {
   describe('handleError', function () {
     it('constructor error', async () => {
@@ -310,6 +321,181 @@ describe('BaseDownloader', function () {
         expect(e.code).toBe('stopped')
       }
       expect(client.message).toBe('socket hang up')
+    })
+  })
+
+  describe('Additional branch coverage', () => {
+    it('should handle file extension validation', () => {
+      const file = {...mockFile(), name: 'test.exe'}
+      const client = new BaseDownloader({file}, {file_ext_list_limit: ['.txt', '.pdf']}, {})
+
+      expect(client.file_ext_list_limit).toEqual(['.txt', '.pdf'])
+    })
+
+    it('should handle verbose mode', () => {
+      const file = mockFile()
+      const client = new BaseDownloader({file, verbose: true}, {}, {})
+
+      expect(client.verbose).toBe(true)
+    })
+
+    it('should handle custom chunk size', () => {
+      const file = {...mockFile(), size: 10000}
+      const client = new BaseDownloader({file}, {max_chunk_size: 2048}, {})
+
+      expect(client.max_chunk_size).toBe(2048)
+    })
+
+    it('should handle state transitions', async () => {
+      class TestDownloader extends BaseDownloader {
+        async prepareAndCreate() {}
+        async initChunks() {
+          this.part_info_list = []
+        }
+        async download() {}
+      }
+
+      const states: string[] = []
+      const client = new TestDownloader({file: mockFile(), state: 'waiting'}, {}, {})
+
+      client.on('statechange', (cp, state) => {
+        states.push(state)
+      })
+
+      await client.changeState('start')
+      await client.changeState('running')
+      await client.changeState('complete')
+
+      expect(states).toContain('start')
+      expect(states).toContain('running')
+      expect(states).toContain('complete')
+    })
+
+    it('should handle progress calculation', () => {
+      const file = {...mockFile(), size: 10000}
+      const client = new BaseDownloader({file, loaded: 5000}, {}, {})
+
+      expect(client.loaded).toBe(5000)
+      expect(client.size).toBe(10000)
+    })
+
+    it('should handle custom context', () => {
+      const file = mockFile()
+      const customContext = {
+        pipeRequest: vi.fn(),
+      }
+      const client = new BaseDownloader({file}, {}, {}, customContext as any)
+
+      expect(client.context_ext).toBe(customContext)
+    })
+
+    it('should handle cancel operation', () => {
+      const file = mockFile()
+      const client = new BaseDownloader({file}, {}, {})
+
+      client.cancel()
+
+      expect(client.cancelFlag).toBe(true)
+    })
+
+    it('should handle stop operation', () => {
+      const file = mockFile()
+      const client = new BaseDownloader({file}, {}, {})
+
+      client.stop()
+
+      expect(client.stopFlag).toBe(true)
+    })
+
+    it('should handle verbose mode', () => {
+      const client = new TestBaseDownloader({file: mockFile(), verbose: true}, {}, {})
+      expect(client.verbose).toBe(true)
+    })
+
+    it('should handle progress events', async () => {
+      let progressCalled = false
+      const client = new TestBaseDownloader({file: mockFile()}, {}, {})
+      client.on('progress', () => {
+        progressCalled = true
+      })
+      client.notifyProgress('running', 50)
+      expect(progressCalled).toBe(true)
+    })
+
+    it('should handle partial complete events', () => {
+      let partialCompleteCalled = false
+      const client = new TestBaseDownloader({file: mockFile()}, {}, {})
+      client.on('partialcomplete', () => {
+        partialCompleteCalled = true
+      })
+      client.notifyPartCompleted({part_number: 1})
+      expect(partialCompleteCalled).toBe(true)
+    })
+
+    it('should handle state change events', async () => {
+      let stateChangeCalled = false
+      const client = new TestBaseDownloader({file: mockFile()}, {}, {})
+      client.on('statechange', () => {
+        stateChangeCalled = true
+      })
+      await client.changeState('running')
+      expect(stateChangeCalled).toBe(true)
+    })
+
+    it('should handle different file sizes for download', () => {
+      const sizes = [100, 1024, 10 * 1024 * 1024]
+      sizes.forEach(size => {
+        const client = new TestBaseDownloader({file: {...mockFile(), size}}, {}, {})
+        expect(client.file.size).toBe(size)
+      })
+    })
+
+    it('should handle stopCalcSpeed', () => {
+      const client = new TestBaseDownloader({file: mockFile()}, {}, {})
+      client.tid_speed = setInterval(() => {}, 1000)
+      client.stopCalcSpeed()
+      expect(client.speed).toBe(0)
+    })
+
+    it('should handle changeState with success', async () => {
+      const client = new TestBaseDownloader({file: mockFile()}, {}, {})
+      await client.changeState('success')
+      expect(client.state).toBe('success')
+    })
+
+    it('should handle changeState with error', async () => {
+      const client = new TestBaseDownloader({file: mockFile()}, {}, {})
+      const error = new Error('Test error') as any
+      await client.changeState('error', error)
+      expect(client.state).toBe('error')
+    })
+
+    it('should handle getCheckpoint', () => {
+      const client = new TestBaseDownloader({file: mockFile()}, {}, {})
+      client.id = 'test-id'
+      client.loaded = 50
+      client.size = 100
+      client.progress = 50
+      client.state = 'running'
+
+      const checkpoint = client.getCheckpoint()
+      expect(checkpoint.id).toBe('test-id')
+      expect(checkpoint.loaded).toBe(50)
+      expect(checkpoint.progress).toBe(50)
+      expect(checkpoint.state).toBe('running')
+    })
+
+    it('should handle wait when already waiting', async () => {
+      const client = new TestBaseDownloader({file: mockFile(), state: 'waiting'}, {}, {})
+      await client.wait()
+      expect(client.state).toBe('waiting')
+    })
+
+    it('should handle cancel', async () => {
+      const client = new TestBaseDownloader({file: mockFile()}, {}, {})
+      await client.cancel()
+      expect(client.cancelFlag).toBe(true)
+      expect(client.state).toBe('cancelled')
     })
   })
 })

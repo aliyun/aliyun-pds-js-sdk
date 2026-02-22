@@ -63,4 +63,63 @@ describe('BaseLoader', function () {
       expect('ok')
     })
   })
+
+  describe('Additional BaseLoader coverage', () => {
+    it('should handle empty time logs', async () => {
+      const client = new BaseLoader()
+      client._time_logs = {}
+      await client.printTimeLogs()
+      expect('ok')
+    })
+
+    it('should handle time logs with only task', async () => {
+      const client = new BaseLoader()
+      client._time_logs = {
+        task: {start: 1000, end: 2000},
+      }
+      await client.printTimeLogs()
+      expect('ok')
+    })
+
+    it('should handle time logs without task', async () => {
+      const client = new BaseLoader()
+      client._time_logs = {
+        upload: {start: 1000, end: 2000},
+      }
+      await client.printTimeLogs()
+      expect('ok')
+    })
+
+    it('should handle complex time logs with downloads', async () => {
+      const client = new BaseLoader()
+      client._time_logs = {
+        task: {start: 1000, end: 5000},
+        download: {start: 2000, end: 4000},
+        'part-1': {start: 2000, end: 3000},
+        'part-2': {start: 3000, end: 4000},
+      }
+      await client.printTimeLogs()
+      expect('ok')
+    })
+
+    it('should handle time logs with very small durations', async () => {
+      const client = new BaseLoader()
+      client._time_logs = {
+        task: {start: 1000, end: 1001},
+        crc64: {start: 1000, end: 1000},
+      }
+      await client.printTimeLogs()
+      expect('ok')
+    })
+
+    it('should handle time logs with large durations', async () => {
+      const client = new BaseLoader()
+      client._time_logs = {
+        task: {start: 0, end: 100000},
+        upload: {start: 0, end: 100000},
+      }
+      await client.printTimeLogs()
+      expect('ok')
+    })
+  })
 })

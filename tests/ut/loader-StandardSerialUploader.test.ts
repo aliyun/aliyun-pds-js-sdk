@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it, vi} from 'vitest'
 import {StandardSerialUploader} from '../../lib/loaders/StandardSerialUploader'
 
 describe('loader/StandardSerialUploader', function () {
@@ -234,6 +234,239 @@ describe('loader/StandardSerialUploader', function () {
 
       expect(loader.part_info_list[3].from).toBe(2048 + 512)
       expect(loader.part_info_list[3].part_size).toBe(1024 + 512)
+    })
+  })
+
+  describe('initChunks', () => {
+    it('should initialize chunks with default chunk size', () => {
+      const loader = new StandardSerialUploader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          file: {name: 'a.txt', size: 10240, path: '/home/admin/a.txt'},
+        },
+        {max_chunk_size: 1024},
+        {},
+      )
+
+      loader.initChunks([])
+
+      expect(loader.part_info_list).toBeDefined()
+      expect(loader.chunk_size).toBeDefined()
+    })
+
+    it('should initialize chunks with existing parts', () => {
+      const loader = new StandardSerialUploader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          file: {name: 'a.txt', size: 10240, path: '/home/admin/a.txt'},
+        },
+        {},
+        {},
+      )
+
+      const existingParts = [{part_number: 1, etag: 'abc'}]
+      loader.initChunks(existingParts)
+
+      expect(loader.part_info_list).toBeDefined()
+    })
+
+    it('should use custom chunk_size if provided', () => {
+      const loader = new StandardSerialUploader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          file: {name: 'a.txt', size: 10240, path: '/home/admin/a.txt'},
+          chunk_size: 2048,
+        },
+        {},
+        {},
+      )
+
+      loader.initChunks([])
+
+      // chunk_size可能会被调整，只需要验证它是基于我们传入的值
+      expect(loader.chunk_size).toBeGreaterThanOrEqual(2048)
+      expect(loader.chunk_size).toBeLessThanOrEqual(2112)
+    })
+  })
+
+  describe('checkRapidUpload', () => {
+    it('should handle 409 status during pre-hash', async () => {
+      const loader = new StandardSerialUploader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          file: {name: 'large.txt', size: 200 * 1024 * 1024, path: '/home/admin/large.txt'},
+        },
+        {min_size_for_pre_hash: 100 * 1024 * 1024, verbose: true},
+        {},
+      )
+
+      loader.changeState = async () => {}
+      loader.calcFileHash = async () => 'hash789'
+      let createCallCount = 0
+      loader.create = async () => {
+        createCallCount++
+        if (createCallCount === 1) {
+          const err: any = new Error('Conflict')
+          err.status = 409
+          throw err
+        }
+        loader.rapid_upload = true
+      }
+
+      const result = await loader.checkRapidUpload()
+
+      expect(createCallCount).toBe(2)
+      expect(result).toBe(true)
+    })
+  })
+
+  describe('prepareAndCreate', () => {
+    it('should throw stopped error when stopFlag is true', async () => {
+      const loader = new StandardSerialUploader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          file: {name: 'test.txt', size: 1024, path: '/home/admin/test.txt'},
+        },
+        {},
+        {},
+      )
+
+      loader.stopFlag = true
+
+      try {
+        await loader.prepareAndCreate()
+        expect(true).toBe(false) // 不应该执行到这里
+      } catch (e: any) {
+        expect(e.code).toBe('stopped')
+      }
+    })
+  })
+
+  describe('Additional coverage', () => {
+    it('should handle verbose logging', () => {
+      const loader = new StandardSerialUploader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          file: {name: 'a.txt', size: 10240, path: '/home/admin/a.txt'},
+          verbose: true,
+        },
+        {},
+        {},
+      )
+      expect(loader.verbose).toBe(true)
+    })
+
+    it('should handle different chunk sizes', () => {
+      const chunkSizes = [1024, 5120, 10240]
+      chunkSizes.forEach(chunk_size => {
+        const loader = new StandardSerialUploader(
+          {
+            drive_id: 'x',
+            file_id: 'x1',
+            file: {name: 'test.txt', size: 50000, path: '/home/admin/test.txt'},
+            chunk_size,
+          },
+          {},
+          {},
+        )
+        loader.initChunks([])
+        expect(loader.chunk_size).toBeGreaterThanOrEqual(chunk_size)
+      })
+    })
+
+    it('should handle empty parts list', () => {
+      const loader = new StandardSerialUploader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          file: {name: 'a.txt', size: 5000, path: '/home/admin/a.txt'},
+        },
+        {},
+        {},
+      )
+      loader.initChunks([])
+      expect(loader.part_info_list).toBeDefined()
+      expect(Array.isArray(loader.part_info_list)).toBe(true)
+    })
+
+    it('should handle large file chunking', () => {
+      const loader = new StandardSerialUploader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          file: {name: 'large.dat', size: 100 * 1024 * 1024, path: '/tmp/large.dat'},
+        },
+        {max_chunk_size: 10 * 1024 * 1024},
+        {},
+      )
+      loader.initChunks([])
+      expect(loader.part_info_list.length).toBeGreaterThan(1)
+    })
+  })
+
+  describe('getNextPart', () => {
+    it('should return next part without etag and not running', () => {
+      const part_info_list = [
+        {part_number: 1, etag: 'abc', running: false},
+        {part_number: 2, etag: undefined, running: false},
+        {part_number: 3, etag: undefined, running: true},
+      ]
+      const loader = new StandardSerialUploader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          part_info_list,
+          file: {name: 'a.txt', size: 300, path: '/home/admin/a.txt'},
+        },
+        {},
+        {},
+      )
+      const result = loader['getNextPart']()
+      expect(result.part_number).toBe(2)
+    })
+
+    it('should return null when all parts have etag', () => {
+      const part_info_list = [
+        {part_number: 1, etag: 'abc', running: false},
+        {part_number: 2, etag: 'def', running: false},
+      ]
+      const loader = new StandardSerialUploader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          part_info_list,
+          file: {name: 'a.txt', size: 200, path: '/home/admin/a.txt'},
+        },
+        {},
+        {},
+      )
+      const result = loader['getNextPart']()
+      expect(result).toBeNull()
+    })
+
+    it('should skip running parts', () => {
+      const part_info_list = [
+        {part_number: 1, etag: undefined, running: true},
+        {part_number: 2, etag: undefined, running: false},
+      ]
+      const loader = new StandardSerialUploader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          part_info_list,
+          file: {name: 'a.txt', size: 200, path: '/home/admin/a.txt'},
+        },
+        {},
+        {},
+      )
+      const result = loader['getNextPart']()
+      expect(result.part_number).toBe(2)
     })
   })
 })

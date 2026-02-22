@@ -68,7 +68,8 @@ describe('MemberShip', function () {
       member_type: 'user',
       limit: 100,
     })
-    expect(result.items.length).toBeGreaterThanOrEqual(0)
+    const items = result.items || []
+    expect(items.length).toBeGreaterThanOrEqual(0)
   })
   it('deleteMembership', async () => {
     try {

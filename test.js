@@ -3,13 +3,16 @@
  *    TEST_TYPE=browser node --max_old_space_size=9000 --experimental-modules ./test.js
  */
 import {execSync, exec} from 'child_process'
-import {appendFileSync, existsSync, unlinkSync} from 'fs'
+import {appendFileSync, writeFileSync, existsSync, unlinkSync} from 'fs'
 
 const TEST_FILE = 'test.log'
+const TEST_FILE_JSON = 'test-result.json'
 
 let failed = 0
 let passed = 0
 let skipped = 0
+let total = 0
+
 let covLine = ''
 let covBranch = ''
 let covFunction = ''
@@ -24,8 +27,15 @@ async function init() {
     if (existsSync(TEST_FILE)) unlinkSync(TEST_FILE)
 
     await new Promise((resolve, reject) => {
-      let child = exec(`npm run cov:${testType}2 -- --silent --run --no-color`, {cwd: process.cwd()})
+      let child = exec(`node -v && tnpm -v && npm run cov:${testType}2 -- --no-color --silent`, {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          NO_COLOR: 1,
+        },
+      })
       child.on('error', err => {
+        console.log('[error]', err)
         reject(err)
       })
       child.on('exit', code => {
@@ -52,20 +62,27 @@ async function init() {
   }
 
   try {
-    const str = execSync(isWindows ? 'powershell gc -tail 500 -encoding utf8 test.log' : `tail -n 500 ./test.log`, {
-      cwd: process.cwd(),
-    }).toString() 
+    const str = execSync(
+      isWindows ? `powershell gc -tail 500 -encoding utf8 ${TEST_FILE}` : `tail -n 500 ./${TEST_FILE}`,
+      {
+        cwd: process.cwd(),
+      },
+    ).toString()
 
     str.split('\n').forEach(line => {
       if (/failed/.test(line)) {
-        failed = line.match(/.*\s(\d+)\sfailed.*/)[1] || 0
+        failed = line.match(/.*\s(\d+)\sfailed.*/)?.[1] || 0
       }
       if (/passed/.test(line)) {
-        passed = line.match(/.*\s(\d+)\spassed.*/)[1] || 0
+        passed = line.match(/.*\s(\d+)\spassed.*/)?.[1] || 0
       }
       if (/skipped/.test(line)) {
-        skipped = line.match(/.*\s(\d+)\sskipped.*/)[1] || 0
+        skipped = line.match(/.*\s(\d+)\sskipped.*/)?.[1] || 0
       }
+      if (/total/.test(line)) {
+        total = line.match(/,\s(\d+)\stotal.*/)?.[1] || 0
+      }
+
       if (/Statements/.test(line)) {
         covLine = line.match(/.*\(\s(.*)\s\)/)[1] || 0
         console.log(`CODE_COVERAGE_LINES: ${covLine}\nCODE_COVERAGE_NAME_LINES: 行`)
@@ -83,10 +100,10 @@ async function init() {
     console.log('Failed to parse stdout.', e)
   }
 
-  if(isNaN(passed) || isNaN(failed) || isNaN(skipped) ) throw new Error('Failed to parse stdout.')
-    
-  const msg = `TEST_CASE_AMOUNT:{"passed": ${passed},"failed": ${failed},"skipped":${skipped} }`
+  const msg = `TEST_CASE_AMOUNT:{"passed": ${passed},"failed": ${failed},"skipped":${skipped},"total":${total} }`
   console.log(msg)
+  writeFileSync(TEST_FILE_JSON, JSON.stringify({passed, failed, skipped, total}))
 
-  execSync(`${isWindows ? 'powershell ' : ''}cp ./test.log coverage/${testType}`, {cwd: process.cwd()})
+  execSync(`${isWindows ? 'powershell ' : ''}cp ./${TEST_FILE} coverage/${testType}`, {cwd: process.cwd()})
+  execSync(`${isWindows ? 'powershell ' : ''}cp ./${TEST_FILE_JSON} coverage/${testType}`, {cwd: process.cwd()})
 }

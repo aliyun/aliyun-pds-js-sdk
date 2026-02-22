@@ -177,4 +177,54 @@ describe('PDSError', function () {
       expect(parseErrorData(1)).toBe(1 + '')
     })
   })
+
+  describe('Additional PDSError coverage', () => {
+    it('should handle initFields with minimal params', () => {
+      const obj = initFields(new Error('simple error'))
+      expect(obj.code).toBe('ClientError')
+      expect(obj.message).toContain('simple error')
+    })
+
+    it('should handle PDSError with only message', () => {
+      const err = new PDSError('test message')
+      expect(err.message).toBe('test message [code: ClientError]')
+      expect(err.code).toBe('ClientError')
+    })
+
+    it('should handle PDSError with code only', () => {
+      const err = new PDSError('msg', 'CustomCode')
+      expect(err.code).toBe('CustomCode')
+      expect(err.message).toBe('msg [code: CustomCode]')
+    })
+
+    it('should handle PDSError with all params', () => {
+      const err = new PDSError('msg', 'Code', 500, 'req-123')
+      expect(err.status).toBe(500)
+      expect(err.reqId).toBe('req-123')
+      expect(err.code).toBe('Code')
+    })
+
+    it('should handle parseErrorData with null', () => {
+      expect(parseErrorData(null)).toBe('null')
+    })
+
+    it('should handle parseErrorData with undefined', () => {
+      expect(parseErrorData(undefined)).toBe('undefined')
+    })
+
+    it('should handle parseErrorData with array', () => {
+      const arr = [1, 2, 3]
+      expect(parseErrorData(arr)).toBe(JSON.stringify(arr))
+    })
+
+    it('should handle PDSError type property', () => {
+      const err = new PDSError('test')
+      expect(err.type).toBe('ClientError')
+    })
+
+    it('should handle PDSError name property', () => {
+      const err = new PDSError('test')
+      expect(err.name).toBe('PDSError')
+    })
+  })
 })
