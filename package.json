@@ -50,6 +50,7 @@
   "author": "guangchun.luo@alibaba-inc.com",
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^22.18.0",
     "@vitest/browser": "1.6.0",
     "@vitest/coverage-istanbul": "1.6.0",
     "@vitest/ui": "1.6.0",
@@ -72,5 +73,8 @@
   "publishConfig": {
     "registry": "https://registry.anpm.alibaba-inc.com"
   },
-  "repository": "git@gitlab.alibaba-inc.com:pds-next/pds-js-sdk.git"
+  "repository": "git@gitlab.alibaba-inc.com:pds-next/pds-js-sdk.git",
+  "dependencies": {
+    "@types/node": "^25.3.0"
+  }
 }
