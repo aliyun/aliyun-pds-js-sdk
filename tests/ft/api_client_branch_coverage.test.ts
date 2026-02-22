@@ -12,6 +12,16 @@ describe('API Client Branch Coverage', function () {
   beforeAll(async () => {
     client = await getClient()
     test_drive_id = client.token_info?.default_drive_id
+    // console.log('-------------client.token_info----', client.token_info)
+    if (!test_drive_id) {
+      const res = await client.createDrive({
+        drive_name: 'default',
+        owner: 'superadmin',
+        total_size: 1021 * 1024,
+        default: true,
+      })
+      test_drive_id = res.drive_id
+    }
 
     // 创建测试文件夹
     test_folder = await client.createFolder({

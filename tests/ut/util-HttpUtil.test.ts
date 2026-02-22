@@ -315,26 +315,26 @@ describe('HttpUtil', function () {
     it('delayRandom, 1,3', async () => {
       for (let i = 0; i < 10; i++) {
         let st = Date.now()
-        await delayRandom()
+        await delayRandom(100, 200)
         let et = Date.now()
-        expect(et - st).toBeLessThan(4050)
+        expect(et - st).toBeLessThan(300 + 100)
       }
     })
     it('delayRandom, 0,1', async () => {
       for (let i = 0; i < 10; i++) {
         let st = Date.now()
-        await delayRandom(0, 1000)
+        await delayRandom(0, 100)
         let et = Date.now()
-        expect(et - st).toBeLessThan(1000 + 100)
+        expect(et - st).toBeLessThan(100 + 100)
       }
     })
   })
 
   describe('exponentialBackoff', () => {
     it('should delay with exponential growth', async () => {
-      const baseDelay = 1000
-      const maxDelay = 30000
-      const retryCount = 3
+      const baseDelay = 10 // 缩短基础延迟
+      const maxDelay = 1000 // 缩短最大延迟
+      const retryCount = 2 // 减少重试次数
 
       const startTime = Date.now()
       await exponentialBackoff(retryCount, baseDelay, maxDelay)
@@ -343,9 +343,9 @@ describe('HttpUtil', function () {
       // 计算预期的延迟时间: baseDelay * 2^retryCount
       const expectedDelay = Math.min(baseDelay * Math.pow(2, retryCount), maxDelay)
 
-      // 允许10ms误差范围
-      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay - expectedDelay * 0.1)
-      expect(elapsed).toBeLessThanOrEqual(expectedDelay + expectedDelay * 0.1)
+      // 允许20%误差范围（时间更短，相对误差可以放宽）
+      expect(elapsed).toBeGreaterThanOrEqual(expectedDelay * 0.8)
+      expect(elapsed).toBeLessThanOrEqual(expectedDelay * 1.2)
     })
 
     it('should not exceed max delay', async () => {

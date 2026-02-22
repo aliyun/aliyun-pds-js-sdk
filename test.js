@@ -27,7 +27,7 @@ async function init() {
     if (existsSync(TEST_FILE)) unlinkSync(TEST_FILE)
 
     await new Promise((resolve, reject) => {
-      let child = exec(`npm run cov:${testType}2 -- --no-color --silent`, {
+      let child = exec(`node -v && tnpm -v && npm run cov:${testType}2 -- --no-color --silent`, {
         cwd: process.cwd(),
         env: {
           ...process.env,

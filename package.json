@@ -50,9 +50,9 @@
   "author": "guangchun.luo@alibaba-inc.com",
   "license": "MIT",
   "devDependencies": {
-    "@vitest/browser": "0.34.6",
-    "@vitest/coverage-istanbul": "0.34.6",
-    "@vitest/ui": "0.34.6",
+    "@vitest/browser": "1.6.0",
+    "@vitest/coverage-istanbul": "1.6.0",
+    "@vitest/ui": "1.6.0",
     "axios": "0.24.0",
     "cross-env": "7.0.3",
     "open-cli": "7.2.0",
@@ -64,7 +64,7 @@
     "uuid": "9.0.1",
     "vite": "4.5.5",
     "vite-plugin-commonjs-externals": "0.1.4",
-    "vitest": "0.34.6"
+    "vitest": "1.6.0"
   },
   "engines": {
     "node": ">=16.15.0"

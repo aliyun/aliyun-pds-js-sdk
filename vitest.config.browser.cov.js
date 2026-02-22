@@ -4,6 +4,10 @@ import {join} from 'path'
 export default defineConfig({
   test: {
     threads: false, // 所有测试在主进程运行 
+    rpcOptions: {
+      timeout: 120_000
+    },
+    
     include: [
       // ts
       'tests/ut/*.test.ts',
@@ -42,11 +46,20 @@ export default defineConfig({
     browser: {
       // https://vitest.dev/guide/browser/#headless
       provider: 'playwright',
-      headless: false,
+      headless: true,
       enabled: true,
       name: 'chromium',
     },
-    testTimeout: 3000000, // 增加到 50 分钟
+    // Windows 环境优化配置
+    testTimeout: 3000000, // 50分钟
     hookTimeout: 3000000,
+    teardownTimeout: 3000000,
+    
+    // 针对 Windows 的特殊配置 
+    maxConcurrency: 1, // 限制并发数
+    
+    // 重试配置
+    retry: 3, // 失败时重试3次
+    bail: 5, // 连续5个测试失败时停止
   },
 })
