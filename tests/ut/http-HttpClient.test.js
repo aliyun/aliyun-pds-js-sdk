@@ -444,4 +444,197 @@ describe('src/http/HttpClient', () => {
       expect(didNotThrow).toBe(true)
     })
   })
+
+  describe('always_get_token_fun', () => {
+    it('should skip token_info validation when always_get_token_fun is provided', () => {
+      // 当提供 always_get_token_fun 时，不需要提供 token_info
+      let didNotThrow = false
+      try {
+        validateParams(
+          {
+            api_endpoint: 'https://xxx',
+            always_get_token_fun: async () => ({access_token: 'xx'}),
+          },
+          {},
+        )
+        didNotThrow = true
+      } catch (e) {
+        didNotThrow = false
+      }
+      expect(didNotThrow).toBe(true)
+    })
+
+    it('should use always_get_token_fun to get token in request', async () => {
+      let callCount = 0
+      const mockTokenInfo = {
+        access_token: 'dynamic_token',
+        expire_time: new Date(Date.now() + 1000000).toISOString(),
+      }
+
+      var mockContext = {
+        axiosSend: req => {
+          // 验证请求中使用了 always_get_token_fun 返回的 token
+          expect(req.headers['Authorization']).toBe('Bearer dynamic_token')
+          return {data: {success: true}}
+        },
+      }
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          always_get_token_fun: async () => {
+            callCount++
+            return mockTokenInfo
+          },
+        },
+        mockContext,
+      )
+
+      // 不设置 token_info，应该通过 always_get_token_fun 获取
+      let data = await client.request('https://xxx', 'POST', '/v2/file/list', {})
+      expect(data.success).toBe(true)
+      expect(callCount).toBe(1)
+    })
+
+    it('should call always_get_token_fun on each request', async () => {
+      let callCount = 0
+
+      var mockContext = {
+        axiosSend: () => {
+          return {data: {result: 'ok'}}
+        },
+      }
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          always_get_token_fun: async () => {
+            callCount++
+            return {
+              access_token: `token_${callCount}`,
+              expire_time: new Date(Date.now() + 1000000).toISOString(),
+            }
+          },
+        },
+        mockContext,
+      )
+
+      // 第一次请求
+      await client.request('https://xxx', 'POST', '/v2/file/list', {})
+      expect(callCount).toBe(1)
+
+      // 第二次请求，应该再次调用 always_get_token_fun
+      await client.request('https://xxx', 'POST', '/v2/file/list', {})
+      expect(callCount).toBe(2)
+    })
+
+    it('should prefer always_get_token_fun over token_info', async () => {
+      let capturedToken = null
+
+      var mockContext = {
+        axiosSend: req => {
+          capturedToken = req.headers['Authorization']
+          return {data: {result: 'ok'}}
+        },
+      }
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          token_info: {
+            access_token: 'static_token',
+            expire_time: new Date(Date.now() + 1000000).toISOString(),
+          },
+          always_get_token_fun: async () => ({
+            access_token: 'dynamic_token',
+            expire_time: new Date(Date.now() + 1000000).toISOString(),
+          }),
+        },
+        mockContext,
+      )
+
+      await client.request('https://xxx', 'POST', '/v2/file/list', {})
+      // 应该使用 always_get_token_fun 返回的 token，而不是 token_info
+      expect(capturedToken).toBe('Bearer dynamic_token')
+    })
+
+    it('should handle always_get_token_fun returning undefined', async () => {
+      var mockContext = {
+        axiosSend: () => {
+          return {data: {result: 'ok'}}
+        },
+      }
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          always_get_token_fun: async () => undefined,
+        },
+        mockContext,
+      )
+
+      let resolveOnError
+      client.on('error', err => {
+        resolveOnError(err)
+      })
+      let prom = new Promise(a => {
+        resolveOnError = a
+      })
+
+      try {
+        await client.request('https://xxx', 'POST', '/v2/file/list', {})
+        expect(2).toBe(1)
+      } catch (e) {
+        // 当 always_get_token_fun 返回 undefined 时，checkRefreshToken 抛出 AccessTokenInvalid
+        // 然后在 catch 块中由于没有 refresh_token_fun，会被转换为 TokenExpired
+        expect(e.code).toBe('TokenExpired')
+      }
+
+      let err = await prom
+      expect(err.code).toBe('AccessTokenInvalid')
+    })
+
+    it('should work with postAPI when using always_get_token_fun', async () => {
+      let callCount = 0
+
+      var mockContext = {
+        axiosSend: req => {
+          expect(req.headers['Authorization']).toBe('Bearer api_token')
+          return {data: {items: []}}
+        },
+      }
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          always_get_token_fun: async () => {
+            callCount++
+            return {
+              access_token: 'api_token',
+              expire_time: new Date(Date.now() + 1000000).toISOString(),
+            }
+          },
+        },
+        mockContext,
+      )
+
+      let data = await client.postAPI('/file/list', {drive_id: '123'})
+      expect(data.items).toEqual([])
+      expect(callCount).toBe(1)
+    })
+
+    it('should store always_get_token_fun in client instance', () => {
+      const tokenFn = async () => ({access_token: 'test'})
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          always_get_token_fun: tokenFn,
+        },
+        {axiosSend: () => {}},
+      )
+
+      expect(client.always_get_token_fun).toBe(tokenFn)
+    })
+  })
 })

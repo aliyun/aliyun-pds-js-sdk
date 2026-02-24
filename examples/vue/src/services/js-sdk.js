@@ -12,24 +12,14 @@ let Context = bContext
 window.CalcUtil = CalcUtil
 window.PDSError = PDSError
 
-// if (window.ClientBridge.Context) {
-//   const {Context: nContext} = require('../../../../dist/node/node-pds.js')
-//   Context = nContext
-// }
 
-function init() {
-  try {
-    const t = tokenStore.get()
-    if (t?.access_token) {
-      SDK.setToken(t)
-    }
-  } catch (e) {
-    window.console.warn('Failed to set token.', e)
-  }
-}
 let SDK = new PDSClient({
   api_endpoint: new URL(window.Global.api_endpoint).origin,
   refresh_token_fun: getTokenThrottle,
+  // always_get_token_fun: () => {
+  //   console.debug('----always_get_token_fun')
+  //   return tokenStore.get()
+  // },
   verbose: true,
 })
 
@@ -94,6 +84,19 @@ SDK.on('error', async (e, req_opt = {}) => {
     }
   }
 })
+
+
+function init() {
+  console.log('--------[js-sdk] init---------')
+  try {
+    const t = tokenStore.get()
+    if (t?.access_token) {
+      SDK.setToken(t)
+    }
+  } catch (e) {
+    window.console.warn('Failed to set token.', e)
+  }
+}
 
 init()
 

@@ -5,6 +5,7 @@
 
 * refactor: request 接口增加 returnResponse 字段, 支持返回请求的 response 而不仅是 response 的 body。
 * fix: 修复 getFileContent 接口， 支持 OSS v4 签名。
+* feature: PDSClient 构造函数增加 always_get_token_fun 可选字段。 用于调接口前实时获取 access_token，适用于多个 tab 页面共享 session 的场景。
 
 ## 1.3.2
 

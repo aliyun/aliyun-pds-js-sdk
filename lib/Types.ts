@@ -431,6 +431,7 @@ interface IClientParams {
   retryCount?: number
   refresh_token_fun?: () => Promise<ITokenInfo>
   refresh_share_token_fun?: () => Promise<string>
+  always_get_token_fun?: ()=> Promise<ITokenInfo>
 }
 
 // 通用列表请求参数
