@@ -1,6 +1,6 @@
 {
   "name": "@ali/pds-js-sdk",
-  "version": "1.4.0-beta.9",
+  "version": "1.4.0-beta.10",
   "type": "module",
   "description": "PDS SDK for javascript",
   "files": [
@@ -50,11 +50,11 @@
   "author": "guangchun.luo@alibaba-inc.com",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^22.18.0",
+    "@types/node": "^18.0.0",
     "@vitest/browser": "1.6.0",
     "@vitest/coverage-istanbul": "1.6.0",
     "@vitest/ui": "1.6.0",
-    "axios": "0.24.0",
+    "axios": "0.30.3",
     "cross-env": "7.0.3",
     "open-cli": "7.2.0",
     "playwright": "^1.53.2",
@@ -68,13 +68,11 @@
     "vitest": "1.6.0"
   },
   "engines": {
-    "node": ">=16.15.0"
+    "node": ">=18.0.0",
+    "electron": ">=23.0.0"
   },
   "publishConfig": {
     "registry": "https://registry.anpm.alibaba-inc.com"
   },
-  "repository": "git@gitlab.alibaba-inc.com:pds-next/pds-js-sdk.git",
-  "dependencies": {
-    "@types/node": "^25.3.0"
-  }
+  "repository": "git@gitlab.alibaba-inc.com:pds-next/pds-js-sdk.git"
 }

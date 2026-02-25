@@ -1,9 +1,9 @@
-import { EventEmitter } from '../utils/EventEmitter'
-import { IClientParams, IContextExt, ITokenInfo, IPDSRequestConfig, TMethod, PathType } from '../Types'
+import {EventEmitter} from '../utils/EventEmitter'
+import {IClientParams, IContextExt, ITokenInfo, IPDSRequestConfig, TMethod, PathType} from '../Types'
 
-import { PDSError } from '../utils/PDSError'
+import {PDSError} from '../utils/PDSError'
 
-import { delayRandom, exponentialBackoff, isNetworkError } from '../utils/HttpUtil'
+import {delayRandom, exponentialBackoff, isNetworkError} from '../utils/HttpUtil'
 
 const MAX_RETRY = 10
 
@@ -188,7 +188,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     endpoint: string,
     method: TMethod,
     pathname: string,
-    data: { [key: string]: any } = {},
+    data: {[key: string]: any} = {},
     options = {},
     retries = MAX_RETRY,
   ): Promise<any> {

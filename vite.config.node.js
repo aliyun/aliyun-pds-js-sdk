@@ -25,6 +25,10 @@ export default defineConfig({
       ],
     }),
   ],
+  define: {
+    // 防止 build 时将 FormData 替换为 window.FormData
+    'window.FormData': 'FormData',
+  },
   build: {
     outDir: 'dist/node',
     lib: {
