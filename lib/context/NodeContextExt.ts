@@ -66,6 +66,8 @@ export class NodeContextExt implements IContextExt {
         headers: {'pds-js-sdk': pkg.version, ...options?.headers},
       })
 
+      const lengthComputable = !isNaN(result.headers['content-length'])
+
       // node 下载 progress 实现
       if (onDownloadProgress && xOptions?.downloadPath) {
         let {start, loaded, total, downloadPath, getStopFlag} = xOptions
@@ -75,7 +77,7 @@ export class NodeContextExt implements IContextExt {
           stream: result.data,
           block_size: STREAM_HIGH_WATER_MARK,
           onProgress: ({loaded, bytes}) => {
-            onDownloadProgress({loaded, bytes, download: true})
+            onDownloadProgress({loaded, total: bytes, lengthComputable} as ProgressEvent)
           },
           downloadPath: downloadPath,
           start: start || 0,

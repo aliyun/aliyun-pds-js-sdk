@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron": "22.3.22",
+    "electron": "34.5.8",
     "ts-node": "^10.4.0"
   },
   "dependencies": {
@@ -18,7 +18,7 @@
     "socket.io": "^4.7.2"
   },
   "engines": {
-    "node": "16.17.1"
+    "node": ">=18.0.0"
   },
   "repository": "git@github.com:aliyun/aliyun-pds-js-sdk.git"
 }
