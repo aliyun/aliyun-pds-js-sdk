@@ -1,9 +1,9 @@
-import {EventEmitter} from '../utils/EventEmitter'
-import {IClientParams, IContextExt, ITokenInfo, IPDSRequestConfig, TMethod, PathType} from '../Types'
+import { EventEmitter } from '../utils/EventEmitter'
+import { IClientParams, IContextExt, ITokenInfo, IPDSRequestConfig, TMethod, PathType } from '../Types'
 
-import {PDSError} from '../utils/PDSError'
+import { PDSError } from '../utils/PDSError'
 
-import {delayRandom, exponentialBackoff, isNetworkError} from '../utils/HttpUtil'
+import { delayRandom, exponentialBackoff, isNetworkError } from '../utils/HttpUtil'
 
 const MAX_RETRY = 10
 
@@ -22,7 +22,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   auth_endpoint?: string
   refresh_token_fun?: () => Promise<ITokenInfo>
   refresh_share_token_fun?: () => Promise<string>
-  always_get_token_fun?: () => Promise<ITokenInfo>
+  always_get_token_fun?: () => Promise<ITokenInfo | undefined>
   path_type: PathType = 'StandardMode'
   version: string = ''
   contextExt: IContextExt
@@ -188,7 +188,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     endpoint: string,
     method: TMethod,
     pathname: string,
-    data: {[key: string]: any} = {},
+    data: { [key: string]: any } = {},
     options = {},
     retries = MAX_RETRY,
   ): Promise<any> {
@@ -310,7 +310,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   }
 
   /* istanbul ignore next */
-  async checkRefreshToken(token_info: ITokenInfo|undefined) {
+  async checkRefreshToken(token_info: ITokenInfo | undefined) {
     if (!token_info?.access_token) {
       throw new PDSError('access_token is required', 'AccessTokenInvalid')
     }

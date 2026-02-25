@@ -1,5 +1,5 @@
-import {AxiosRequestConfig, AxiosResponse} from 'axios'
-import {PDSError} from './utils/PDSError'
+import { AxiosRequestConfig, AxiosResponse } from 'axios'
+import { PDSError } from './utils/PDSError'
 
 interface IPDSRequestConfig extends AxiosRequestConfig {
   retryCount?: number
@@ -249,7 +249,7 @@ interface IUpConfig {
   hash_name?: THashName
 
   // 标签
-  user_tags?: {key: string; value: string}[]
+  user_tags?: { key: string; value: string }[]
 
   // 是否校验
   checking_crc?: boolean
@@ -287,12 +287,12 @@ interface IUpConfig {
    */
   custom_parts_sha1_fun?: (
     opt: ICustomPartsHashFunOpt,
-  ) => Promise<{part_info_list: IUpPartInfo[]; content_hash: string}> //自定义计算 sha1 方法 (分part)
+  ) => Promise<{ part_info_list: IUpPartInfo[]; content_hash: string }> //自定义计算 sha1 方法 (分part)
 
   custom_hash_fun?: (opt: ICustomHashFunOpt) => Promise<string> //自定义 计算 sha1/sha256 的方法
   custom_parts_hash_fun?: (
     opt: ICustomPartsHashFunOpt,
-  ) => Promise<{part_info_list: IUpPartInfo[]; content_hash: string}> //自定义计算 sha1/sha256 方法 (分part)
+  ) => Promise<{ part_info_list: IUpPartInfo[]; content_hash: string }> //自定义计算 sha1/sha256 方法 (分part)
 
   // 标准模式是否启用分片并发上传
   parallel_upload?: boolean
@@ -431,7 +431,7 @@ interface IClientParams {
   retryCount?: number
   refresh_token_fun?: () => Promise<ITokenInfo>
   refresh_share_token_fun?: () => Promise<string>
-  always_get_token_fun?: ()=> Promise<ITokenInfo>
+  always_get_token_fun?: () => Promise<ITokenInfo | undefined>
 }
 
 // 通用列表请求参数
@@ -492,7 +492,7 @@ interface IContextExt {
       process_calc_hash_size?: number
     },
   )
-  calcFileCrc64(params: ICalcFileParams & {process_calc_crc64_size?: number})
+  calcFileCrc64(params: ICalcFileParams & { process_calc_crc64_size?: number })
 
   // for downloads
   getFreeDiskSize(file_path: string): Promise<number>
