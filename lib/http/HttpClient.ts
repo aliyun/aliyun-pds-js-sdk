@@ -1,9 +1,9 @@
-import {EventEmitter} from '../utils/EventEmitter'
-import {IClientParams, IContextExt, ITokenInfo, IPDSRequestConfig, TMethod, PathType} from '../Types'
+import { EventEmitter } from '../utils/EventEmitter'
+import { IClientParams, IContextExt, ITokenInfo, IPDSRequestConfig, TMethod, PathType } from '../Types'
 
-import {PDSError} from '../utils/PDSError'
+import { PDSError } from '../utils/PDSError'
 
-import {delayRandom, exponentialBackoff, isNetworkError} from '../utils/HttpUtil'
+import { delayRandom, exponentialBackoff, isNetworkError } from '../utils/HttpUtil'
 
 const MAX_RETRY = 10
 
@@ -22,6 +22,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   auth_endpoint?: string
   refresh_token_fun?: () => Promise<ITokenInfo>
   refresh_share_token_fun?: () => Promise<string>
+  always_get_token_fun?: () => Promise<ITokenInfo | undefined>
   path_type: PathType = 'StandardMode'
   version: string = ''
   contextExt: IContextExt
@@ -40,6 +41,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       auth_endpoint,
       refresh_token_fun,
       refresh_share_token_fun,
+      always_get_token_fun, // 忽略 token_info，强制重新获取
       path_type = 'StandardMode',
       version = 'v2',
       verbose = false,
@@ -53,6 +55,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       auth_endpoint: auth_endpoint || api_endpoint,
       refresh_token_fun,
       refresh_share_token_fun,
+      always_get_token_fun,
       path_type,
       version,
       verbose,
@@ -185,7 +188,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     endpoint: string,
     method: TMethod,
     pathname: string,
-    data: {[key: string]: any} = {},
+    data: { [key: string]: any } = {},
     options = {},
     retries = MAX_RETRY,
   ): Promise<any> {
@@ -216,13 +219,13 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     let hasShareToken = !!req_opt.headers['x-share-token']
 
     try {
+      const tokenInfo = await this.get_token_info()
       // 如果没有token或token失效，统一 emitError
       if (!hasShareToken) {
-        await this.checkRefreshToken()
+        await this.checkRefreshToken(tokenInfo)
       }
-
-      if (this.token_info?.access_token) {
-        req_opt.headers['Authorization'] = 'Bearer ' + this.token_info?.access_token
+      if (tokenInfo?.access_token) {
+        req_opt.headers['Authorization'] = 'Bearer ' + tokenInfo?.access_token
       }
 
       // 发送请求
@@ -298,12 +301,20 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     }
   }
 
+  protected async get_token_info() {
+    if (typeof this.always_get_token_fun === 'function') {
+      const info = await this.always_get_token_fun()
+      return info
+    }
+    return this.token_info
+  }
+
   /* istanbul ignore next */
-  async checkRefreshToken() {
-    if (!this.token_info || !this.token_info.access_token) {
+  async checkRefreshToken(token_info: ITokenInfo | undefined) {
+    if (!token_info?.access_token) {
       throw new PDSError('access_token is required', 'AccessTokenInvalid')
     }
-    const expire_time = Date.parse(this.token_info?.expire_time || '')
+    const expire_time = Date.parse(token_info?.expire_time || '')
     if (!isNaN(expire_time) && Date.now() > expire_time) {
       if (this.refresh_token_fun) {
         await this.customRefreshTokenFun()
@@ -362,7 +373,7 @@ export function validateParams(params: IClientParams, contextExt: IContextExt) {
     throw new PDSError('api_endpoint or auth_endpoint is required', 'InvalidParameter')
   }
 
-  if (params.token_info) {
+  if (typeof params.always_get_token_fun !== 'function' && params.token_info) {
     validateTokenInfo(params.token_info)
   }
 
