@@ -432,6 +432,7 @@ interface IClientParams {
   refresh_token_fun?: () => Promise<ITokenInfo>
   refresh_share_token_fun?: () => Promise<string>
   always_get_token_fun?: () => Promise<ITokenInfo | undefined>
+  always_get_token_cache_ms?: number
 }
 
 // 通用列表请求参数
