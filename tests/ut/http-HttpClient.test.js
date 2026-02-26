@@ -457,6 +457,68 @@ describe('src/http/HttpClient', () => {
       expect(c == 2)
     })
 
+    it('should deduplicate concurrent refresh_share_token_fun calls', async () => {
+      let refreshCount = 0
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          retryCount: 0,
+          refresh_share_token_fun: async () => {
+            refreshCount++
+            // 模拟异步刷新耗时
+            await new Promise(resolve => setTimeout(resolve, 30))
+            return 'new_share_token'
+          },
+        },
+        {axiosSend: () => ({data: {ok: 'success'}})},
+      )
+
+      // 并发发起 3 个调用
+      const promises = Array(3).fill(null).map(() =>
+        client.customRefreshShareTokenFun()
+      )
+
+      const results = await Promise.allSettled(promises)
+
+      // 虽然有 3 个并发调用，但 refresh_share_token_fun 应该只被调用 1 次
+      expect(refreshCount).toBe(1)
+      // 所有调用都应该成功
+      expect(results.every(r => r.status === 'fulfilled')).toBe(true)
+      // 验证 share_token 被正确设置
+      expect(client.share_token).toBe('new_share_token')
+      // _refresh_share_token_promise 应该已被清除
+      expect(client._refresh_share_token_promise).toBeUndefined()
+    })
+
+    it('should handle refresh_share_token_fun error and allow retry', async () => {
+      let refreshCount = 0
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          retryCount: 0,
+          refresh_share_token_fun: async () => {
+            refreshCount++
+            throw new Error('Refresh failed')
+          },
+        },
+        {axiosSend: () => ({data: {ok: 'success'}})},
+      )
+
+      // 第一次调用应该失败
+      let errorThrown = false
+      try {
+        await client.customRefreshShareTokenFun()
+      } catch (e) {
+        errorThrown = true
+      }
+      expect(errorThrown).toBe(true)
+      expect(refreshCount).toBe(1)
+      // _refresh_share_token_promise 应该已被清除（通过 finally）
+      expect(client._refresh_share_token_promise).toBeUndefined()
+    })
+
     it('remove token', () => {
       var mockContext = {
         axiosSend: () => {
