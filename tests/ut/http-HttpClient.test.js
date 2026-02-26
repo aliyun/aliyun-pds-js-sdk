@@ -309,6 +309,73 @@ describe('src/http/HttpClient', () => {
       expect(data.ok).toBe('123')
     })
 
+    it('should deduplicate concurrent refresh_token_fun calls', async () => {
+      let refreshCount = 0
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          retryCount: 0, // 禁用重试，避免重试导致多次刷新
+          refresh_token_fun: async () => {
+            refreshCount++
+            // 模拟异步刷新耗时
+            await new Promise(resolve => setTimeout(resolve, 30))
+            return {access_token: 'new_token', expire_time: new Date(Date.now() + 1000000).toISOString()}
+          },
+        },
+        {axiosSend: () => ({data: {ok: 'success'}})},
+      )
+
+      // 设置一个已过期但会被 checkRefreshToken 接受的 token
+      // 注意：checkRefreshToken 检查的是传入的 token_info，不是 this.token_info
+      // 所以我们需要直接调用 customRefreshTokenFun 来测试并发去重
+      const promises = Array(3).fill(null).map(() =>
+        client.customRefreshTokenFun()
+      )
+
+      const results = await Promise.allSettled(promises)
+
+      // 虽然有 3 个并发调用，但 refresh_token_fun 应该只被调用 1 次
+      expect(refreshCount).toBe(1)
+      // 所有调用都应该成功
+      expect(results.every(r => r.status === 'fulfilled')).toBe(true)
+      // _refresh_token_promise 应该已被清除
+      expect(client._refresh_token_promise).toBeUndefined()
+    })
+
+    it('should handle refresh_token_fun error and allow retry', async () => {
+      let refreshCount = 0
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          retryCount: 0,
+          refresh_token_fun: async () => {
+            refreshCount++
+            throw new Error('Refresh failed')
+          },
+        },
+        {axiosSend: () => ({data: {ok: 'success'}})},
+      )
+
+      client.setToken({
+        access_token: 'old_token',
+        expire_time: new Date(Date.now() - 1000).toISOString(), // 已过期
+      })
+
+      // 第一次请求触发刷新，应该失败
+      let errorThrown = false
+      try {
+        await client.request('https://xxx', 'POST', '/v2/file/list', {}, {}, 0)
+      } catch (e) {
+        errorThrown = true
+      }
+      expect(errorThrown).toBe(true)
+      expect(refreshCount).toBe(1)
+      // _refresh_token_promise 应该已被清除（通过 finally）
+      expect(client._refresh_token_promise).toBeUndefined()
+    })
+
     it('ShareLinkTokenInvalid', async () => {
       var mockContext = {
         axiosSend: () => {
@@ -496,18 +563,14 @@ describe('src/http/HttpClient', () => {
       expect(callCount).toBe(1)
     })
 
-    it('should call always_get_token_fun on each request', async () => {
+    it('should call always_get_token_fun on each request when cache expires', async () => {
       let callCount = 0
-
-      var mockContext = {
-        axiosSend: () => {
-          return {data: {result: 'ok'}}
-        },
-      }
 
       let client = new HttpClient(
         {
           api_endpoint: 'https://xxx',
+          retryCount: 1,
+          always_get_token_cache_ms: 1, // 1ms 缓存
           always_get_token_fun: async () => {
             callCount++
             return {
@@ -516,15 +579,18 @@ describe('src/http/HttpClient', () => {
             }
           },
         },
-        mockContext,
+        {axiosSend: () => ({data: {result: 'ok'}})},
       )
 
       // 第一次请求
-      await client.request('https://xxx', 'POST', '/v2/file/list', {})
+      await client.request('https://xxx', 'POST', '/v2/file/list', {}, {}, 1)
       expect(callCount).toBe(1)
 
+      // 强制清除缓存，模拟缓存过期
+      client.get_token_cache = undefined
+
       // 第二次请求，应该再次调用 always_get_token_fun
-      await client.request('https://xxx', 'POST', '/v2/file/list', {})
+      await client.request('https://xxx', 'POST', '/v2/file/list', {}, {}, 1)
       expect(callCount).toBe(2)
     })
 
@@ -635,6 +701,147 @@ describe('src/http/HttpClient', () => {
       )
 
       expect(client.always_get_token_fun).toBe(tokenFn)
+    })
+
+    it('should deduplicate concurrent calls to always_get_token_fun', async () => {
+      let callCount = 0
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          retryCount: 1,
+          always_get_token_cache_ms: 100, // 设置较短的缓存时间便于测试
+          always_get_token_fun: async () => {
+            callCount++
+            // 模拟异步操作耗时
+            await new Promise(resolve => setTimeout(resolve, 20))
+            return {
+              access_token: `token_${callCount}`,
+              expire_time: new Date(Date.now() + 1000000).toISOString(),
+            }
+          },
+        },
+        {axiosSend: () => ({data: {result: 'ok'}})},
+      )
+
+      // 并发发起 5 个请求
+      const promises = Array(5).fill(null).map(() =>
+        client.request('https://xxx', 'POST', '/v2/file/list', {}, {}, 1)
+      )
+
+      await Promise.all(promises)
+
+      // 虽然有 5 个并发请求，但 always_get_token_fun 应该只被调用 1 次
+      expect(callCount).toBe(1)
+    })
+
+    it('should use cached token within cache period', async () => {
+      let callCount = 0
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          retryCount: 1,
+          always_get_token_cache_ms: 10000, // 10s 缓存，确保不会过期
+          always_get_token_fun: async () => {
+            callCount++
+            return {
+              access_token: `token_${callCount}`,
+              expire_time: new Date(Date.now() + 1000000).toISOString(),
+            }
+          },
+        },
+        {axiosSend: () => ({data: {result: 'ok'}})},
+      )
+
+      // 第一次请求
+      await client.request('https://xxx', 'POST', '/v2/file/list', {}, {}, 1)
+      expect(callCount).toBe(1)
+
+      // 立即第二次请求，应该使用缓存，不调用 always_get_token_fun
+      await client.request('https://xxx', 'POST', '/v2/file/list', {}, {}, 1)
+      expect(callCount).toBe(1) // 仍然是 1
+    })
+
+    it('should refresh token after cache expires', async () => {
+      let callCount = 0
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          retryCount: 1,
+          always_get_token_cache_ms: 1, // 1ms 缓存
+          always_get_token_fun: async () => {
+            callCount++
+            return {
+              access_token: `token_${callCount}`,
+              expire_time: new Date(Date.now() + 1000000).toISOString(),
+            }
+          },
+        },
+        {axiosSend: () => ({data: {result: 'ok'}})},
+      )
+
+      // 第一次请求
+      await client.request('https://xxx', 'POST', '/v2/file/list', {}, {}, 1)
+      expect(callCount).toBe(1)
+
+      // 强制清除缓存，模拟缓存过期
+      client.get_token_cache = undefined
+
+      // 第二次请求，缓存已过期，应该重新获取
+      await client.request('https://xxx', 'POST', '/v2/file/list', {}, {}, 1)
+      expect(callCount).toBe(2)
+    })
+
+    it('should handle error in always_get_token_fun and allow retry', async () => {
+      let callCount = 0
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          retryCount: 0, // 禁用重试
+          always_get_token_fun: async () => {
+            callCount++
+            throw new Error('Network error')
+          },
+        },
+        {axiosSend: () => ({data: {result: 'ok'}})},
+      )
+
+      // 第一次请求失败
+      let errorThrown = false
+      try {
+        await client.request('https://xxx', 'POST', '/v2/file/list', {}, {}, 0)
+      } catch (e) {
+        errorThrown = true
+      }
+      expect(errorThrown).toBe(true)
+      expect(callCount).toBe(1)
+
+      // 验证 _get_token_promise 被清除（通过 finally）
+      expect(client._get_token_promise).toBeUndefined()
+    }, 5000)
+
+    it('should clear _get_token_promise after completion', async () => {
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          retryCount: 1,
+          always_get_token_cache_ms: 50,
+          always_get_token_fun: async () => ({
+            access_token: 'test_token',
+            expire_time: new Date(Date.now() + 1000000).toISOString(),
+          }),
+        },
+        {axiosSend: () => ({data: {result: 'ok'}})},
+      )
+
+      // 第一次请求
+      await client.request('https://xxx', 'POST', '/v2/file/list', {}, {}, 1)
+
+      // _get_token_promise 应该已被清除
+      expect(client._get_token_promise).toBeUndefined()
     })
   })
 })

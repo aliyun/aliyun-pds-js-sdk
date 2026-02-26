@@ -1,11 +1,12 @@
-import {EventEmitter} from '../utils/EventEmitter'
-import {IClientParams, IContextExt, ITokenInfo, IPDSRequestConfig, TMethod, PathType} from '../Types'
+import { EventEmitter } from '../utils/EventEmitter'
+import { IClientParams, IContextExt, ITokenInfo, IPDSRequestConfig, TMethod, PathType } from '../Types'
 
-import {PDSError} from '../utils/PDSError'
+import { PDSError } from '../utils/PDSError'
 
-import {delayRandom, exponentialBackoff, isNetworkError} from '../utils/HttpUtil'
+import { delayRandom, exponentialBackoff, isNetworkError } from '../utils/HttpUtil'
 
 const MAX_RETRY = 10
+const GET_TOKEN_CACHE_MS= 2000
 
 export interface IHttpClient {
   contextExt: IContextExt
@@ -23,11 +24,16 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   refresh_token_fun?: () => Promise<ITokenInfo>
   refresh_share_token_fun?: () => Promise<string>
   always_get_token_fun?: () => Promise<ITokenInfo | undefined>
+  always_get_token_cache_ms?: number = GET_TOKEN_CACHE_MS
   path_type: PathType = 'StandardMode'
   version: string = ''
   contextExt: IContextExt
-  retryCount: number = 10
+  retryCount: number = MAX_RETRY
   verbose: boolean
+
+  private get_token_cache?: { token?: ITokenInfo; expire_ms?: number }
+  private _get_token_promise?: Promise<ITokenInfo | undefined>
+  private _refresh_token_promise?: Promise<ITokenInfo | undefined>
 
   constructor(params: IClientParams, contextExt: IContextExt) {
     super()
@@ -188,7 +194,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     endpoint: string,
     method: TMethod,
     pathname: string,
-    data: {[key: string]: any} = {},
+    data: { [key: string]: any } = {},
     options = {},
     retries = MAX_RETRY,
   ): Promise<any> {
@@ -301,10 +307,32 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     }
   }
 
+
   protected async get_token_info() {
     if (typeof this.always_get_token_fun === 'function') {
-      const info = await this.always_get_token_fun()
-      return info
+      // 检查缓存
+      if (this.get_token_cache?.token && this.get_token_cache?.expire_ms && this.get_token_cache?.expire_ms > Date.now()) {
+        return this.get_token_cache.token
+      }
+
+      // 如果已经有正在进行的请求，直接返回该 Promise
+      if (this._get_token_promise) {
+        return this._get_token_promise
+      }
+
+      // 创建新的 token 获取请求
+      this._get_token_promise = this.always_get_token_fun().then(token => {
+        this.get_token_cache = {
+          token,
+          expire_ms: Date.now() + (this.always_get_token_cache_ms || GET_TOKEN_CACHE_MS)
+        }
+        return token
+      }).finally(() => {
+        // 完成后清除 Promise，允许下次获取
+        this._get_token_promise = undefined
+      })
+
+      return this._get_token_promise
     }
     return this.token_info
   }
@@ -325,15 +353,28 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   }
   /* istanbul ignore next */
   async customRefreshTokenFun(): Promise<ITokenInfo | undefined> {
-    try {
-      //自定义refresh_token方法
-      var new_token_info = await this.refresh_token_fun?.()
-      //需要重新赋值
-      this.token_info = new_token_info
-      return new_token_info
-    } catch (e) {
-      throw new PDSError(e)
+    // 如果已经有正在进行的刷新请求，直接返回该 Promise
+    if (this._refresh_token_promise) {
+      return this._refresh_token_promise
     }
+
+    // 创建新的刷新请求
+    this._refresh_token_promise = (async () => {
+      try {
+        //自定义refresh_token方法
+        var new_token_info = await this.refresh_token_fun?.()
+        //需要重新赋值
+        this.token_info = new_token_info
+        return new_token_info
+      } catch (e) {
+        throw new PDSError(e)
+      }
+    })().finally(() => {
+      // 完成后清除 Promise，允许下次刷新
+      this._refresh_token_promise = undefined
+    })
+
+    return this._refresh_token_promise
   }
   /* istanbul ignore next */
   async customRefreshShareTokenFun(): Promise<string | undefined> {
