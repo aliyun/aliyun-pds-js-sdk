@@ -33,6 +33,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
 
   private get_token_cache?: { token?: ITokenInfo; expire_ms?: number }
   private _get_token_promise?: Promise<ITokenInfo | undefined>
+  private _refresh_token_promise?: Promise<ITokenInfo | undefined>
 
   constructor(params: IClientParams, contextExt: IContextExt) {
     super()
@@ -352,15 +353,28 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   }
   /* istanbul ignore next */
   async customRefreshTokenFun(): Promise<ITokenInfo | undefined> {
-    try {
-      //自定义refresh_token方法
-      var new_token_info = await this.refresh_token_fun?.()
-      //需要重新赋值
-      this.token_info = new_token_info
-      return new_token_info
-    } catch (e) {
-      throw new PDSError(e)
+    // 如果已经有正在进行的刷新请求，直接返回该 Promise
+    if (this._refresh_token_promise) {
+      return this._refresh_token_promise
     }
+
+    // 创建新的刷新请求
+    this._refresh_token_promise = (async () => {
+      try {
+        //自定义refresh_token方法
+        var new_token_info = await this.refresh_token_fun?.()
+        //需要重新赋值
+        this.token_info = new_token_info
+        return new_token_info
+      } catch (e) {
+        throw new PDSError(e)
+      }
+    })().finally(() => {
+      // 完成后清除 Promise，允许下次刷新
+      this._refresh_token_promise = undefined
+    })
+
+    return this._refresh_token_promise
   }
   /* istanbul ignore next */
   async customRefreshShareTokenFun(): Promise<string | undefined> {

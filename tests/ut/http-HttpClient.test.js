@@ -309,6 +309,73 @@ describe('src/http/HttpClient', () => {
       expect(data.ok).toBe('123')
     })
 
+    it('should deduplicate concurrent refresh_token_fun calls', async () => {
+      let refreshCount = 0
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          retryCount: 0, // 禁用重试，避免重试导致多次刷新
+          refresh_token_fun: async () => {
+            refreshCount++
+            // 模拟异步刷新耗时
+            await new Promise(resolve => setTimeout(resolve, 30))
+            return {access_token: 'new_token', expire_time: new Date(Date.now() + 1000000).toISOString()}
+          },
+        },
+        {axiosSend: () => ({data: {ok: 'success'}})},
+      )
+
+      // 设置一个已过期但会被 checkRefreshToken 接受的 token
+      // 注意：checkRefreshToken 检查的是传入的 token_info，不是 this.token_info
+      // 所以我们需要直接调用 customRefreshTokenFun 来测试并发去重
+      const promises = Array(3).fill(null).map(() =>
+        client.customRefreshTokenFun()
+      )
+
+      const results = await Promise.allSettled(promises)
+
+      // 虽然有 3 个并发调用，但 refresh_token_fun 应该只被调用 1 次
+      expect(refreshCount).toBe(1)
+      // 所有调用都应该成功
+      expect(results.every(r => r.status === 'fulfilled')).toBe(true)
+      // _refresh_token_promise 应该已被清除
+      expect(client._refresh_token_promise).toBeUndefined()
+    })
+
+    it('should handle refresh_token_fun error and allow retry', async () => {
+      let refreshCount = 0
+
+      let client = new HttpClient(
+        {
+          api_endpoint: 'https://xxx',
+          retryCount: 0,
+          refresh_token_fun: async () => {
+            refreshCount++
+            throw new Error('Refresh failed')
+          },
+        },
+        {axiosSend: () => ({data: {ok: 'success'}})},
+      )
+
+      client.setToken({
+        access_token: 'old_token',
+        expire_time: new Date(Date.now() - 1000).toISOString(), // 已过期
+      })
+
+      // 第一次请求触发刷新，应该失败
+      let errorThrown = false
+      try {
+        await client.request('https://xxx', 'POST', '/v2/file/list', {}, {}, 0)
+      } catch (e) {
+        errorThrown = true
+      }
+      expect(errorThrown).toBe(true)
+      expect(refreshCount).toBe(1)
+      // _refresh_token_promise 应该已被清除（通过 finally）
+      expect(client._refresh_token_promise).toBeUndefined()
+    })
+
     it('ShareLinkTokenInvalid', async () => {
       var mockContext = {
         axiosSend: () => {
