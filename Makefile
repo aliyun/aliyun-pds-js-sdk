@@ -44,12 +44,13 @@ publish:build
 pub:build
 	npm publish --tag=beta
 
-build2:
+build2: b2 f
+b2:
 	PKG_NAME=@ali/pds-js-sdk npm run build
-pub2:
-	PKG_NAME=@ali/pds-js-sdk npm run build
+pub2: b2 f
 	tnpm publish --tag=beta
-
+publish2: b2 f
+	tnpm publish
 
 # 命令和目录名称冲突
 .PHONY:doc lib dist tests

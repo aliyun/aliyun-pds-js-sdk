@@ -1,12 +1,12 @@
-import { EventEmitter } from '../utils/EventEmitter'
-import { IClientParams, IContextExt, ITokenInfo, IPDSRequestConfig, TMethod, PathType } from '../Types'
+import {EventEmitter} from '../utils/EventEmitter'
+import {IClientParams, IContextExt, ITokenInfo, IPDSRequestConfig, TMethod, PathType} from '../Types'
 
-import { PDSError } from '../utils/PDSError'
+import {PDSError} from '../utils/PDSError'
 
-import { delayRandom, exponentialBackoff, isNetworkError } from '../utils/HttpUtil'
+import {delayRandom, exponentialBackoff, isNetworkError} from '../utils/HttpUtil'
 
 const MAX_RETRY = 10
-const GET_TOKEN_CACHE_MS= 2000
+const GET_TOKEN_CACHE_MS = 2000
 
 export interface IHttpClient {
   contextExt: IContextExt
@@ -31,7 +31,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   retryCount: number = MAX_RETRY
   verbose: boolean
 
-  private get_token_cache?: { token?: ITokenInfo; expire_ms?: number }
+  private get_token_cache?: {token?: ITokenInfo; expire_ms?: number}
   private _get_token_promise?: Promise<ITokenInfo | undefined>
   private _refresh_token_promise?: Promise<ITokenInfo | undefined>
   private _refresh_share_token_promise?: Promise<string | undefined>
@@ -195,7 +195,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     endpoint: string,
     method: TMethod,
     pathname: string,
-    data: { [key: string]: any } = {},
+    data: {[key: string]: any} = {},
     options = {},
     retries = MAX_RETRY,
   ): Promise<any> {
@@ -308,14 +308,14 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     }
   }
 
-
   protected async get_token_info() {
     if (typeof this.always_get_token_fun === 'function') {
       // 检查缓存
-      if (this.get_token_cache?.token 
-        && this.get_token_cache?.expire_ms 
-        && this.get_token_cache?.expire_ms > Date.now()
-        && Date.parse(this.get_token_cache?.token?.expire_time||'') > Date.now()
+      if (
+        this.get_token_cache?.token &&
+        this.get_token_cache?.expire_ms &&
+        this.get_token_cache?.expire_ms > Date.now() &&
+        Date.parse(this.get_token_cache?.token?.expire_time || '') > Date.now()
       ) {
         return this.get_token_cache.token
       }
@@ -326,16 +326,18 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       }
 
       // 创建新的 token 获取请求
-      this._get_token_promise = this.always_get_token_fun().then(token => {
-        this.get_token_cache = {
-          token,
-          expire_ms: Date.now() + (this.always_get_token_cache_ms || GET_TOKEN_CACHE_MS)
-        }
-        return token
-      }).finally(() => {
-        // 完成后清除 Promise，允许下次获取
-        this._get_token_promise = undefined
-      })
+      this._get_token_promise = this.always_get_token_fun()
+        .then(token => {
+          this.get_token_cache = {
+            token,
+            expire_ms: Date.now() + (this.always_get_token_cache_ms || GET_TOKEN_CACHE_MS),
+          }
+          return token
+        })
+        .finally(() => {
+          // 完成后清除 Promise，允许下次获取
+          this._get_token_promise = undefined
+        })
 
       return this._get_token_promise
     }

@@ -329,9 +329,9 @@ describe('src/http/HttpClient', () => {
       // 设置一个已过期但会被 checkRefreshToken 接受的 token
       // 注意：checkRefreshToken 检查的是传入的 token_info，不是 this.token_info
       // 所以我们需要直接调用 customRefreshTokenFun 来测试并发去重
-      const promises = Array(3).fill(null).map(() =>
-        client.customRefreshTokenFun()
-      )
+      const promises = Array(3)
+        .fill(null)
+        .map(() => client.customRefreshTokenFun())
 
       const results = await Promise.allSettled(promises)
 
@@ -475,9 +475,9 @@ describe('src/http/HttpClient', () => {
       )
 
       // 并发发起 3 个调用
-      const promises = Array(3).fill(null).map(() =>
-        client.customRefreshShareTokenFun()
-      )
+      const promises = Array(3)
+        .fill(null)
+        .map(() => client.customRefreshShareTokenFun())
 
       const results = await Promise.allSettled(promises)
 
@@ -787,9 +787,9 @@ describe('src/http/HttpClient', () => {
       )
 
       // 并发发起 5 个请求
-      const promises = Array(5).fill(null).map(() =>
-        client.request('https://xxx', 'POST', '/v2/file/list', {}, {}, 1)
-      )
+      const promises = Array(5)
+        .fill(null)
+        .map(() => client.request('https://xxx', 'POST', '/v2/file/list', {}, {}, 1))
 
       await Promise.all(promises)
 

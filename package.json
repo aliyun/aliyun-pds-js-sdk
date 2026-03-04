@@ -1,6 +1,6 @@
 {
-  "name": "@ali/pds-js-sdk",
-  "version": "1.4.0-beta.13",
+  "name": "aliyun-pds-js-sdk",
+  "version": "1.4.0",
   "type": "module",
   "description": "PDS SDK for javascript",
   "files": [
@@ -72,7 +72,7 @@
     "electron": ">=23.0.0"
   },
   "publishConfig": {
-    "registry": "https://registry.anpm.alibaba-inc.com"
+    "registry": "https://registry.npmjs.org"
   },
-  "repository": "git@gitlab.alibaba-inc.com:pds-next/pds-js-sdk.git"
+  "repository": "git@github.com:aliyun/aliyun-pds-js-sdk.git"
 }
