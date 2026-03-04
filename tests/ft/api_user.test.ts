@@ -1,5 +1,5 @@
 import {describe, expect, beforeAll, afterAll, it} from 'vitest'
-import {IUserItem} from '../../lib'
+import {IUserItem, formatGeneralUserItems} from '../../lib/client/api_user'
 import {getClient, deleteUserForce} from './util/token-util'
 
 async function delete_user_force(client, user_id) {
@@ -150,6 +150,25 @@ describe('User', function () {
         limit: 100,
       })
       expect(result.items?.length).toBeGreaterThanOrEqual(0)
+    })
+  })
+  describe('formatGeneralUserItems', () => {
+    it('test', () => {
+      const items: IUserItem[] = [
+        {
+          role: 'user',
+          status: 'enabled',
+          user_id: '123',
+          parent_group: [{group_name: 'a'}, {group_name: 'b'}],
+          default_drive: {total_size: 100, used_size: 50},
+        },
+      ]
+      const arr = formatGeneralUserItems(items)
+      expect(arr[0].total_size).toBe(100)
+      expect(arr[0].used).toBe('50B')
+      expect(arr[0].total).toBe('100B')
+      expect(arr[0].used_total).toBe('50.00%')
+      expect(arr[0].group_name).toBe('a,b')
     })
   })
 })

@@ -154,4 +154,163 @@ describe('loader/NodeDownloader', function () {
       expect(partInfo.crc64).toBe('xx')
     })
   })
+
+  describe('Additional coverage', () => {
+    it('should handle constructor with various options', () => {
+      const loader = new NodeDownloader(
+        {
+          drive_id: 'test-drive',
+          file_id: 'test-file',
+          file: {name: 'test.txt', size: 1024, path: '/tmp/test.txt'},
+          verbose: true,
+        },
+        {
+          max_chunk_size: 2048,
+          max_size_for_sha1: 1024,
+        },
+        {},
+        new NodeContextExt(Context),
+      )
+      expect(loader).toBeDefined()
+      expect(loader.verbose).toBe(true)
+    })
+
+    it('should handle cancelled error', async () => {
+      const loader = new NodeDownloader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          file: {name: 'a.txt', size: 100, path: '/home/admin/a.txt'},
+        },
+        {},
+        {},
+        new NodeContextExt(Context),
+      )
+
+      const partInfo = {
+        done: false,
+        running: true,
+        loaded: 20,
+      }
+      const err: any = new Error('cancelled')
+      err.code = 'cancelled'
+
+      try {
+        await loader.handlePartError(err, partInfo)
+        expect(1).toBe(2)
+      } catch (e) {
+        expect(e.code).toBe('cancelled')
+      }
+    })
+
+    it('should handle other errors', async () => {
+      const loader = new NodeDownloader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          file: {name: 'a.txt', size: 100, path: '/home/admin/a.txt'},
+        },
+        {},
+        {},
+        new NodeContextExt(Context),
+      )
+
+      const partInfo = {
+        done: false,
+        running: true,
+        loaded: 20,
+      }
+      const err = new Error('Unknown error')
+
+      try {
+        await loader.handlePartError(err, partInfo)
+        expect(1).toBe(2)
+      } catch (e) {
+        expect(e.message).toBe('Unknown error')
+      }
+    })
+  })
+
+  describe('getNextPart', () => {
+    it('should return allDone when part_info_list is empty', () => {
+      const loader = new NodeDownloader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          part_info_list: [],
+          file: {name: 'a.txt', size: 100, path: '/home/admin/a.txt'},
+        },
+        {},
+        {},
+        new NodeContextExt(Context),
+      )
+      const result = loader['getNextPart']()
+      expect(result.allDone).toBe(true)
+      expect(result.hasNext).toBe(false)
+    })
+
+    it('should find next part without done and not running', () => {
+      const part_info_list = [
+        {part_number: 1, done: true, running: false},
+        {part_number: 2, done: false, running: false},
+        {part_number: 3, done: false, running: true},
+      ]
+      const loader = new NodeDownloader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          part_info_list,
+          file: {name: 'a.txt', size: 300, path: '/home/admin/a.txt'},
+        },
+        {},
+        {},
+        new NodeContextExt(Context),
+      )
+      const result = loader['getNextPart']()
+      expect(result.allDone).toBe(false)
+      expect(result.hasNext).toBe(true)
+      expect(result.nextPart.part_number).toBe(2)
+    })
+
+    it('should return allDone true when all parts are done', () => {
+      const part_info_list = [
+        {part_number: 1, done: true, running: false},
+        {part_number: 2, done: true, running: false},
+      ]
+      const loader = new NodeDownloader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          part_info_list,
+          file: {name: 'a.txt', size: 200, path: '/home/admin/a.txt'},
+        },
+        {},
+        {},
+        new NodeContextExt(Context),
+      )
+      const result = loader['getNextPart']()
+      expect(result.allDone).toBe(true)
+    })
+
+    it('should handle all parts running', () => {
+      const part_info_list = [
+        {part_number: 1, done: false, running: true},
+        {part_number: 2, done: false, running: true},
+      ]
+      const loader = new NodeDownloader(
+        {
+          drive_id: 'x',
+          file_id: 'x1',
+          part_info_list,
+          file: {name: 'a.txt', size: 200, path: '/home/admin/a.txt'},
+        },
+        {},
+        {},
+        new NodeContextExt(Context),
+      )
+      const result = loader['getNextPart']()
+      expect(result.allDone).toBe(false)
+      expect(result.hasNext).toBe(false)
+    })
+  })
 })

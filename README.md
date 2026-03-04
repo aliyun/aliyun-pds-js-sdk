@@ -1,4 +1,4 @@
-# ALIYUN-PDS-JS-SDK
+# aliyun-pds-js-sdk
 
 > PDS SDK for both Node.js and Javascript in browser.
 
@@ -22,18 +22,6 @@ import {PDSClient} from 'aliyun-pds-js-sdk'
 ```
 
 ### Browser
-
-* via script tag
-
-```html
-<script src="/path/to/dist/aliyun-pds-js-sdk.min.js"></script>
-```
-
-```js
-const {PDSClient} = window.PDS_SDK
-```
-
-* or ES Import
 
 ```js
 // 前端使用：

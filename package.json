@@ -1,6 +1,6 @@
 {
   "name": "aliyun-pds-js-sdk",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "type": "module",
   "description": "PDS SDK for javascript",
   "files": [
@@ -29,20 +29,20 @@
     "doc:node": "typedoc --tsconfig tsconfig.json --options typedoc-node.js",
     "doc:web": "typedoc --tsconfig tsconfig.json --options typedoc-web.js",
     "build:version": "node build.js",
-    "build:node": "tsc --lib ES2020,DOM,DOM.Iterable  && vite build --config vite.config.js",
+    "build:node": "tsc --lib ES2020,DOM,DOM.Iterable  && vite build --config vite.config.node.js",
     "build:browser": "tsc --lib ES2020,DOM,DOM.Iterable && vite build --config vite.config.browser.js",
     "dts": "tsc --build tsconfig-dts.json",
     "build": "npm run build:version && npm run build:node && npm run build:browser && npm run dts",
     "format": "prettier --write 'lib/**/*.{js,mjs,ts}' 'tests/**/*.{js,mjs,ts}' examples/**/*.{js,vue,ts}",
-    "test": "vitest",
-    "test2": "vitest --config vite.config.browser.js",
-    "test:node": "npm run token && vitest --coverage",
-    "test:browser": "npm run token && vitest --coverage --config vite.config.browser.js",
+    "test:node:ut": "vitest run --coverage --config vitest.config.node.ut.js",
+    "test:browser:ut": "vitest run --coverage --config vitest.config.browser.ut.js",
+    "test:node:ft": "npm run token && vitest run --coverage --config vitest.config.node.ft.js",
+    "test:browser:ft": "npm run token && vitest run --coverage --config vitest.config.browser.ft.js",
     "token": "tsx tests/ft/bin/pre-test.js",
-    "cov:node": "npm run token && vitest run --coverage && open-cli coverage/node/index.html",
-    "cov:browser": "npm run token && vitest run --coverage --config vite.config.browser.js && open-cli coverage/browser/index.html",
-    "cov:node2": "npm run token && vitest run --coverage",
-    "cov:browser2": "npm run token && vitest run --coverage --config vite.config.browser.js"
+    "cov:node": "npm run token && vitest run --coverage --config vitest.config.node.cov.js && open-cli coverage/node/index.html",
+    "cov:browser": "npm run token && vitest run --coverage --config vitest.config.browser.cov.js && open-cli coverage/browser/index.html",
+    "cov:node2": "npm run token && vitest run --coverage --config vitest.config.node.cov.js",
+    "cov:browser2": "npm run token && vitest run --coverage --config vitest.config.browser.cov.js"
   },
   "directories": {
     "test": "tests/"
@@ -50,10 +50,11 @@
   "author": "guangchun.luo@alibaba-inc.com",
   "license": "MIT",
   "devDependencies": {
-    "@vitest/browser": "0.34.6",
-    "@vitest/coverage-istanbul": "0.34.6",
-    "@vitest/ui": "0.34.6",
-    "axios": "0.24.0",
+    "@types/node": "^18.0.0",
+    "@vitest/browser": "1.6.0",
+    "@vitest/coverage-istanbul": "1.6.0",
+    "@vitest/ui": "1.6.0",
+    "axios": "0.30.3",
     "cross-env": "7.0.3",
     "open-cli": "7.2.0",
     "playwright": "^1.53.2",
@@ -64,13 +65,14 @@
     "uuid": "9.0.1",
     "vite": "4.5.5",
     "vite-plugin-commonjs-externals": "0.1.4",
-    "vitest": "0.34.6"
+    "vitest": "1.6.0"
   },
   "engines": {
-    "node": ">=16.15.0"
+    "node": ">=18.0.0",
+    "electron": ">=23.0.0"
   },
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org"
   },
   "repository": "git@github.com:aliyun/aliyun-pds-js-sdk.git"
 }

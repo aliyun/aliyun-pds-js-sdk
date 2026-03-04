@@ -6,6 +6,7 @@ import {PDSError} from '../utils/PDSError'
 import {delayRandom, exponentialBackoff, isNetworkError} from '../utils/HttpUtil'
 
 const MAX_RETRY = 10
+const GET_TOKEN_CACHE_MS = 2000
 
 export interface IHttpClient {
   contextExt: IContextExt
@@ -22,11 +23,18 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   auth_endpoint?: string
   refresh_token_fun?: () => Promise<ITokenInfo>
   refresh_share_token_fun?: () => Promise<string>
+  always_get_token_fun?: () => Promise<ITokenInfo | undefined>
+  always_get_token_cache_ms?: number = GET_TOKEN_CACHE_MS
   path_type: PathType = 'StandardMode'
   version: string = ''
   contextExt: IContextExt
-  retryCount: number = 10
+  retryCount: number = MAX_RETRY
   verbose: boolean
+
+  private get_token_cache?: {token?: ITokenInfo; expire_ms?: number}
+  private _get_token_promise?: Promise<ITokenInfo | undefined>
+  private _refresh_token_promise?: Promise<ITokenInfo | undefined>
+  private _refresh_share_token_promise?: Promise<string | undefined>
 
   constructor(params: IClientParams, contextExt: IContextExt) {
     super()
@@ -40,6 +48,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       auth_endpoint,
       refresh_token_fun,
       refresh_share_token_fun,
+      always_get_token_fun, // 忽略 token_info，强制重新获取
       path_type = 'StandardMode',
       version = 'v2',
       verbose = false,
@@ -53,6 +62,7 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       auth_endpoint: auth_endpoint || api_endpoint,
       refresh_token_fun,
       refresh_share_token_fun,
+      always_get_token_fun,
       path_type,
       version,
       verbose,
@@ -89,13 +99,11 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     return await this.request(this.auth_endpoint || '', 'POST', pathname, data, options)
   }
   async postAPIAnonymous<T = any>(pathname: string, data = {}, options: IPDSRequestConfig = {}): Promise<T> {
-    let res = await this.send('POST', getUrl(this.api_endpoint || '', this.version, pathname), data, options)
-    return res.data
+    return await this.send('POST', getUrl(this.api_endpoint || '', this.version, pathname), data, options)
   }
   /* istanbul ignore next */
   async postAuthAnonymous<T = any>(pathname: string, data = {}, options: IPDSRequestConfig = {}): Promise<T> {
-    let res = await this.send('POST', getUrl(this.auth_endpoint || '', this.version, pathname), data, options)
-    return res.data
+    return await this.send('POST', getUrl(this.auth_endpoint || '', this.version, pathname), data, options)
   }
 
   /* istanbul ignore next */
@@ -103,7 +111,10 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     return this.contextExt.sendOSS.call(this.contextExt, options)
   }
 
-  async send(
+  /**
+   * @deprecated use postAPIAnonymous instead
+   */
+  protected async send(
     method: TMethod,
     url: string,
     data = {},
@@ -138,7 +149,8 @@ export class HttpClient extends EventEmitter implements IHttpClient {
           data: JSON.stringify(res.data),
         })
       }
-      return res
+      if (req_opt?.returnResponse) return res
+      else return res.data
     } catch (err) {
       let pdsErr = new PDSError(err)
 
@@ -176,8 +188,10 @@ export class HttpClient extends EventEmitter implements IHttpClient {
       throw pdsErr
     }
   }
-
-  async request(
+  /**
+   * @deprecated use postAPI instead
+   */
+  protected async request(
     endpoint: string,
     method: TMethod,
     pathname: string,
@@ -212,13 +226,13 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     let hasShareToken = !!req_opt.headers['x-share-token']
 
     try {
+      const tokenInfo = await this.get_token_info()
       // 如果没有token或token失效，统一 emitError
       if (!hasShareToken) {
-        await this.checkRefreshToken()
+        await this.checkRefreshToken(tokenInfo)
       }
-
-      if (this.token_info?.access_token) {
-        req_opt.headers['Authorization'] = 'Bearer ' + this.token_info?.access_token
+      if (tokenInfo?.access_token) {
+        req_opt.headers['Authorization'] = 'Bearer ' + tokenInfo?.access_token
       }
 
       // 发送请求
@@ -231,7 +245,8 @@ export class HttpClient extends EventEmitter implements IHttpClient {
         })
       }
 
-      return response.data
+      if (req_opt?.returnResponse) return response
+      else return response.data
     } catch (e) {
       let pdsErr = new PDSError(e)
 
@@ -293,12 +308,48 @@ export class HttpClient extends EventEmitter implements IHttpClient {
     }
   }
 
+  protected async get_token_info() {
+    if (typeof this.always_get_token_fun === 'function') {
+      // 检查缓存
+      if (
+        this.get_token_cache?.token &&
+        this.get_token_cache?.expire_ms &&
+        this.get_token_cache?.expire_ms > Date.now() &&
+        Date.parse(this.get_token_cache?.token?.expire_time || '') > Date.now()
+      ) {
+        return this.get_token_cache.token
+      }
+
+      // 如果已经有正在进行的请求，直接返回该 Promise
+      if (this._get_token_promise) {
+        return this._get_token_promise
+      }
+
+      // 创建新的 token 获取请求
+      this._get_token_promise = this.always_get_token_fun()
+        .then(token => {
+          this.get_token_cache = {
+            token,
+            expire_ms: Date.now() + (this.always_get_token_cache_ms || GET_TOKEN_CACHE_MS),
+          }
+          return token
+        })
+        .finally(() => {
+          // 完成后清除 Promise，允许下次获取
+          this._get_token_promise = undefined
+        })
+
+      return this._get_token_promise
+    }
+    return this.token_info
+  }
+
   /* istanbul ignore next */
-  async checkRefreshToken() {
-    if (!this.token_info || !this.token_info.access_token) {
+  async checkRefreshToken(token_info: ITokenInfo | undefined) {
+    if (!token_info?.access_token) {
       throw new PDSError('access_token is required', 'AccessTokenInvalid')
     }
-    const expire_time = Date.parse(this.token_info?.expire_time || '')
+    const expire_time = Date.parse(token_info?.expire_time || '')
     if (!isNaN(expire_time) && Date.now() > expire_time) {
       if (this.refresh_token_fun) {
         await this.customRefreshTokenFun()
@@ -309,27 +360,53 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   }
   /* istanbul ignore next */
   async customRefreshTokenFun(): Promise<ITokenInfo | undefined> {
-    try {
-      //自定义refresh_token方法
-      var new_token_info = await this.refresh_token_fun?.()
-      //需要重新赋值
-      this.token_info = new_token_info
-      return new_token_info
-    } catch (e) {
-      throw new PDSError(e)
+    // 如果已经有正在进行的刷新请求，直接返回该 Promise
+    if (this._refresh_token_promise) {
+      return this._refresh_token_promise
     }
+
+    // 创建新的刷新请求
+    this._refresh_token_promise = (async () => {
+      try {
+        //自定义refresh_token方法
+        var new_token_info = await this.refresh_token_fun?.()
+        //需要重新赋值
+        this.token_info = new_token_info
+        return new_token_info
+      } catch (e) {
+        throw new PDSError(e)
+      }
+    })().finally(() => {
+      // 完成后清除 Promise，允许下次刷新
+      this._refresh_token_promise = undefined
+    })
+
+    return this._refresh_token_promise
   }
   /* istanbul ignore next */
   async customRefreshShareTokenFun(): Promise<string | undefined> {
-    try {
-      //自定义refresh_share_token_fun方法
-      var new_share_token = await this.refresh_share_token_fun?.()
-      //需要重新赋值
-      this.share_token = new_share_token
-      return new_share_token
-    } catch (e) {
-      throw new PDSError(e)
+    // 如果已经有正在进行的刷新请求，直接返回该 Promise
+    if (this._refresh_share_token_promise) {
+      return this._refresh_share_token_promise
     }
+
+    // 创建新的刷新请求
+    this._refresh_share_token_promise = (async () => {
+      try {
+        //自定义refresh_share_token_fun方法
+        var new_share_token = await this.refresh_share_token_fun?.()
+        //需要重新赋值
+        this.share_token = new_share_token
+        return new_share_token
+      } catch (e) {
+        throw new PDSError(e)
+      }
+    })().finally(() => {
+      // 完成后清除 Promise，允许下次刷新
+      this._refresh_share_token_promise = undefined
+    })
+
+    return this._refresh_share_token_promise
   }
   emitError(e: PDSError, request_config?: IPDSRequestConfig) {
     this.emit('error', e, request_config)
@@ -357,7 +434,7 @@ export function validateParams(params: IClientParams, contextExt: IContextExt) {
     throw new PDSError('api_endpoint or auth_endpoint is required', 'InvalidParameter')
   }
 
-  if (params.token_info) {
+  if (typeof params.always_get_token_fun !== 'function' && params.token_info) {
     validateTokenInfo(params.token_info)
   }
 

@@ -62,7 +62,15 @@ describe('MemberShip', function () {
     })
     expect(!!result.user_id).toBe(true)
   })
-
+  it('listDirectParentMemberships', async () => {
+    const result = await client.listDirectParentMemberships({
+      user_id: client.token_info?.user_id,
+      member_type: 'user',
+      limit: 100,
+    })
+    const items = result.items || []
+    expect(items.length).toBeGreaterThanOrEqual(0)
+  })
   it('deleteMembership', async () => {
     try {
       await client.deleteMembership({
@@ -74,13 +82,5 @@ describe('MemberShip', function () {
     } catch (error) {
       expect(1).toBe(1)
     }
-  })
-  it('listDirectParentMemberships', async () => {
-    const result = await client.listDirectParentMemberships({
-      user_id: client.token_info?.user_id,
-      member_type: 'user',
-      limit: 100,
-    })
-    expect(result.items.length).toBeGreaterThanOrEqual(0)
   })
 })

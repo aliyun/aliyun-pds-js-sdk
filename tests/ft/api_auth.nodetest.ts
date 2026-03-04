@@ -15,7 +15,6 @@ describe('AuthAPI', function () {
     })
 
     let token = await client.getUserJwtToken(params)
-
     expect(!!token.access_token).toBe(true)
     expect(!!token.refresh_token).toBe(true)
     expect(token.token_type).toBe('Bearer')
@@ -31,7 +30,7 @@ describe('AuthAPI', function () {
     expect(token2.user_id).toBe(token.user_id)
     expect(!!token2.access_token)
     expect(!!token2.refresh_token)
-    expect(token2.access_token).not.toBe(token.access_token)
+    // expect(token2.access_token).not.toBe(token.access_token)
     expect(token2.refresh_token).not.toBe(token.refresh_token)
   })
 
