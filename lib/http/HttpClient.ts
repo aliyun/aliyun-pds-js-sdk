@@ -312,7 +312,11 @@ export class HttpClient extends EventEmitter implements IHttpClient {
   protected async get_token_info() {
     if (typeof this.always_get_token_fun === 'function') {
       // 检查缓存
-      if (this.get_token_cache?.token && this.get_token_cache?.expire_ms && this.get_token_cache?.expire_ms > Date.now()) {
+      if (this.get_token_cache?.token 
+        && this.get_token_cache?.expire_ms 
+        && this.get_token_cache?.expire_ms > Date.now()
+        && Date.parse(this.get_token_cache?.token?.expire_time||'') > Date.now()
+      ) {
         return this.get_token_cache.token
       }
 
